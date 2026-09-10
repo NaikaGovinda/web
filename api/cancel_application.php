@@ -36,6 +36,14 @@ try {
     // Удаляем заявку
     $pdo->prepare("DELETE FROM `applications` WHERE id = ?")->execute([$app_id]);
 
+    // Сохраняем уведомление в БД
+    try {
+        $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, `read`) VALUES (?, ?, ?, ?, 0)");
+        $notifStmt->execute([$_SESSION['user_id'], 'application_cancelled', 'Заявка отменена ↩️', 'Вы отменили заявку на вступление в группу.', 0]);
+    } catch (Exception $e) {
+        error_log("Ошибка сохранения уведомления: " . $e->getMessage());
+    }
+
     echo json_encode(['success' => true]);
 
 } catch (Exception $e) {

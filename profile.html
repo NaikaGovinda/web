@@ -18,6 +18,13 @@
             </svg>
         </button>
         <h1 class="org-name">МОЙ ПРОФИЛЬ</h1>
+        <button class="back-btn" id="btnNotifications" aria-label="Уведомления" style="position:relative;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span id="notifBadge" style="display:none; position:absolute; top:-2px; right:-4px; background:#ff3b30; color:#fff; font-size:11px; font-weight:700; min-width:18px; height:18px; border-radius:9px; text-align:center; line-height:18px; padding:0 4px;">0</span>
+        </button>
     </header>
 
     <!-- Основной контент -->
@@ -49,6 +56,173 @@
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // ===== УВЕДОМЛЕНИЯ =====
+    let currentUserId = null;
+
+    // Открыть панель уведомлений
+    function openNotificationPanel() {
+        const panel = document.getElementById('notificationPanel');
+        if (panel) panel.style.display = 'flex';
+        loadNotifications();
+    }
+
+    // Закрыть панель уведомлений
+    function closeNotificationPanel() {
+        const panel = document.getElementById('notificationPanel');
+        if (panel) panel.style.display = 'none';
+    }
+
+    // Загрузить уведомления
+    async function loadNotifications() {
+        const listEl = document.getElementById('notificationsList');
+        if (!listEl) return;
+
+        try {
+            const response = await fetch('/api/get_notifications.php?user_id=' + currentUserId + '&v=' + Date.now());
+            const text = await response.text();
+            let data;
+            try {
+                const jsonIdx = text.indexOf('{');
+                if (jsonIdx !== -1) data = JSON.parse(text.substring(jsonIdx));
+            } catch(e) { console.error('Парсинг уведомлений:', e); }
+
+            if (!data || !data.success) {
+                listEl.innerHTML = '<div class="notif-empty"><div class="notif-empty-icon">🔔</div><p>Нет уведомлений</p></div>';
+                updateNotifBadge(0);
+                return;
+            }
+
+            const notifications = data.notifications || [];
+            console.log('Загружено уведомлений:', notifications.length, notifications);
+            updateNotifBadge(notifications.filter(n => !n.is_read).length);
+
+            if (notifications.length === 0) {
+                listEl.innerHTML = '<div class="notif-empty"><div class="notif-empty-icon">🔔</div><p>Нет уведомлений</p></div>';
+                return;
+            }
+
+            let html = '';
+            notifications.forEach(notif => {
+                const iconMap = {
+                    'application_approved': '✅',
+                    'application_rejected': '❌',
+                    'application_cancelled': '↩️',
+                    'group_removed': '🚪',
+                    'chat_message': '💬',
+                    'group_created': '🎉',
+                    'default': '🔔'
+                };
+                const icon = iconMap[notif.type] || iconMap['default'];
+                const iconClass = notif.type.replace(/_/g, '-');
+                const timeStr = formatNotifTime(notif.created_at || '');
+
+                html += `
+                <div class="notif-item ${notif.is_read ? '' : 'unread'}" data-id="${notif.id}">
+                    <div class="notif-icon ${iconClass}">${icon}</div>
+                    <div class="notif-content">
+                        <p class="notif-title">${escapeHtml(notif.title || 'Уведомление')}</p>
+                        <p class="notif-text">${escapeHtml(notif.message || '')}</p>
+                        <p class="notif-time">${timeStr}</p>
+                    </div>
+                </div>
+                `;
+            });
+
+            listEl.innerHTML = html;
+
+            // Обработчик клика по уведомлению
+            listEl.querySelectorAll('.notif-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const notifId = item.dataset.id;
+                    markNotificationRead(notifId);
+                    item.classList.remove('unread');
+                });
+            });
+
+        } catch (error) {
+            console.error('Ошибка загрузки уведомлений:', error);
+            listEl.innerHTML = '<div class="notif-empty"><p>Не удалось загрузить</p></div>';
+        }
+    }
+
+    // Отметить уведомление прочитанным
+    async function markNotificationRead(notifId) {
+        try {
+            await fetch('/api/mark_notification_read.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ notification_id: notifId })
+            });
+        } catch (e) {
+            console.error('Ошибка отметки прочитанным:', e);
+        }
+    }
+
+    // Очистить все уведомления
+    async function clearAllNotifications() {
+        try {
+            await fetch('/api/clear_notifications.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: currentUserId })
+            });
+            updateNotifBadge(0);
+            loadNotifications();
+        } catch (e) {
+            console.error('Ошибка очистки:', e);
+        }
+    }
+
+    // Обновить бейдж
+    function updateNotifBadge(count) {
+        const badge = document.getElementById('notifBadge');
+        if (!badge) return;
+        if (count > 0) {
+            badge.style.display = 'block';
+            badge.textContent = count > 99 ? '99+' : count;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // Форматирование времени
+    function formatNotifTime(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Только что';
+        if (diffMins < 60) return diffMins + ' мин. назад';
+        if (diffHours < 24) return diffHours + ' ч. назад';
+        if (diffDays < 7) return diffDays + ' дн. назад';
+
+        return date.toLocaleDateString('ru-RU');
+    }
+
+    // Добавить уведомление в localStorage (для локальных событий)
+    function addLocalNotification(type, title, message) {
+        if (!currentUserId) return;
+        const notifs = JSON.parse(localStorage.getItem('notifications_' + currentUserId) || '[]');
+        notifs.unshift({
+            id: 'local_' + Date.now(),
+            type: type,
+            title: title,
+            message: message,
+            read: false,
+            created_at: new Date().toISOString()
+        });
+        // Храним только последние 50
+        if (notifs.length > 50) notifs.length = 50;
+        localStorage.setItem('notifications_' + currentUserId, JSON.stringify(notifs));
+        // Обновляем бейдж
+        const unread = notifs.filter(n => !n.read).length;
+        updateNotifBadge(unread);
     }
 
     // Загружаем профиль пользователя
@@ -100,7 +274,13 @@
             // Подхватываем данные
             const user_info = data.user_info || data.user || null;
             const applications = data.applications || [];
+            currentUserId = user_info.id || null;
             localStorage.setItem('userInfo', JSON.stringify(user_info));
+
+            // Инициализируем бейдж из ответа сервера
+            if (data.unread_notifications !== undefined) {
+                updateNotifBadge(data.unread_notifications);
+            }
 
             // Генерируем аватарку
             let avatarPreviewHtml = '';
@@ -432,6 +612,7 @@
                 const result = await response.json();
                 if (result.success) {
                     showToast('✅ Вы успешно покинули группу');
+                    addLocalNotification('group_removed', 'Вы покинули группу', 'Вы успешно вышли из группы.');
                     loadProfile();
                 } else {
                     showToast('❌ Ошибка: ' + (result.error || 'не удалось выйти'));
@@ -469,6 +650,17 @@
         });
 
         // ==========================================
+        // УВЕДОМЛЕНИЯ
+        // ==========================================
+        document.getElementById('btnNotifications')?.addEventListener('click', openNotificationPanel);
+        document.getElementById('btnCloseNotifs')?.addEventListener('click', closeNotificationPanel);
+        document.getElementById('btnClearAllNotifs')?.addEventListener('click', () => {
+            if (confirm('Очистить все уведомления?')) {
+                clearAllNotifications();
+            }
+        });
+
+        // ==========================================
         // КНОПКИ ОДОБРЕНИЯ / ОТКЛОНЕНИЯ ЗАЯВОК
         // ==========================================
         document.querySelectorAll('.js-leader-approve, .js-leader-reject').forEach(btn => {
@@ -491,6 +683,7 @@
             const result = await response.json();
             if (result.success) {
                 showToast('✅ Заявка успешно отменена');
+                addLocalNotification('application_cancelled', 'Заявка отменена', 'Вы отменили заявку на вступление.');
                 loadProfile();
             } else {
                 showToast('❌ Ошибка: ' + (result.error || 'не удалось отменить'));
@@ -523,8 +716,10 @@
             if (result.success) {
                 if (status === 'approved') {
                     showToast('✅ Заявка успешно одобрена');
+                    addLocalNotification('application_approved', 'Заявка одобрена', 'Ваша заявка одобрена!');
                 } else {
                     showToast('ℹ️ Заявка отклонена');
+                    addLocalNotification('application_rejected', 'Заявка отклонена', 'Ваша заявка отклонена.');
                 }
                 loadProfile();
             } else {
@@ -637,6 +832,22 @@
         <div style="display: flex; gap: 10px;">
             <button class="btn btn-ghost" id="btnCancelLogout" style="flex: 1; margin: 0;">Отмена</button>
             <button class="btn btn-danger" id="btnConfirmLogout" style="flex: 1; margin: 0; background: #ff3b30; color: #fff; border: none;">Выйти</button>
+        </div>
+    </div>
+</div>
+
+<!-- Панель уведомлений -->
+<div id="notificationPanel" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; align-items:flex-end; justify-content:center;">
+    <div class="card" style="width:100%; max-width:100%; height:85vh; border-radius:20px 20px 0 0; overflow:hidden; display:flex; flex-direction:column; padding:0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #e0e0e2; background:#fff;">
+            <h3 style="margin:0; font-size:18px; font-weight:700;">Уведомления</h3>
+            <div style="display:flex; gap:12px; align-items:center;">
+                <button id="btnClearAllNotifs" style="background:none; border:none; color:#007aff; font-size:14px; font-weight:600; cursor:pointer; padding:4px 8px;">Очистить все</button>
+                <button id="btnCloseNotifs" style="background:none; border:none; font-size:20px; cursor:pointer; padding:4px 8px;">✕</button>
+            </div>
+        </div>
+        <div id="notificationsList" style="flex:1; overflow-y:auto; padding:0 20px 20px;">
+            <div class="loading" style="padding:40px 0; text-align:center;">Загрузка...</div>
         </div>
     </div>
 </div>

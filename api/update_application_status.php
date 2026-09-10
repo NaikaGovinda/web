@@ -57,6 +57,19 @@ try {
     $stmt = $pdo->prepare("UPDATE applications SET status = ? WHERE id = ?");
     $stmt->execute([$status, $app_id]);
 
+    // Сохраняем уведомление в БД
+    try {
+        $notifTitle = $status === 'approved' ? 'Заявка одобрена! ✅' : 'Заявка отклонена ❌';
+        $notifMessage = $status === 'approved' 
+            ? "Ваша заявка в группу «{$app['group_name']}» одобрена!" 
+            : "Ваша заявка в группу «{$app['group_name']}» отклонена.";
+        $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, `read`) VALUES (?, ?, ?, ?, 0)");
+        $notifStmt->execute([$app['user_id'], $status === 'approved' ? 'application_approved' : 'application_rejected', $notifTitle, $notifMessage]);
+    } catch (Exception $e) {
+        // Таблица notifications может ещё не существовать
+        error_log("Ошибка сохранения уведомления: " . $e->getMessage());
+    }
+
     // Получаем Email и Имя участника, чью заявку мы только что обработали
     $stmtUser = $pdo->prepare("SELECT email, first_name FROM users WHERE id = ?");
     $stmtUser->execute([$app['user_id']]);

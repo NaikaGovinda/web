@@ -38,6 +38,14 @@ try {
     // Удаляем заявку или членство
     $pdo->prepare("DELETE FROM `applications` WHERE id = ?")->execute([$application_id]);
 
+    // Сохраняем уведомление в БД
+    try {
+        $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, `read`) VALUES (?, ?, ?, ?, 0)");
+        $notifStmt->execute([$user_id, 'group_removed', 'Вы покинули группу 🚪', 'Вы успешно вышли из группы «' . $app['group_name'] . '».', 0]);
+    } catch (Exception $e) {
+        error_log("Ошибка сохранения уведомления: " . $e->getMessage());
+    }
+
     // [ИСПРАВЛЕНО] Добавлен флаг сохранения читаемости кириллицы для вывода названия группы
     echo json_encode([
         'success' => true,

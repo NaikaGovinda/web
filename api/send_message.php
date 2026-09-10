@@ -208,6 +208,44 @@ try {
         file_put_contents(__DIR__ . '/fcm_debug.log', "[" . date('Y-m-d H:i:s') . "] Message push error: " . $fcmEx->getMessage() . "\n", FILE_APPEND);
     }
     
+    // ==========================================================
+    // 8. СОХРАНЕНИЕ УВЕДОМЛЕНИЙ В БАЗУ ДАННЫХ
+    // ==========================================================
+    try {
+        if ($recipientId !== null) {
+            // Личное сообщение — уведомляем получателя
+            $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, `read`) VALUES (?, ?, ?, ?, 0)");
+            $notifStmt->execute([
+                $recipientId,
+                'chat_message',
+                'Личное сообщение 💬',
+                "{$senderName}: {$messageText}"
+            ]);
+        } else {
+            // Сообщение в общий чат — уведомляем всех участников группы, кроме отправителя
+            $stmtNotifMembers = $pdo->prepare("SELECT user_id FROM applications WHERE group_id = ? AND status = 'approved' AND user_id != ?");
+            $stmtNotifMembers->execute([$groupId, $userId]);
+            $memberIds = $stmtNotifMembers->fetchAll(PDO::FETCH_COLUMN);
+            
+            $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, `read`) VALUES (?, ?, ?, ?, 0)");
+            foreach ($memberIds as $memberId) {
+                try {
+                    $notifStmt->execute([
+                        $memberId,
+                        'chat_message',
+                        'Новое сообщение в чате 💬',
+                        "{$senderName}: {$messageText}"
+                    ]);
+                } catch (Exception $innerEx) {
+                    // Таблица notifications может ещё не существовать
+                }
+            }
+        }
+    } catch (Exception $notifEx) {
+        // Не критично — уведомление всё равно появится через push и localStorage
+        error_log("Ошибка сохранения уведомления о сообщении: " . $notifEx->getMessage());
+    }
+    
     echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
 
 } catch (\PDOException $e) {
