@@ -84,17 +84,11 @@
         container.style.display = 'none';
       } else {
         // Показываем кнопку входа
-        container.innerHTML = '<button id="btnLogin" class="btn btn-primary">Войти или зарегистрироваться</button>';
-        document.getElementById('btnLogin').addEventListener('click', () => {
-          window.location.href = '/login.html';
-        });
+        container.innerHTML = '<a href="/login.html" class="btn btn-primary">Войти или зарегистрироваться</a>';
       }
     } catch (error) {
       // При ошибке — показываем кнопку входа
-      container.innerHTML = '<button id="btnLogin" class="btn btn-primary">Войти или зарегистрироваться</button>';
-      document.getElementById('btnLogin').addEventListener('click', () => {
-        window.location.href = '/login.html';
-      });
+      container.innerHTML = '<a href="/login.html" class="btn btn-primary">Войти или зарегистрироваться</a>';
     }
   }
 

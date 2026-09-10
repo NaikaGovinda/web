@@ -211,123 +211,111 @@
     let leafletMapInstance = null; // Добавим для отслеживания экземпляра карты
 
     async function openMapModal() {
-      document.getElementById('mapModal').style.display = 'flex';
-
-      // Если карта уже была создана ранее, просто обновляем её размеры
-      if (mapInitialized && leafletMapInstance) {
+    document.getElementById('mapModal').style.display = 'flex';
+    
+    // Если карта уже была создана ранее, просто обновляем её размеры
+    if (mapInitialized && leafletMapInstance) {
         setTimeout(() => {
-          leafletMapInstance.invalidateSize();
+            leafletMapInstance.invalidateSize();
         }, 100);
         return;
-      }
+    }
 
-      try {
+    try {
         await loadLeaflet();
         const mapContainer = document.getElementById('map');
         mapContainer.innerHTML = '';
 
-        // Получаем геолокацию пользователя
-        let mapCenter = [55.751244, 37.618423]; // Москва по умолчанию
-        let mapZoom = 10;
-
-        const userLoc = await getUserLocation();
-        if (userLoc) {
-          mapCenter = [userLoc.lat, userLoc.lng];
-          mapZoom = 12;
-        }
-
-        const map = L.map('map').setView(mapCenter, mapZoom);
-        leafletMapInstance = map;
+        const map = L.map('map').setView([55.751244, 37.618423], 10);
+        leafletMapInstance = map; // Запоминаем карту
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
         }).addTo(map);
 
-        // [ИЗМЕНЕНО] Тип группы для Бхакти-Врикши
         const currentType = 'bhakti_vriksha';
-
+        // [ИСПРАВЛЕНО] Вызываем правильный файл, который мы отрефакторили
         const res = await fetch(`/api/get_groups_for_map.php?type=${currentType}`);
         const mapGroups = await res.json();
 
-        // [ДОБАВЛЕНО] Проверка, что API вернул массив
-        if (!Array.isArray(mapGroups)) {
-          console.error('API вернул не массив:', mapGroups);
-          showToast('❌ Ошибка загрузки групп для карты');
-          return;
-        }
-
         if (mapGroups.length > 0) {
-          let latSum = 0, lngSum = 0, validCount = 0;
+            let latSum = 0, lngSum = 0, validCount = 0;
+            
+            // 1. Создаем объект, куда временно сгруппируем наши Нама-Хатты по адресам
+            const groupsByAddress = {};
 
-          const groupsByAddress = {};
+            mapGroups.forEach(group => {
+                if (group.lat && group.lng) {
+                    const lat = parseFloat(group.lat);
+                    const lng = parseFloat(group.lng);
+                    if (isNaN(lat) || isNaN(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return;
 
-          mapGroups.forEach(group => {
-            if (group.lat && group.lng) {
-              const lat = parseFloat(group.lat);
-              const lng = parseFloat(group.lng);
-              if (isNaN(lat) || isNaN(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return;
+                    // Создаем уникальный текстовый ключ для этих координат (убираем микросмещения)
+                    const coordKey = lat.toFixed(5) + "_" + lng.toFixed(5);
 
-              const coordKey = lat.toFixed(5) + "_" + lng.toFixed(5);
-
-              if (!groupsByAddress[coordKey]) {
-                groupsByAddress[coordKey] = {
-                  lat: lat,
-                  lng: lng,
-                  groupsList: []
-                };
-              }
-              groupsByAddress[coordKey].groupsList.push(group);
-            }
-          });
-
-          Object.keys(groupsByAddress).forEach(key => {
-            const point = groupsByAddress[key];
-
-            latSum += point.lat;
-            lngSum += point.lng;
-            validCount++;
-
-            const currentMarker = L.marker([point.lat, point.lng]).addTo(map);
-
-            let popupHtml = '<div style="font-family: \'Montserrat\', sans-serif; min-width: 170px; max-width: 240px; max-height: 240px; overflow-y: auto; padding-right: 3px; text-align: center;">';
-
-            point.groupsList.forEach((group, index) => {
-              if (index > 0) {
-                popupHtml += '<hr style="border: 0; border-top: 1px solid #e0e0e0; margin: 10px 0;">';
-              }
-
-              popupHtml += '<div>';
-              popupHtml += '   <b style="color: #4a90e2; font-size: 13px; display: block; margin-bottom: 2px;">' + escapeHtml(group.name) + '</b>';
-              popupHtml += '   <span style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">🏙️ ' + escapeHtml(group.city) + '</span>';
-              popupHtml += '   <span style="color: #666; font-size: 11px; display: block; margin-bottom: 8px; font-style: italic;">🏠 ' + (group.address ? escapeHtml(group.address) : 'Адрес не указан') + '</span>';
-              popupHtml += '   <a href="/group.html?id=' + group.id + '" style="display: inline-block; padding: 6px 14px; background: #4a90e2; color: #fff; text-decoration: none; border-radius: 6px; font-size: 11px; font-weight: 600; box-shadow: 0 2px 4px rgba(74,144,226,0.2);">Перейти в группу ➡️</a>';
-              popupHtml += '</div>';
+                    if (!groupsByAddress[coordKey]) {
+                        groupsByAddress[coordKey] = {
+                            lat: lat,
+                            lng: lng,
+                            groupsList: []
+                        };
+                    }
+                    // Складываем все группы с одинаковыми координатами в один ящик
+                    groupsByAddress[coordKey].groupsList.push(group);
+                }
             });
 
-            popupHtml += '</div>';
+            // 2. Теперь перебираем сгруппированные адреса и ставим ровно ПО ОДНОМУ маркеру на точку
+            Object.keys(groupsByAddress).forEach(key => {
+                const point = groupsByAddress[key];
+                
+                latSum += point.lat;
+                lngSum += point.lng;
+                validCount++;
 
-            currentMarker.bindPopup(popupHtml);
-          });
+                // Ставим ОДИН маркер на дом
+                const currentMarker = L.marker([point.lat, point.lng]).addTo(map);
 
-          // [ВАЖНО] Центрируем карту только если не получили геолокацию
-          if (validCount > 0 && !userLoc) {
-            map.setView([latSum / validCount, lngSum / validCount], 10);
-          }
-        } else {
-          showToast('ℹ️ Нет групп с координатами для отображения');
+                // Начинаем собирать HTML-текст для всплывающего окошка балуна
+                let popupHtml = '<div style="font-family: \'Montserrat\', sans-serif; min-width: 170px; max-width: 240px; max-height: 240px; overflow-y: auto; padding-right: 3px; text-align: center;">';
+
+                // Добавляем внутрь этого окошка каждую группу этого адреса по очереди
+                point.groupsList.forEach((group, index) => {
+                    // Если групп больше одной, разделяем их тонкой серой линией
+                    if (index > 0) {
+                        popupHtml += '<hr style="border: 0; border-top: 1px solid #e0e0e0; margin: 10px 0;">';
+                    }
+
+                    // Добавляем название, город, адрес и персональную кнопку перехода
+                    popupHtml += '<div>';
+                    popupHtml += '   <b style="color: #4a90e2; font-size: 13px; display: block; margin-bottom: 2px;">' + escapeHtml(group.name) + '</b>';
+                    popupHtml += '   <span style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">🏙️ ' + escapeHtml(group.city) + '</span>';
+                    popupHtml += '   <span style="color: #666; font-size: 11px; display: block; margin-bottom: 8px; font-style: italic;">🏠 ' + (group.address ? escapeHtml(group.address) : 'Адрес не указан') + '</span>';
+                    popupHtml += '   <a href="/group.html?id=' + group.id + '" style="display: inline-block; padding: 6px 14px; background: #4a90e2; color: #fff; text-decoration: none; border-radius: 6px; font-size: 11px; font-weight: 600; box-shadow: 0 2px 4px rgba(74,144,226,0.2);">Перейти в группу ➡️</a>';
+                    popupHtml += '</div>';
+                });
+
+                popupHtml += '</div>';
+
+                // Привязываем итоговый склеенный список к нашему единственному маркеру
+                currentMarker.bindPopup(popupHtml);
+            });
+
+            if (validCount > 0) {
+                map.setView([latSum / validCount, lngSum / validCount], 10);
+            }
         }
-
+        
         mapInitialized = true;
         setTimeout(() => {
-          map.invalidateSize();
+            map.invalidateSize();
         }, 100);
-
-      } catch (err) {
-        console.error('Ошибка карты:', err);
+        
+    } catch (err) {
         showToast('❌ Ошибка загрузки карты: ' + err.message);
-      }
     }
+}
   </script>
  
 <script>

@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf8mb4');
 
-session_start();
+$pdo = require __DIR__ . '/db.php';
 
 if (!isset($_SESSION['user_id'])) {
     http_response_code(403);
@@ -10,14 +10,13 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 try {
-    $pdo = require __DIR__ . '/db.php';
-    $user_id = $_SESSION['user_id'];
+    $user_id = (int)$_SESSION['user_id'];
 
-    // Проверяем роль
-    $stmt = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+    // Проверяем админский флаг (по стандарту проекта is_admin === 1)
+    $stmt = $pdo->prepare("SELECT id, is_admin FROM users WHERE id = ?");
     $stmt->execute([$user_id]);
     $user = $stmt->fetch();
-    if (!$user || $user['role'] !== 'admin') {
+    if (!$user || (int)$user['is_admin'] !== 1) {
         throw new Exception('Доступ запрещён');
     }
 
