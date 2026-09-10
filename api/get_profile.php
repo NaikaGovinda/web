@@ -57,10 +57,22 @@ try {
         $app['id'] = (int)$app['id'];
     }
 
+    // Считаем непрочитанные уведомления
+    $unread_count = 0;
+    try {
+        $stmtNotif = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND `read` = 0");
+        $stmtNotif->execute([$user_id]);
+        $unread_count = (int)$stmtNotif->fetchColumn();
+    } catch (Exception $e) {
+        // Таблица notifications может ещё не существовать
+        $unread_count = 0;
+    }
+
     echo json_encode([
         'success' => true,
         'user_info' => $user_info,
-        'applications' => $applications
+        'applications' => $applications,
+        'unread_notifications' => (int)$unread_count
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {
