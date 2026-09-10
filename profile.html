@@ -152,7 +152,16 @@
 
             // Мои личные заявки
             if (applications && applications.length > 0) {
-                html += '<div class="card"><h3>📬 Мои заявки</h3><ul class="applications-list">';
+                const applicationsAccordionId = 'applications-accordion';
+                html += `
+<div class="card">
+    <div class="accordion-header" onclick="toggleAccordion(this)" id="${applicationsAccordionId}-header">
+        <h3 style="margin:0;">📬 Мои заявки</h3>
+        <span class="accordion-arrow">▶</span>
+    </div>
+    <div class="accordion-content" id="${applicationsAccordionId}">
+        <ul class="applications-list">`; 
+
                 applications.forEach((app, index) => {
                     let statusText = 'Ожидает';
                     let statusClass = 'status-pending';
@@ -164,24 +173,15 @@
                         statusClass = 'status-rejected';
                     }
 
-                    const accordionId = `app-accordion-${index}`;
-
                     html += `
                     <li class="application-item">
-                        <div class="accordion-header" onclick="toggleAccordion(this)">
-                            <div style="display:flex; align-items:center; gap:10px;">
-                                <span class="accordion-arrow">▶</span>
-                                <strong>${escapeHtml(app.group_name)}</strong>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0f0f2;">
+                            <div>
+                                <strong>${escapeHtml(app.group_name)}</strong><br>
+                                <small style="color:var(--color-muted);">${escapeHtml(app.message)}</small>
                             </div>
-                            <span class="status-badge ${statusClass}">${statusText}</span>
-                        </div>
-                        <div class="accordion-content" id="${accordionId}">
-                            <div class="accordion-content-inner">
-                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                                    <div>
-                                        <small style="color:var(--color-text-muted);">${escapeHtml(app.message)}</small>
-                                    </div>
-                                    <div style="display:flex; gap:8px; align-items:center;">
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <span class="status-badge ${statusClass}">${statusText}</span>
                     `;
 
                     if (app.status === 'pending') {
@@ -191,20 +191,22 @@
                         html += `<button class="btn btn-small btn-ghost js-btn-leave" data-app-id="${app.id}" data-group-name="${escapeHtml(app.group_name)}">🚪 Выйти</button>`;
                     }
                     if (app.status === 'rejected') {
-                        html += `<button class="btn btn-small btn-ghost js-btn-cancel" data-app-id="${app.id}" style="color: var(--color-text-muted, #888); border-color: #ddd;">Удалить</button>`;
+                        html += `<button class="btn btn-small btn-ghost js-btn-cancel" data-app-id="${app.id}" style="color: var(--color-muted, #888); border-color: #ddd;">Удалить</button>`;
                     }
 
                     html += `
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </li>
                     `;
                 });
-                html += '</ul></div>';
+
+                html += `
+        </ul>
+    </div>
+</div>`;
             } else {
-                html += '<div class="card"><p style="color:var(--color-text-muted);">Вы пока не подавали заявок.</p></div>';
+                html += '<div class="card"><p style="color:var(--color-muted);">Вы пока не подавали заявок.</p></div>';
             }
 
             // Заявки на мои группы (для лидера или админа)
@@ -227,7 +229,7 @@
                                 <li class="application-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0f0f2;">
                                     <div>
                                         <strong>${escapeHtml(app.applicant_name)}</strong><br>
-                                        <small style="color:var(--color-text-muted);">${escapeHtml(app.group_name)} • ${escapeHtml(app.message)}</small>
+                                        <small style="color:var(--color-muted);">${escapeHtml(app.group_name)} • ${escapeHtml(app.message)}</small>
                                     </div>
                                     <div style="display:flex; gap:8px;">
                                         <button class="btn btn-small btn-success js-leader-approve" data-app-id="${app.id}">✅</button>
@@ -238,7 +240,7 @@
                             });
                             html += '</ul>';
                         } else {
-                            html += '<p style="color:var(--color-text-muted); text-align:center; margin:0;">Нет новых заявок</p>';
+                            html += '<p style="color:var(--color-muted); text-align:center; margin:0;">Нет новых заявок</p>';
                         }
                         html += '</div>';
                     }
@@ -650,7 +652,7 @@
 <div id="customLeaveGroupModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
     <div class="card" style="width: 85%; max-width: 320px; text-align: center; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto;">
         <h3 style="margin-top: 0; font-size: 18px;">Выйти из группы?</h3>
-        <p id="leaveGroupModalText" style="color: var(--color-text-muted, #666); font-size: 14px; margin-bottom: 20px;">Вы действительно хотите покинуть эту группу?</p>
+        <p id="leaveGroupModalText" style="color: var(--color-muted, #666); font-size: 14px; margin-bottom: 20px;">Вы действительно хотите покинуть эту группу?</p>
         <div style="display: flex; gap: 10px;">
             <button class="btn btn-ghost" id="btnCancelLeaveGroup" style="flex: 1; margin: 0;">Отмена</button>
             <button class="btn btn-danger" id="btnConfirmLeaveGroup" style="flex: 1; margin: 0; background: #ff3b30; color: #fff; border: none;">Покинуть</button>
@@ -662,7 +664,7 @@
 <div id="customCancelAppModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
     <div class="card" style="width: 85%; max-width: 320px; text-align: center; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto;">
         <h3 style="margin-top: 0; font-size: 18px;">Отменить заявку?</h3>
-        <p style="color: var(--color-text-muted, #666); font-size: 14px; margin-bottom: 20px;">Вы действительно хотите отозвать свою заявку на вступление?</p>
+        <p style="color: var(--color-muted, #666); font-size: 14px; margin-bottom: 20px;">Вы действительно хотите отозвать свою заявку на вступление?</p>
         <div style="display: flex; gap: 10px;">
             <button class="btn btn-ghost" id="btnCancelAppModalClose" style="flex: 1; margin: 0;">Назад</button>
             <button class="btn btn-danger" id="btnConfirmCancelApp" style="flex: 1; margin: 0; background: #ff3b30; color: #fff; border: none;">Отменить</button>
@@ -674,7 +676,7 @@
 <div id="customLogoutModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
     <div class="card" style="width: 85%; max-width: 320px; text-align: center; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto;">
         <h3 style="margin-top: 0; font-size: 18px;">Выйти из аккаунта?</h3>
-        <p style="color: var(--color-text-muted, #666); font-size: 14px; margin-bottom: 20px;">Вы действительно хотите выйти из своего профиля?</p>
+        <p style="color: var(--color-muted, #666); font-size: 14px; margin-bottom: 20px;">Вы действительно хотите выйти из своего профиля?</p>
         <div style="display: flex; gap: 10px;">
             <button class="btn btn-ghost" id="btnCancelLogout" style="flex: 1; margin: 0;">Отмена</button>
             <button class="btn btn-danger" id="btnConfirmLogout" style="flex: 1; margin: 0; background: #ff3b30; color: #fff; border: none;">Выйти</button>
