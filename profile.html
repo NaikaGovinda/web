@@ -276,49 +276,6 @@
         }
     }
 
-    // Функция отправки измененных данных
-    async function saveProfileData(e) {
-        e.preventDefault();
-        const button = document.getElementById('btnSaveProfile');
-        if (!button) return;
-
-        button.disabled = true;
-        button.textContent = 'Сохранение...';
-
-        const formData = new FormData();
-        formData.append('first_name', document.getElementById('profFirstName').value.trim());
-        formData.append('last_name', document.getElementById('profLastName').value.trim());
-        formData.append('city', document.getElementById('profCity').value.trim());
-        formData.append('phone', document.getElementById('profPhone').value.trim());
-
-        const fileInput = document.getElementById('avatarFile');
-        if (fileInput && fileInput.files.length > 0) {
-            formData.append('avatar', fileInput.files[0]);
-        }
-
-        try {
-            const response = await fetch('/api/update_profile.php?v=' + Date.now(), {
-                method: 'POST',
-                body: formData,
-                credentials: 'include',
-            });
-
-            const result = await response.json();
-            if (result.success) {
-                showToast('✅ Профиль успешно обновлен!');
-                loadProfile();
-            } else {
-                showToast('❌ Ошибка: ' + (result.error || 'Не удалось сохранить'));
-            }
-        } catch (err) {
-            console.error(err);
-            showToast('❌ Не удалось связаться с сервером');
-        } finally {
-            button.disabled = false;
-            button.textContent = '💾 Сохранить изменения';
-        }
-    }
-
     // Переменные для хранения ID выбранных элементов
     let pendingLeaveApplicationId = null;
     let pendingCancelApplicationId = null;
