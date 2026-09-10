@@ -187,6 +187,7 @@ p, li {
   font-size: 17px;
   margin: var(--space-s) 0 var(--space-l) 0;
   outline: none;
+  caret-color: var(--color-primary);
 }
 
 .input-field:focus, .textarea-field:focus {
