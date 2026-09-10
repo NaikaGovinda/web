@@ -153,7 +153,7 @@
             // Мои личные заявки
             if (applications && applications.length > 0) {
                 html += '<div class="card"><h3>📬 Мои заявки</h3><ul class="applications-list">';
-                applications.forEach(app => {
+                applications.forEach((app, index) => {
                     let statusText = 'Ожидает';
                     let statusClass = 'status-pending';
                     if (app.status === 'approved') {
@@ -164,14 +164,24 @@
                         statusClass = 'status-rejected';
                     }
 
+                    const accordionId = `app-accordion-${index}`;
+
                     html += `
-                    <li class="application-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0f0f2;">
-                        <div>
-                            <strong>${escapeHtml(app.group_name)}</strong><br>
-                            <small style="color:var(--color-text-muted);">${escapeHtml(app.message)}</small>
-                        </div>
-                        <div style="display:flex; gap:8px; align-items:center;">
+                    <li class="application-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span class="accordion-arrow">▶</span>
+                                <strong>${escapeHtml(app.group_name)}</strong>
+                            </div>
                             <span class="status-badge ${statusClass}">${statusText}</span>
+                        </div>
+                        <div class="accordion-content" id="${accordionId}">
+                            <div class="accordion-content-inner">
+                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                                    <div>
+                                        <small style="color:var(--color-text-muted);">${escapeHtml(app.message)}</small>
+                                    </div>
+                                    <div style="display:flex; gap:8px; align-items:center;">
                     `;
 
                     if (app.status === 'pending') {
@@ -184,7 +194,13 @@
                         html += `<button class="btn btn-small btn-ghost js-btn-cancel" data-app-id="${app.id}" style="color: var(--color-text-muted, #888); border-color: #ddd;">Удалить</button>`;
                     }
 
-                    html += '</div></li>';
+                    html += `
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    `;
                 });
                 html += '</ul></div>';
             } else {
@@ -558,6 +574,17 @@
         } catch (err) {
             console.error(err);
             showToast('❌ Не удалось связаться с сервером');
+        }
+    }
+
+    // Функция для раскрывающегося списка
+    function toggleAccordion(header) {
+        const content = header.nextElementSibling;
+        const arrow = header.querySelector('.accordion-arrow');
+        
+        if (content && arrow) {
+            content.classList.toggle('expanded');
+            arrow.classList.toggle('expanded');
         }
     }
 
