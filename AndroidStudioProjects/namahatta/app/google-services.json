@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "55071412526",
+    "project_id": "namahata-notifications",
+    "storage_bucket": "namahata-notifications.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:55071412526:android:a5c678a95d19463eb32abf",
+        "android_client_info": {
+          "package_name": "com.example.namahatta"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBixfGmqf0du0jwEEVZK0uR2txe1vNnH04"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

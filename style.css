@@ -1,0 +1,942 @@
+/* style.css — единый стиль всего проекта (Apple-inspired) */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100% !important;
+    height: 100% !important; /* Только проценты для мобильныхWebView */
+    max-width: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden;
+    background-color: #ffffff;
+}
+
+:root {
+  /* Цвета */
+  --frontboard: #f5f0e6;
+  /* --color-bg: #ffffff; */
+  --color-bg: #f5f0e6;
+  --color-text: #1d1d1f;
+  --color-muted: #8e8e93;
+  --color-border: #e0e0e0;
+  /* --color-card-bg: #ffffff;*/
+  --color-card-bg: #e8f5e9;
+  --color-beige: #f5f0e6;
+  --color-sage: #e8f5e9;
+
+  /* Основные цвета */
+  --color-primary: #007aff;    /* синий (Apple) */
+  --color-success: #34c759;    /* зелёный */
+  --color-danger: #ff3b30;     /* красный */
+  --color-warning: #ff9500;    /* оранжевый */
+
+  /* Отступы и радиусы */
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 16px;
+  --space-xs: 4px;
+  --space-s: 8px;
+  --space-m: 16px;
+  --space-l: 24px;
+  --space-xl: 32px;
+
+  /* Тени */
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-btn: 0 1px 3px rgba(0,0,0,0.1);
+
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-size: 16px;
+  min-height: 100vh;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+}
+
+#app {
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important; /* Намертво прибивает каркас к экрану */
+    top: 0 !important;
+    left: 0 !important;
+    
+    /* ИСПРАВЛЕНО: Меняем vh на жесткие проценты, чтобы сайт не лез под системные кнопки Android */
+    width: 100% !important;
+    height: 100% !important; 
+    max-width: 100% !important;
+    max-height: 100% !important;
+    
+    overflow: hidden !important; /* Блокирует скроллинг всего экрана */
+    box-sizing: border-box !important;
+}
+
+.frontboard, .content, main, #profileContent {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    padding-top: 15px !important;
+    padding-bottom: 80px !important;
+    
+    /* ИСПРАВЛЕНО: Задаем правильный фоновый цвет страницы для контраста */
+    background-color: #f4f3f0 !important; 
+    
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+/*
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+*/
+
+/*
+.frontboard {
+    flex: 1;
+    overflow-y: auto; /* Включает прокрутку только внутри контента */
+    padding-bottom: 20px;
+    -webkit-overflow-scrolling: touch; /* Делает прокрутку плавной на iOS */
+}
+*/
+
+.card {
+  background: #ffffff !important;
+  border-radius: var(--radius-m);
+  padding: var(--space-m);
+  margin-bottom: var(--space-m);
+  box-shadow: var(--shadow-card);
+}
+
+/* === Текст и заголовки === */
+h1, h2, h3, h4 {
+  font-weight: 700;
+  margin-bottom: var(--space-m);
+}
+
+h1 { font-size: 24px; }
+h2 { font-size: 20px; }
+h3 { font-size: 18px; }
+h4 { font-size: 16px; }
+
+p, li {
+  margin-bottom: var(--space-s);
+}
+
+/* === Кнопки === */
+.btn {
+  display: inline-block;
+  width: 100%;
+  padding: 14px var(--space-m);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-l);
+  font-size: 17px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-btn);
+  margin: var(--space-s) 0;
+}
+
+.btn:hover, .btn:active {
+  opacity: 0.9;
+  transform: translateY(1px);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  box-shadow: none;
+}
+
+.btn-small {
+  padding: 8px 16px;
+  font-size: 14px;
+  border-radius: var(--radius-s);
+  width: auto;
+  margin: 0 var(--space-xs);
+}
+
+.btn-success {
+  background: var(--color-success);
+  color: white;
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: white;
+}
+
+.btn-warning {
+  background: var(--color-warning);
+  color: white;
+}
+
+/* === Поля ввода === */
+.input-field, .textarea-field, .select-field {
+  width: 100%;
+  padding: 12px 0;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  font-size: 17px;
+  margin: var(--space-s) 0 var(--space-l) 0;
+  outline: none;
+}
+
+.input-field:focus, .textarea-field:focus {
+  border-bottom-color: var(--color-primary);
+}
+
+.textarea-field {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.select-field {
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+/* === Статусы === */
+.status-badge {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  display: inline-block;
+  font-weight: 600;
+}
+
+.status-pending { background: #fff3cd; color: #856404; }
+.status-approved { background: #d4edda; color: #155724; }
+.status-rejected { background: #f8d7da; color: #721c24; }
+
+/* === Индикаторы === */
+.status-indicator {
+  font-size: 16px;
+  margin-right: var(--space-s);
+}
+
+/* === Шапка === */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-l) var(--space-m) var(--space-m);
+  background: var(--color-bg);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.org-name {
+  font-weight: 800;
+  font-size: 18px;
+  text-align: center;
+  flex: 1;
+  margin: 0 16px;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  color: var(--color-primary);
+}
+
+/* === Нижняя панель === */
+.bottom-bar {
+    flex-shrink: 0 !important;
+    position: absolute !important; /* Прибиваем к низу каркаса */
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    z-index: 1000 !important;
+    background: #ffffff !important;
+    border-top: 1px solid #e0e0e2 !important;
+
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+
+    /* Обнуляем отступы самого контейнера */
+    padding: 0 !important;
+    
+    /* Жестко фиксируем высоту: 50 пикселей для Android! Панель станет аккуратной и узкой */
+    height: 50px !important;
+    box-sizing: border-box !important;
+}
+
+/* Наводим жесткий порядок ВНУТРИ кнопок подвала (чтобы они не распирали высоту) */
+.bottom-bar a, 
+.bottom-bar .bar-btn {
+    display: flex !important;
+    flex-direction: column !important; /* Иконка сверху, текст снизу */
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 1 !important;
+    
+    /* Кнопка должна занимать ровно высоту подвала и ни пикселем больше */
+    height: 50px !important; 
+    padding: 2px 0 !important; /* Минимальный аккуратный отступ сверху и снизу */
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    text-decoration: none !important;
+    
+    /* Текст черный и жирный */
+    color: #000000 !important;
+    font-weight: 600 !important;
+    opacity: 1 !important;
+}
+
+/* Ограничиваем размер иконок (emoji или шрифтовых) внутри кнопок */
+.bottom-bar .bar-btn span.ico,
+.bottom-bar a span:first-child {
+    font-size: 16px !important; /* Делаем размер иконки аккуратным */
+    line-height: 1 !important;
+    margin-bottom: 2px !important; /* Маленький зазор до текста */
+    padding: 0 !important;
+}
+
+/* Делаем подписи кнопок тонкими, мобильными и аккуратными */
+.bottom-bar .bar-btn span:last-child,
+.bottom-bar a span:last-child {
+    color: #000000 !important;
+    font-weight: 600 !important;
+    font-size: 11px !important; /* Уменьшаем шрифт надписи, чтобы она не раздувала панель */
+    line-height: 1.1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Защита цвета для активной кнопки */
+.bottom-bar a.bar-btn-active,
+.bottom-bar a.bar-btn-active span,
+.bottom-bar .bar-btn-active,
+.bottom-bar .bar-btn-active span {
+    color: var(--color-primary, #4a90e2) !important;
+    font-weight: 700 !important;
+}
+
+
+.bottom-bar a:not(.bar-btn-active) svg {
+    stroke: #000000 !important; /* Перекрашивает контур иконок */
+    fill: none; /* Если иконки контурные, оставляет их без заливки */
+}
+
+
+/*
+.bottom-bar {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-around;
+  background: white;
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-s) 0;
+}
+*/
+
+.bar-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: var(--color-muted);
+  font-size: 12px;
+  padding: var(--space-xs) var(--space-s);
+}
+
+.bar-btn.active, .bar-btn:hover {
+  color: var(--color-primary);
+}
+
+/* === Модальные окна === */
+.modal {
+  position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: #ffffff; /* Белый фон, чтобы не было видно задний сайт */
+    display: flex;
+    justify-content: flex-start; /* Прижимаем контент к самому верху экрана */
+    align-items: flex-start;     /* Прижимаем контент к самому верху экрана */
+    z-index: 100000;             /* Поверх абсолютно всего на сайте */
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.modal-content {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 85vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    position: relative;
+    overflow: hidden;
+	overflow-y: auto !important;
+}
+
+/* === Состояния === */
+.loading, .empty-state, .error-state {
+  padding: var(--space-l);
+  text-align: center;
+  color: var(--color-muted);
+}
+
+.error-state {
+  color: var(--color-danger);
+}
+
+/* === Списки заявок === */
+.applications-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.application-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: var(--space-m) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.application-item:last-child {
+  border-bottom: none;
+}
+
+/* === Карточки групп === */
+.group-card {
+  display: flex;
+  gap: var(--space-m);
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.group-card:hover {
+  opacity: 0.95;
+}
+
+.group-status {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.group-info {
+  flex: 1;
+}
+
+.group-title {
+  font-weight: 700;
+  font-size: 16px;
+  margin: 0 0 var(--space-s);
+}
+
+.group-desc, .group-meta {
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+/* === Главная страница === */
+.welcome-card {
+  text-align: center;
+  padding: var(--space-xl) var(--space-m);
+}
+
+.sacred-symbol {
+  font-size: 48px;
+  margin-bottom: var(--space-l);
+}
+
+.welcome-title {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: var(--space-m);
+  line-height: 1.3;
+}
+
+.path-selection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-l);
+  margin: var(--space-xl) 0;
+}
+
+.path-btn {
+  display: flex;
+  gap: var(--space-m);
+  text-decoration: none;
+  color: var(--color-text);
+  padding: var(--space-l);
+  border-radius: var(--radius-m);
+  background: var(--color-beige); /* белый по умолчанию */
+  box-shadow: var(--shadow-card);
+  transition: transform 0.2s;
+}
+
+/* Специфичные фоны — после общего */
+.path-btn.namahatta {
+  background: var(--color-sage);
+}
+
+.path-btn.bhakti {
+  background: var(--color-sage);
+}
+
+.path-btn:hover {
+  transform: translateY(-2px);
+}
+
+.path-icon {
+  font-size: 24px;
+}
+
+.path-name {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.path-desc {
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+.user-location {
+  margin-top: var(--space-l);
+  color: var(--color-muted);
+}
+
+/* === Фильтры === */
+.filters {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-s);
+  /* Было: padding: 0 var(--space-m) var(--space-m); */
+    padding: 0 var(--space-m) 4px; /* Уменьшили нижний отступ до 4px */
+}
+
+.filter-btn {
+  padding: 6px 16px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-s);
+  color: var(--color-muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.filter-btn.active, .filter-btn:hover {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.theme-color {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background-clip: padding-box;
+  cursor: pointer;
+  margin: 4px;
+  display: inline-block;
+}
+
+.theme-color.selected {
+  border-color: var(--color-primary);
+  transform: scale(1.1);
+}
+
+/* === Страницы входа и регистрации === */
+.auth-page {
+  padding: 20px;
+  background: var(--color-bg);
+}
+
+.auth-card {
+  max-width: 400px;
+  margin: 40px auto;
+  background: var(--color-card-bg);
+  padding: 24px;
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-card);
+}
+
+.auth-card h2 {
+  margin-top: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.auth-input {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+  font-family: inherit;
+  font-size: 16px;
+}
+
+.auth-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-m);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+.auth-btn:hover {
+  opacity: 0.9;
+}
+
+.auth-error {
+  color: var(--color-danger);
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.auth-link {
+  display: block;
+  margin-top: 16px;
+  color: var(--color-primary);
+  text-decoration: none;
+  text-align: center;
+}
+
+#closeMap {
+    position: absolute;
+    top: 60px;              /* Кардинально опустили кнопку вниз, чтобы обойти системную строку телефона */
+    right: 24px;            /* Слегка увеличили отступ справа для баланса */
+    z-index: 10000;
+    width: auto !important;
+    min-width: 100px;
+    background: #ffffff;
+    color: #1d1d1f;
+    border: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 24px;
+    cursor: pointer;
+    text-align: center;
+}
+
+#closeMap:active {
+    background: #f5f5f7;
+    transform: scale(0.95); /* Эффект нажатия пальцем */
+}
+
+/* Опускаем блок управления зумом Leaflet (+ и -) чуть ниже, чтобы он не залезал под кнопку */
+.leaflet-top.leaflet-left {
+    top: 62px !important;    /* Сдвигаем весь блок вниз на 75 пикселей от верхнего края */
+    left: 16px !important;   /* Слегка отодвигаем от левого края для красоты */
+}
+
+/* Делаем кнопки зума аккуратнее на смартфонах */
+.leaflet-bar {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important; /* Мягкая тень под + и - вместо жесткой черной */
+    border: none !important;
+}
+
+.multi-select {
+  width: 100%;
+  height: 120px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+  background-color: white;
+  font-size: 16px;
+}
+
+/* Всплывающие уведомления (Toast) для Web, Android и iOS */
+.toast-notification {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(30, 30, 32, 0.95);
+    color: #ffffff;
+    padding: 12px 24px;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    z-index: 9999;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
+    text-align: center;
+    max-width: 85%;
+    width: max-content;
+}
+
+.toast-notification.toast-show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+/* Стили для раскрывающегося списка участников группы */
+.members-accordion {
+    margin-top: 12px;
+}
+.members-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 4px 0;
+}
+.members-arrow {
+    transition: transform 0.2s ease;
+    font-size: 14px;
+}
+.members-accordion.open .members-arrow {
+    transform: rotate(180deg);
+}
+.members-list-wrapper {
+    display: none;
+    margin-top: 15px;
+    border-top: 1px solid #f0f0f2;
+    padding-top: 10px;
+}
+.members-accordion.open .members-list-wrapper {
+    display: block;
+}
+.member-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f8f8fa;
+}
+.member-item:last-child {
+    border-bottom: none;
+}
+.member-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #eee;
+}
+.member-name {
+    font-size: 14px;
+    font-weight: 600;
+}
+.member-role-badge {
+    font-size: 11px;
+    background: #eef2ff;
+    color: #4a90e2;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: auto;
+}
+
+/* Стили для встроенного группового чата Нама-Хатта */
+.chat-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #ffffff;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+}
+.chat-history {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    background: #f4f4f7;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.chat-msg-row {
+    display: flex;
+    gap: 8px;
+    max-width: 80%;
+}
+.chat-msg-row.my-msg {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+.chat-msg-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #e0e0e0;
+    flex-shrink: 0;
+}
+.chat-msg-bubble {
+    background: #ffffff;
+    padding: 10px 14px;
+    border-radius: 4px 16px 16px 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.chat-msg-row.my-msg .chat-msg-bubble {
+    background: #eef2ff;
+    border-radius: 16px 4px 16px 16px;
+}
+.chat-msg-author {
+    font-size: 11px;
+    font-weight: 700;
+    color: #4a90e2;
+    margin-bottom: 3px;
+}
+.chat-msg-text {
+    font-size: 14px;
+    color: #1e1e20;
+    word-break: break-word;
+}
+.chat-msg-time {
+    font-size: 10px;
+    color: #88888b;
+    text-align: right;
+    margin-top: 4px;
+}
+.chat-input-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: #ffffff;
+    border-top: 1px solid #e5e5e7;
+}
+.chat-input-bar input {
+    margin-bottom: 0 !important;
+}
+
+/* Анимация для индикатора непрочитанных сообщений */
+@keyframes pulseUnread {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); box-shadow: 0 1px 6px rgba(255, 59, 48, 0.4); }
+    100% { transform: scale(1); }
+}
+
+/* Делаем маску Кроппера круглой для аватарок */
+.cropper-view-box,
+.cropper-face {
+    border-radius: 50%;
+}
+.cropper-view-box {
+    outline: 2px solid #4a90e2;
+    outline-color: rgba(74, 144, 226, 0.75);
+}
+
+/* ==========================================================
+   [ОБНОВЛЕНО] СОВРЕМЕННЫЙ 3D-ДИЗАЙН ПАРЯЩИХ КАРТОЧЕК ГРУПП
+   ========================================================== */
+
+.frontboard .card, 
+.content .card {
+    background: #ffffff !important;
+    border-radius: 16px !important; /* Красивые скругленные мобильные углы */
+    padding: 16px 18px !important;  /* Внутренние отступы, чтобы текст дышал */
+    margin-bottom: 16px !important; /* Увеличиваем зазор между карточками */
+    
+    /* ТРЁХМЕРНЫЙ ЭФФЕКТ: Сложная мягкая тень (парение блока над серым фоном) */
+    box-shadow: 0 6px 16px rgba(160, 150, 140, 0.15) !important;
+    
+    /* Полностью убираем плоские рамки, тень сама сделает объём */
+    border: none !important; 
+    
+    box-sizing: border-box !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+/* Реалистичный эффект продавливания 3D-карточки при нажатии пальцем */
+.frontboard .card:active, 
+.content .card:active {
+    transform: translateY(2px) scale(0.985) !important; /* Карточка слегка опускается */
+    box-shadow: 0 2px 6px rgba(160, 150, 140, 0.1) !important; /* Тень становится ближе */
+    background-color: #fafafa !important;
+}
+
+/* Заголовки групп делаем крупнее, жирнее и солиднее */
+.frontboard .card h4, 
+.content .card h4 {
+    color: #1d1d1f !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    margin-bottom: 6px !important;
+    line-height: 1.3 !important;
+}
+
+/* Описание программы (Киртан, лекция, прасад...) */
+.frontboard .card p, 
+.content .card p {
+    color: #48484a !important;
+    font-size: 13.5px !important;
+    margin-bottom: 10px !important;
+    line-height: 1.45 !important;
+}
+
+/* Оформление нижней информационной строчки (иконки) */
+.frontboard .card small, 
+.content .card small,
+.frontboard .card p:last-child {
+    font-size: 12px !important;
+    color: #8e8e93 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin: 0 !important;
+}
+
+/* ==========================================================
+   [НОВОЕ] ЭФФЕКТ ВЫДЕЛЕНИЯ И ПРИПОДНИМАНИЯ КАРТОЧЕК ГРУПП
+   ========================================================== */
+
+/* Эффект при наведении курсора мыши (для ПК) */
+.frontboard .card:hover, 
+.content .card:hover {
+    transform: translateY(-4px) !important; /* Карточка плавно приподнимается вверх на 4 пикселя */
+    box-shadow: 0 10px 24px rgba(140, 130, 120, 0.22) !important; /* Тень становится глубже и мягче, усиливая 3D-эффект */
+    background-color: #ffffff !important;
+}

@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Админка — Нама-Хатта</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <button class="back-btn" onclick="history.back()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <h1 class="org-name">АДМИНКА</h1>
+    </header>
+
+    <main class="content" id="adminContent">
+      <div class="loading">Загрузка...</div>
+    </main>
+
+    <nav class="bottom-bar">
+      <a href="/index.html" class="bar-btn"><span class="ico ico-home"></span><span>Домой</span></a>
+      <a href="/namahatta.html" class="bar-btn"><span class="ico ico-namahatta"></span><span>Нама-Хатта</span></a>
+      <a href="/profile.html" class="bar-btn"><span class="ico ico-profile"></span><span>Профиль</span></a>
+    </nav>
+  </div>
+
+  <!-- Модальное окно группы -->
+  <!-- 🔥 ИСПРАВЛЕНО: Добавлены стили прокрутки, теперь форма будет идеально скроллиться на любом телефоне и ПК! -->
+	<div id="groupModal" class="modal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+		<div class="modal-content" style="background: #fff; padding: 20px; border-radius: 16px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; box-shadow: 0 4px 24px rgba(0,0,0,0.15); box-sizing: border-box;">
+      <button id="cancelGroup" class="btn btn-ghost">✕ Закрыть</button>
+      <h3 id="modalTitle">Создать группу</h3>
+      <input type="hidden" id="groupId">
+      
+      <label>Название *</label>
+      <input type="text" id="groupName" class="input-field" placeholder="Например: Харе Кришна Москва" required><br><br>
+      
+      <label>Описание *</label>
+      <textarea id="groupDesc" class="textarea-field" placeholder="Киртаны, лекции, воскресные обеды" required></textarea><br><br>
+      
+      <label>Тип *</label>
+      <select id="groupType" class="select-field" required>
+        <option value="namahatta">Нама-Хатта</option>
+        <option value="bhakti_vriksha">Бхакти-Врикша</option>
+      </select><br><br>
+      
+      <label>
+        <input type="checkbox" id="groupOnline"> Онлайн-группа
+      </label><br><br>
+      
+      <div id="cityField">
+        <label>Город *</label>
+        <input type="text" id="groupCity" class="input-field" placeholder="Москва" required><br><br>
+        
+        <label>Адрес! (улица, дом)</label>
+        <input type="text" id="groupAddress" class="input-field" placeholder="ул. Тверская, 1">
+        <input type="hidden" id="groupLat" name="lat">
+        <input type="hidden" id="groupLng" name="lng">
+      </div>
+      
+      <label>Лидер группы *</label>
+        <select id="groupLeaderId" multiple size="3" class="multi-select">
+          <option value="">— Выберите лидеров —</option>
+        </select>
+      
+      <button id="saveGroup" class="btn">Сохранить</button>
+      <button id="cancelGroup2" class="btn btn-ghost">Отмена</button>
+    </div>
+  </div>
+  
+  <!-- Кастомное окно подтверждения удаления ГРУППЫ (вместо confirm) -->
+<div id="customGroupDeleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 85%; max-width: 320px; text-align: center; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto;">
+        <h3 style="margin-top: 0; font-size: 18px;">Удалить группу?</h3>
+        <p style="color: var(--color-text-muted, #666); font-size: 14px; margin-bottom: 20px;">Вы действительно хотите удалить эту группу? Все связанные участники и события будут стерты навсегда.</p>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-ghost" id="btnCancelGroupDelete" style="flex: 1; margin: 0;">Отмена</button>
+            <button class="btn btn-danger" id="btnConfirmGroupDelete" style="flex: 1; margin: 0; background: #ff3b30; color: #fff; border: none;">Удалить</button>
+        </div>
+    </div>
+</div>
+
+
+  <script>
+    // Защита от XSS
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+	let pendingGroupIdToDelete = null; // Хранит ID группы, которую админ хочет удалить
+
+    async function loadAdmin() {
+      try {
+        // Проверяем авторизацию и роль
+        const authRes = await fetch('/api/check_auth.php');
+        const authData = await authRes.json();
+        
+        if (!authData.is_authenticated) {
+          window.location.href = '/login.html';
+          return;
+        }
+    
+        // Загружаем данные админки
+        const res = await fetch('/api/get_admin_data.php');
+        const data = await res.json();
+    
+        if (!data.success) {
+          document.getElementById('adminContent').innerHTML = `<p class="error-state">${data.error || 'Доступ запрещён'}</p>`;
+          return;
+        }
+    
+        // Исправление: теперь данные групп находятся напрямую в data.groups
+        let html = `
+          <div class="card">
+            <h3>👥 Группы (${data.groups.length})</h3>
+            <button class="btn btn-block" id="btnCreateGroup">➕ Создать группу</button>
+            <div id="groupsList"></div>
+          </div>
+    
+          <div class="card">
+            <h3>📬 Все заявки (${data.applications?.length || 0})</h3>
+            <div id="applicationsList"></div>
+          </div>
+        <!-- 🔥 ДОБАВЛЕНО: ОТДЕЛЬНЫЙ ФУНКЦИОНАЛ НАЗНАЧЕНИЯ ЛИДЕРОВ -->
+		<div class="card" style="margin-top: 20px; border-top: 2px solid var(--color-primary, #4a90e2);">
+			<h3>👑 Управление ролями пользователей</h3>
+			<p style="font-size: 13px; color: #666; margin-bottom: 15px;">Здесь вы можете изменить глобальный статус любого преданного в системе (например, сделать его Администратором).</p>
+			
+			<div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px;">
+				<label style="font-weight: 600; font-size: 13px;">1. Выберите пользователя:</label>
+				<!-- Сюда подгрузится список всех людей -->
+				<select id="assignLeaderUserId" class="select-field" style="width: 100%; height: 40px; margin: 0; padding: 5px 10px; border-radius: 8px; border: 1px solid #ddd;">
+					<option value="">-- Загрузка пользователей... --</option>
+				</select>
+
+				<label style="font-weight: 600; font-size: 13px;">2. Назначить глобальную роль:</label>
+				<select id="assignUserRoleValue" class="select-field" style="width: 100%; height: 40px; margin: 0; padding: 5px 10px; border-radius: 8px; border: 1px solid #ddd;">
+    <option value="user">Обычный пользователь (Участник)</option>
+    <option value="leader">Лидер (Управление группами и событиями)</option>
+    <option value="admin">Главный Администратор (Доступ в админку)</option>
+    <!-- 🔥 ДОБАВЛЕНО: Роль Наблюдателя -->
+    <option value="observer">Наблюдатель (только просмотр, без права писать)</option>
+</select>
+			</div>
+
+			<button type="button" class="btn btn-block" onclick="executeChangeUserRole()" style="background: #4a90e2; color: #fff; font-weight: 600;">
+				Сохранить новую роль пользователя 💾
+			</button>
+		</div>
+		`;
+    
+        document.getElementById('adminContent').innerHTML = html;
+		loadUsersForRoleManagement();
+        
+        // Кнопка создания
+        document.getElementById('btnCreateGroup').addEventListener('click', createGroup);
+    
+        // Рендер групп
+        const groupsEl = document.getElementById('groupsList');
+        data.groups.forEach(g => {
+          // Обработка нескольких лидеров
+          const leaders = g.leaders?.map(l => `${l.first_name} ${l.last_name}`).join(', ') || '—';
+          
+          groupsEl.innerHTML += `
+            <div class="card" style="margin:8px 0;">
+              <h4>${escapeHtml(g.name)} ${g.is_online ? '(онлайн)' : ''}</h4>
+              <p>📍 ${escapeHtml(g.city)} | 👥 ${g.member_count || 0} | Лидеры: ${escapeHtml(leaders)}</p>
+              <button class="btn btn-small btn-ghost" onclick="editGroup(${g.id})">✏️ Редактировать</button>
+              <button class="btn btn-small btn-danger" onclick="deleteGroup(${g.id})">🗑 Удалить</button>
+            </div>
+          `;
+        });
+    
+        // Рендер заявок (если данные приходят)
+        const appsEl = document.getElementById('applicationsList');
+        if (data.applications) {
+          data.applications.forEach(a => {
+            let status = a.status === 'approved' ? '✅' : a.status === 'rejected' ? '❌' : '⏳';
+            appsEl.innerHTML += `
+              <div class="application-item">
+                <strong>${escapeHtml(a.group_name)}</strong> → ${escapeHtml(a.applicant_name)}<br>
+                <small>${status} ${escapeHtml(a.message)}</small>
+              </div>
+            `;
+          });
+        } else {
+          appsEl.innerHTML = '<p>Нет заявок для отображения</p>';
+        }
+    
+      } catch (e) {
+        console.error(e);
+        document.getElementById('adminContent').innerHTML = '<p class="error-state">Ошибка загрузки</p>';
+      }
+    }
+	
+	
+	// 🔥 ДОБАВЛЕНО: Загрузка всех пользователей (без групп)
+	async function loadUsersForRoleManagement() {
+		const userSelect = document.getElementById('assignLeaderUserId');
+		if (!userSelect) return;
+
+		try {
+			const response = await fetch('/api/admin_get_all_users.php', {
+				credentials: 'include'
+			});
+			const data = await response.json();
+			
+			if (data.success) {
+				let userHtml = '<option value="">-- Выберите пользователя --</option>';
+				data.users.forEach(u => {
+					// Если у пользователя is_admin === 1, пометим это в списке для удобства
+					let roleText = ' [Пользователь]';
+					if (parseInt(u.is_admin) === 1) {
+						roleText = ' [АДМИН]';
+					} else if (u.role === 'leader') {
+						roleText = ' [ЛИДЕР]';
+					}
+					const fullName = `${u.first_name} ${u.last_name || ''}`.trim();
+					userHtml += `<option value="${u.id}">ID ${u.id} | ${escapeHtml(fullName)} (${escapeHtml(u.email)})${roleText}</option>`;
+				});
+				userSelect.innerHTML = userHtml;
+			} else {
+				userSelect.innerHTML = '<option value="">Ошибка загрузки списка</option>';
+			}
+		} catch (err) {
+			console.error(err);
+			userSelect.innerHTML = '<option value="">Ошибка сети</option>';
+		}
+	}
+
+	// 🔥 ДОБАВЛЕНО: Сетевой запрос на изменение роли в таблице users
+	async function executeChangeUserRole() {
+		const userId = document.getElementById('assignLeaderUserId').value;
+		const roleValue = document.getElementById('assignUserRoleValue').value;
+
+		if (!userId || !roleValue) {
+			showToast('⚠️ Выберите пользователя из списка');
+			return;
+		}
+
+		try {
+			const response = await fetch('/api/admin_assign_leader.php', { // Используем тот же файл, сейчас перепишем его бэкенд
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body: JSON.stringify({ user_id: userId, role: roleValue })
+			});
+
+			const result = await response.json();
+			if (result.success) {
+				showToast('✅ Глобальная роль пользователя успешно изменена!');
+				loadAdmin(); // Перерисовываем админку, чтобы обновить статусы в списке
+			} else {
+				showToast('❌ Ошибка: ' + (result.error || 'не удалось изменить роль'));
+			}
+		} catch (err) {
+			console.error(err);
+			showToast('❌ Сетевой сбой при отправке данных');
+		}
+	}
+	
+    
+    async function createGroup() {
+      document.getElementById('modalTitle').textContent = 'Создать группу';
+      document.getElementById('groupId').value = '';
+      document.getElementById('groupName').value = '';
+      document.getElementById('groupDesc').value = '';
+      document.getElementById('groupType').value = 'namahatta';
+      document.getElementById('groupOnline').checked = false;
+      document.getElementById('groupCity').value = '';
+      toggleCityField();
+    
+      try {
+        const res = await fetch('/api/get_leaders.php');
+        const data = await res.json();
+        const select = document.getElementById('groupLeaderId');
+        select.innerHTML = '<option value="">— Выберите лидеров —</option>';
+        if (data.success && data.leaders) {
+          data.leaders.forEach(l => {
+            const name = `${l.first_name} ${l.last_name || ''}`.trim();
+            const option = document.createElement('option');
+            option.value = l.id; // ← Внутренний user_id
+            option.textContent = name;
+            select.appendChild(option);
+          });
+        }
+      } catch (err) {
+        console.error('Ошибка загрузки лидеров:', err);
+        select.innerHTML = '<option value="">Ошибка загрузки</option>';
+      }
+    
+      document.getElementById('groupModal').style.display = 'flex';
+    }
+
+	async function editGroup(id) {
+		try {
+			const res = await fetch(`/api/get_group_for_edit.php?id=${id}`);
+			const data = await res.json();
+
+			if (!data.success) {
+				showToast('❌ Ошибка: ' + (data.error || 'нет доступа'));
+				return;
+			}
+
+			const g = data.group;
+			document.getElementById('modalTitle').textContent = 'Редактировать группу';
+			document.getElementById('groupId').value = g.id;
+			document.getElementById('groupName').value = g.name;
+			document.getElementById('groupDesc').value = g.description;
+			document.getElementById('groupType').value = g.type;
+			document.getElementById('groupOnline').checked = parseInt(g.is_online) === 1;
+			document.getElementById('groupCity').value = g.city || '';
+			document.getElementById('groupAddress').value = g.address || '';
+
+			// Железно фиксируем старые координаты в форме перед редактированием
+			document.getElementById('groupLat').value = g.lat !== null ? g.lat : '';
+			document.getElementById('groupLng').value = g.lng !== null ? g.lng : '';
+
+			// Загружаем лидеров в мультиселект
+			const leadersRes = await fetch('/api/get_leaders.php');
+			const leadersData = await leadersRes.json();
+			const select = document.getElementById('groupLeaderId');
+			select.innerHTML = '<option value="">— Выберите лидеров —</option>';
+
+			if (leadersData.success && leadersData.leaders) {
+				leadersData.leaders.forEach(l => {
+					const name = `${l.first_name} ${l.last_name || ''}`.trim();
+					const option = document.createElement('option');
+					option.value = l.id;
+					option.textContent = name;
+
+					// Проверяем, назначен ли этот пользователь лидером
+					if (g.leaders && g.leaders.includes(parseInt(l.id))) {
+						option.selected = true;
+					}
+					select.appendChild(option);
+				});
+			}
+
+			document.getElementById('groupModal').style.display = 'flex';
+		} catch (err) {
+			console.error(err);
+			showToast('❌ Не удалось загрузить данные группы');
+		}
+	}
+
+
+    function toggleCityField() {
+        /*
+        const isOnlineChecked = document.getElementById('groupOnline').checked;
+        const cityFieldContainer = document.getElementById('cityField');
+        
+        // Мы просто визуально скрываем или показываем поля адреса в форме, 
+        // но физически НЕ стираем и НЕ меняем их текстовые значения!
+        if (cityFieldContainer) {
+            if (isOnlineChecked) {
+                cityFieldContainer.style.opacity = "0.5"; // Делаем полупрозрачным, если онлайн
+            } else {
+                cityFieldContainer.style.opacity = "1";
+            }
+        }
+        */
+    }
+
+    let isSaving = false;
+    
+    // [ВАЖНО] Добавлено ключевое слово async в начале!
+	// [УЛЬТИМАТИВНЫЙ ФИНАЛ] Полностью рабочая функция сохранения групп с неубиваемым геокодером
+	async function saveGroup() {
+		const button = document.getElementById('saveGroup');
+		if (!button || isSaving) return;
+
+		isSaving = true;
+		const originalText = button.textContent;
+		button.textContent = 'Поиск координат...';
+		button.disabled = true;
+
+		let latVal = null;
+		let lngVal = null;
+
+		try {
+			const city = document.getElementById('groupCity')?.value.trim() || '';
+			const address = document.getElementById('groupAddress')?.value.trim() || '';
+
+			// Умная очистка от слова "Онлайн", чтобы не путать робота карт
+			const cleanCity = city.toLowerCase() === 'онлайн' ? '' : city;
+			const cleanAddress = address.toLowerCase() === 'онлайн' ? '' : address;
+			
+			let searchQuery = '';
+			if (cleanAddress.toLowerCase().includes(cleanCity.toLowerCase())) {
+				searchQuery = cleanAddress;
+			} else if (cleanCity && cleanAddress) {
+				searchQuery = `${cleanCity}, ${cleanAddress}`;
+			} else {
+				searchQuery = cleanAddress || cleanCity;
+			}
+			
+			searchQuery = searchQuery.replace(/\s+/g, ' ').trim();
+
+			if (searchQuery) {
+				try {
+					// [ИСПРАВЛЕНО] Собираем неубиваемый URL-адрес по нашему победному методу через массив
+					var urlArray = [
+						"https://",
+						"nominatim.",
+						"openstreetmap.org",
+						"/search?q=",
+						encodeURIComponent(searchQuery),
+						"&format=json&limit=1&accept-language=ru&email=achyutagauradas@mail.ru"
+					];
+					
+					const geoRes = await fetch(urlArray.join(""));
+					const geoData = await geoRes.json();
+					
+					// [ИСПРАВЛЕНО] Строгая проверка массива и чтение первой точки [0]
+					if (geoData && Array.isArray(geoData) && geoData.length > 0 && geoData[0]) {
+						latVal = parseFloat(geoData[0].lat);
+						lngVal = parseFloat(geoData[0].lon);
+						console.log("Координаты успешно зафиксированы фронтендом:", latVal, lngVal);
+					}
+				} catch (geoErr) {
+					console.error('Ошибка сети или ответа геокодера:', geoErr);
+				}
+			}
+
+			button.textContent = 'Сохранение...';
+			const id = document.getElementById('groupId').value;
+			const isEdit = !!id;
+
+			// Формируем пакет данных для отправки на бэкенд save_group.php
+			const data = {
+				name: document.getElementById('groupName').value.trim(),
+				description: document.getElementById('groupDesc').value.trim(),
+				type: document.getElementById('groupType').value,
+				is_online: document.getElementById('groupOnline').checked ? 1 : 0,
+				city: city,
+				address: address,
+				leader_ids: Array.from(document.getElementById('groupLeaderId').selectedOptions).map(opt => parseInt(opt.value)),
+				timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+				id: id ? parseInt(id) : null,
+				// [ИСПРАВЛЕНО] Сюда теперь железно попадают вычисленные браузером числа координат
+				lat: latVal, 
+				lng: lngVal  
+			};
+
+			if (!data.name || !data.description || data.leader_ids.length === 0) {
+				showToast('⚠️ Заполните обязательные поля и выберите лидера');
+				isSaving = false;
+				button.textContent = originalText;
+				button.disabled = false;
+				return;
+			}
+
+			const response = await fetch('/api/save_group.php', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(data)
+			});
+
+			const result = await response.json();
+
+			if (result.success) {
+				showToast(isEdit ? '✅ Группа успешно обновлена!' : '🎉 Группа успешно создана!');
+				document.getElementById('groupModal').style.display = 'none';
+				loadAdmin();
+			} else {
+				showToast('❌ Ошибка бэкенда: ' + (result.error || 'неизвестный сбой'));
+			}
+
+		} catch (err) {
+			console.error("Глобальный сбой функции saveGroup:", err);
+			showToast('❌ Не удалось сохранить данные группы.');
+		} finally {
+			isSaving = false;
+			if (button) {
+				button.textContent = originalText;
+				button.disabled = false;
+			}
+		}
+	}
+
+
+
+    function cancelGroup() {
+      document.getElementById('groupModal').style.display = 'none';
+    }
+
+	async function deleteGroup(id) {
+		pendingGroupIdToDelete = id;
+		const modal = document.getElementById('customGroupDeleteModal');
+		if (modal) modal.style.display = 'flex';
+	}
+
+	// Клики кнопок в модалке удаления группы
+	document.getElementById('btnCancelGroupDelete')?.addEventListener('click', () => {
+		const modal = document.getElementById('customGroupDeleteModal');
+		if (modal) modal.style.display = 'none';
+		pendingGroupIdToDelete = null;
+	});
+
+	document.getElementById('btnConfirmGroupDelete')?.addEventListener('click', async () => {
+		if (!pendingGroupIdToDelete) return;
+		
+		const idToSend = pendingGroupIdToDelete;
+		const modal = document.getElementById('customGroupDeleteModal');
+		if (modal) modal.style.display = 'none';
+		
+		try {
+			const response = await fetch('/api/delete_group.php', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ group_id: idToSend })
+			});
+			const result = await response.json();
+			if (result.success) {
+				showToast('🗑️ Группа успешно удалена');
+				loadAdmin();
+			} else {
+				showToast('❌ Ошибка: ' + result.error);
+			}
+		} catch (err) {
+			showToast('❌ Не удалось удалить группу');
+		} finally {
+			pendingGroupIdToDelete = null;
+		}
+	});
+    
+
+    document.addEventListener('DOMContentLoaded', () => {
+      //document.getElementById('groupOnline')?.addEventListener('change', toggleCityField);
+      document.getElementById('saveGroup')?.addEventListener('click', saveGroup);
+      document.getElementById('cancelGroup')?.addEventListener('click', cancelGroup);
+      document.getElementById('cancelGroup2')?.addEventListener('click', cancelGroup);
+      loadAdmin();
+    });
+  </script>
+<script>
+ // ГЛОБАЛЬНЫЙ ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМА ДЛЯ ВСЕГО ФРОНТЕНДА
+ const IS_DEBUG = true; // Смени на false перед релизом, чтобы включить кэширование!
+ const APP_VERSION = '1.0.0'; // Версия для релиза
+
+ (function() {
+     const version = IS_DEBUG ? Date.now() : APP_VERSION;
+
+     // 1. Динамически обновляем версию стилей в <head>
+     const mainStyle = document.querySelector('link[href^="style.css"]');
+     if (mainStyle) {
+         mainStyle.href = 'style.css?v=' + version;
+     }
+
+     // 2. Подключаем саму тему theme.js с правильной версией
+     const themeScript = document.createElement('script');
+     themeScript.src = 'theme.js?v=' + version;
+     document.body.appendChild(themeScript);
+ })();
+</script>
+</body>
+</html>

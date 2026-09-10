@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Вход — Нама-Хатта</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <button class="back-btn" onclick="history.back()" aria-label="Назад">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <h1 class="org-name">Вход</h1>
+    </header>
+
+    <main class="content">
+      <div class="card">
+        <h2>Войти в аккаунт</h2>
+        <form id="loginForm">
+          <input type="email" id="email" class="input-field" placeholder="Email" required><br><br>
+          <input type="password" id="password" class="input-field" placeholder="Пароль" required><br><br>
+          <button type="submit" class="btn btn-primary">Войти</button>
+        </form>
+        <p style="text-align:center; margin-top:16px;">
+            <a href="#" id="btnForgotPassword" style="color: var(--color-primary, #4a90e2); font-size: 14px; text-decoration: none; display: block; margin-bottom: 10px;">Забыли пароль?</a>
+            Нет аккаунта? <a href="/register.html">Зарегистрироваться</a>
+        </p>
+    </div>
+</main>
+</div>
+
+<!-- КРИТИЧНО ДЛЯ АНДРОИД: Подключаем общие скрипты темы и мост уведомлений -->
+
+<script src="/android.js"></script>
+<script>
+ const IS_DEBUG = true; 
+ const APP_VERSION = '1.0.0'; 
+
+ (function() {
+     const version = IS_DEBUG ? Date.now() : APP_VERSION;
+
+     const mainStyle = document.querySelector('link[href^="style.css"]');
+     if (mainStyle) {
+         mainStyle.href = 'style.css?v=' + version;
+     }
+
+     const themeScript = document.createElement('script');
+     themeScript.src = 'theme.js?v=' + version;
+     document.body.appendChild(themeScript);
+ })();
+</script>
+
+<script>
+document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+
+        const emailInput = document.getElementById('email') || document.getElementById('loginEmail');
+        const passwordInput = document.getElementById('password') || document.getElementById('loginPassword');
+
+        if (!emailInput || !passwordInput) {
+            showToast("❌ Поля ввода не найдены на странице");
+            if (submitBtn) submitBtn.disabled = false;
+            return;
+        }
+
+        try {
+            // Отправляем данные строго в формате JSON, как их ждет твой бэкенд
+            const response = await fetch('/api/login.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: emailInput.value.trim(),
+                    password: passwordInput.value
+                })
+            });
+
+            // Читаем сырой текст для очистки от возможных предупреждений session_start
+            const cleanRawText = await response.text();
+            let data;
+            
+            try {
+                const jsonIdx = cleanRawText.indexOf('{');
+                if (jsonIdx === -1) throw new Error("JSON не найден");
+                data = JSON.parse(cleanRawText.substring(jsonIdx));
+            } catch (jsonErr) {
+                console.error("Сырой ответ сервера:", cleanRawText);
+                showToast('❌ Ошибка чтения ответа сервера');
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
+
+			if (data.success) {
+				showToast(' Вход успешно выполнен! 🌸');
+				
+				// 🔥 ИСПРАВЛЕНО: Принудительно запускаем наш новый бронебойный мост,
+				// который сам дождётся инициализации интерфейса Android и отправит токен в базу!
+				if (typeof sendUserIdToAndroid === 'function') {
+					sendUserIdToAndroid();
+				}
+				
+				// Плавный переход в профиль
+				setTimeout(() => {
+					window.location.href = '/profile.html';
+				}, 1000);
+			} else {
+            showToast('❌ ' + (data.error || 'Неверный логин или пароль'));
+                if (submitBtn) submitBtn.disabled = false;
+        }
+    } catch (err) {
+        console.error(err);
+            showToast('❌ Не удалось связаться с сервером');
+            if (submitBtn) submitBtn.disabled = false;
+    }
+});
+
+// Заглушка клика для перехода к следующему этапу (Сброс пароля)
+document.getElementById('btnForgotPassword').addEventListener('click', (e) => {
+    e.preventDefault();
+    window.location.href = '/forgot_password.html'; // На эту страницу мы сейчас переведём пользователя
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Инфо-центр — Нама-Хатта</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+    <!-- Шапка страницы -->
+    <header class="app-header">
+        <button class="back-btn" onclick="window.location.href='/index.html'" aria-label="Назад">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+        </button>
+        <h1 class="org-name">ИНФО-ЦЕНТР</h1>
+    </header>
+
+    <!-- Строка живого поиска -->
+    <div style="padding: 0 16px 10px 16px; background-color: #f4f3f0;">
+        <input type="text" id="infoSearchInput" class="input-field" placeholder="🔍 Быстрый поиск по названию..." style="margin: 0; padding: 10px 14px; border: 1px solid #e2dbd0; border-radius: 12px; background: #fff; font-size: 15px;">
+    </div>
+
+    <!-- Основной скроллящийся контент -->
+    <main class="content" id="infoContentBlock" style="padding-top: 5px;">
+        <!-- Кнопка добавления для модераторов (скрыта по умолчанию) -->
+        <button id="btnShowAddForm" class="btn btn-primary" style="display: none; margin-bottom: 16px; background: #34c759;">➕ Добавить запись</button>
+
+        <!-- Форма создания записи (скрыта по умолчанию) -->
+        <div id="addInfoFormBlock" class="card" style="display: none; border: 1px solid #34c759; margin-bottom: 20px;">
+            <h3 style="margin-top: 0; margin-bottom: 15px; color: #34c759;">Новый материал</h3>
+            <input type="text" id="newInfoTitle" class="input-field" placeholder="Название (например: Правила общины)" style="margin-bottom: 12px; border-bottom: 1px solid #ddd; padding: 6px 0;">
+            <textarea id="newInfoDesc" class="textarea-field" placeholder="Краткое описание / подзаголовок (необязательно)" style="min-height: 60px; margin-bottom: 12px; border-bottom: 1px solid #ddd; padding: 6px 0;"></textarea>
+            
+            <label style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 4px; color: #555;">Тип содержимого:</label>
+            <select id="newInfoType" class="select-field" style="margin-bottom: 15px; border-bottom: 1px solid #ddd; padding: 8px 0; font-family: inherit;">
+                <option value="link">🌐 Интернет-ссылка (Сайт, YouTube, Zoom)</option>
+                <option value="text">📄 Текстовая статья / Объявление</option>
+                <option value="file">📁 Файл для скачивания (PDF, Документ)</option>
+                <option value="phone">📞 Телефонный контакт общины</option>
+            </select>
+
+            <textarea id="newInfoContent" class="textarea-field" placeholder="Вставьте сюда ссылку, номер телефона или текст статьи..." style="min-height: 100px; margin-bottom: 15px; border: 1px solid #e2dbd0; border-radius: 8px; padding: 10px; background: #fafafa;"></textarea>
+            
+            <div style="display: flex; gap: 10px;">
+				<input type="hidden" id="editInfoId" value="">
+                <button class="btn btn-ghost" id="btnCancelAddInfo" style="flex: 1; margin: 0; padding: 10px;">Отмена</button>
+                <button class="btn btn-success" id="btnSaveInfoItem" style="flex: 1; margin: 0; padding: 10px; background: #34c759;">Сохранить</button>
+            </div>
+        </div>
+
+        <!-- Контейнер для вывода 3D-карточек -->
+        <div id="infoItemsContainer">
+            <div class="loading">Загрузка полезных материалов...</div>
+        </div>
+    </main>
+</div>
+
+<!-- Кастомное модальное окно удаления записи (вместо confirm) -->
+<div id="customInfoDeleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 85%; max-width: 320px; text-align: center; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto;">
+        <h3 style="margin-top: 0; font-size: 18px;">Удалить запись?</h3>
+        <p style="color: var(--color-text-muted, #666); font-size: 14px; margin-bottom: 20px;">Вы действительно хотите удалить этот информационный блок из общей библиотеки?</p>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-ghost" id="btnCancelInfoDelete" style="flex: 1; margin: 0;">Отмена</button>
+            <button class="btn btn-danger" id="btnConfirmInfoDelete" style="flex: 1; margin: 0; background: #ff3b30; color: #fff; border: none;">Удалить</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Глобальные переменные для фильтрации и удаления данных
+let allInfoItems = [];
+let pendingLinkIdToDelete = null;
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Сетевой запрос к API инфо-центра
+async function loadInfoCenter() {
+    try {
+        const response = await fetch('/api/info_handler.php');
+        const data = await response.json();
+
+        if (!data.success) throw new Error(data.error || 'Ошибка доступа');
+
+        allInfoItems = data.links || [];
+
+        // Если зашел лидер или админ — делаем видимой зеленую кнопку создания материалов
+        if (data.is_moderator) {
+            document.getElementById('btnShowAddForm').style.display = 'block';
+        }
+
+        renderInfoItems(allInfoItems);
+
+    } catch (err) {
+        console.error(err);
+        showToast('❌ Не удалось загрузить информационный блок');
+        document.getElementById('infoItemsContainer').innerHTML = '<p class="error-state" style="text-align:center;">Ошибка соединения с сервером</p>';
+    }
+}
+
+// Интеллектуальный рендер парящих блоков с учетом типов данных
+function renderInfoItems(items) {
+    const container = document.getElementById('infoItemsContainer');
+    if (items.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#888; padding: 20px 0;">Информационных материалов пока нет.</p>';
+        return;
+    }
+
+    let html = '';
+    items.forEach(item => {
+        let actionAttr = '';
+        let icon = '📄';
+        let badgeText = 'Статья';
+        let badgeColor = '#8e8e93';
+
+        // Распределяем поведение карточки в мобильном WebView
+        if (item.type === 'link') {
+            icon = '🌐';
+            badgeText = 'Ссылка';
+            badgeColor = '#007aff'; // Синий
+            actionAttr = `onclick="window.open('${escapeHtml(item.content)}', '_blank')"`;
+        } else if (item.type === 'file') {
+            icon = '📁';
+            badgeText = 'Файл';
+            badgeColor = '#ff9500'; // Оранжевый
+            actionAttr = `onclick="window.open('${escapeHtml(item.content)}', '_blank')"`;
+        } else if (item.type === 'phone') {
+            icon = '📞';
+            badgeText = 'Контакт';
+            badgeColor = '#34c759'; // Зеленый
+            actionAttr = `onclick="window.location.href='tel:${escapeHtml(item.content)}'"`;
+        } else {
+            // Обычная статья: при клике выводим текст в красивом тосте без алертов
+            actionAttr = `onclick="showToast('📄 ' + this.querySelector('.js-hidden-text').textContent)"`;
+        }
+
+        const isModeratorMode = document.getElementById('btnShowAddForm').style.display === 'block';
+
+        html += `
+            <div class="card" style="position: relative; cursor: pointer;">
+                <!-- Контентный блок с поддержкой нативных кликов -->
+                <div ${actionAttr} style="padding-right: ${isModeratorMode ? '40px' : '0'};">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                        <span style="font-size: 20px; flex-shrink:0;">${icon}</span>
+                        <h4 style="margin:0; font-size:16px; font-weight:700; color:#1d1d1f;">${escapeHtml(item.title)}</h4>
+                    </div>
+                    ${item.description ? `<p style="margin: 0 0 8px 0; font-size: 13.5px; color:#48484a;">${escapeHtml(item.description)}</p>` : ''}
+                    
+                    <span style="display:inline-block; font-size:11px; font-weight:700; color:white; background:${badgeColor}; padding:2px 8px; border-radius:10px; text-transform:uppercase; letter-spacing:0.5px;">${badgeText}</span>
+                    
+                    <span class="js-hidden-text" style="display:none;">${escapeHtml(item.content)}</span>
+                </div>
+
+                <!-- Кнопки управления для лидеров/админов (Карандашик и Ведро) -->
+                ${isModeratorMode ? `
+                    <div style="position: absolute; top: 14px; right: 14px; display: flex; gap: 10px; z-index: 10;">
+                        <button onclick="initEditInfoItem(${item.id})" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 2px;">✏️</button>
+                        <button onclick="openDeleteInfoModal(${item.id})" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 2px;">🗑️</button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+// Фильтрация карточек на лету при вводе текста в поиск (без нагрузки на сервер)
+document.getElementById('infoSearchInput').addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    const filtered = allInfoItems.filter(item => item.title.toLowerCase().includes(query));
+    renderInfoItems(filtered);
+});
+
+// Обработчики кнопок показа и скрытия формы добавления
+document.getElementById('btnShowAddForm').addEventListener('click', () => {
+    document.getElementById('btnShowAddForm').style.display = 'none';
+    document.getElementById('addInfoFormBlock').style.display = 'block';
+});
+
+document.getElementById('btnCancelAddInfo').addEventListener('click', () => {
+    document.getElementById('addInfoFormBlock').style.display = 'none';
+    document.getElementById('btnShowAddForm').style.display = 'block';
+    clearAddFormFields();
+});
+
+function clearAddFormFields() {
+    document.getElementById('newInfoTitle').value = '';
+    document.getElementById('newInfoDesc').value = '';
+    document.getElementById('newInfoContent').value = '';
+    document.getElementById('newInfoType').value = 'link';
+}
+
+// Отправка новой записи в базу данных MySQL через AJAX
+document.getElementById('btnSaveInfoItem').addEventListener('click', async () => {
+	const id = document.getElementById('editInfoId').value;
+    const title = document.getElementById('newInfoTitle').value.trim();
+    const description = document.getElementById('newInfoDesc').value.trim();
+    const type = document.getElementById('newInfoType').value;
+    const content = document.getElementById('newInfoContent').value.trim();
+
+    if (!title || !content) {
+        showToast('⚠️ Заполните название и содержимое записи');
+        return;
+    }
+
+    const btn = document.getElementById('btnSaveInfoItem');
+    btn.disabled = true;
+    btn.textContent = 'Сохранение...';
+
+    try {
+        const response = await fetch('/api/info_handler.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: id ? 'update' : 'create', id, title, description, type, content })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('🎉 Материал успешно добавлен в инфо-центр!');
+            document.getElementById('addInfoFormBlock').style.display = 'none';
+            document.getElementById('btnShowAddForm').style.display = 'block';
+            clearAddFormFields();
+            await loadInfoCenter(); // Обновляем ленту на экране
+        } else {
+            showToast('❌ Ошибка: ' + result.error);
+        }
+    } catch (err) {
+        showToast('❌ Ошибка сети при сохранении');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Сохранить';
+    }
+});
+
+// Логика работы кастомного HTML-окна удаления записи (Вместо confirm)
+window.openDeleteInfoModal = function(id) {
+    pendingLinkIdToDelete = id;
+    document.getElementById('customInfoDeleteModal').style.display = 'flex';
+};
+
+document.getElementById('btnCancelInfoDelete').addEventListener('click', () => {
+    document.getElementById('customInfoDeleteModal').style.display = 'none';
+    pendingLinkIdToDelete = null;
+});
+
+document.getElementById('btnConfirmInfoDelete').addEventListener('click', async () => {
+    if (!pendingLinkIdToDelete) return;
+    const idToSend = pendingLinkIdToDelete;
+    document.getElementById('customInfoDeleteModal').style.display = 'none';
+
+    try {
+        const response = await fetch('/api/info_handler.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', link_id: idToSend })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('🗑️ Запись успешно удалена');
+            await loadInfoCenter(); // Перезагружаем список
+        } else {
+            showToast('❌ Ошибка удаления: ' + result.error);
+        }
+    } catch (err) {
+        showToast('❌ Не удалось удалить запись');
+    } finally {
+        pendingLinkIdToDelete = null;
+    }
+});
+
+// Запуск инициализации при полной загрузке страницы
+document.addEventListener('DOMContentLoaded', loadInfoCenter);
+
+// Функция инициализации редактирования материала
+window.initEditInfoItem = function(id) {
+    // Находим нужный элемент в нашем глобальном массиве по ID
+    const item = allInfoItems.find(i => i.id === id);
+    if (!item) return;
+
+    // Заполняем форму текущими данными из базы
+    document.getElementById('editInfoId').value = item.id;
+    document.getElementById('newInfoTitle').value = item.title;
+    document.getElementById('newInfoDesc').value = item.description || '';
+    document.getElementById('newInfoType').value = item.type;
+    document.getElementById('newInfoContent').value = item.content;
+
+    // Меняем заголовки и кнопки под режим редактирования
+    const formTitle = document.querySelector('#addInfoFormBlock h3');
+    if (formTitle) {
+        formTitle.textContent = 'Редактировать материал';
+        formTitle.style.color = '#007aff'; // Меняем цвет на синий Apple для визуального отличия
+    }
+    
+    const saveBtn = document.getElementById('btnSaveInfoItem');
+    if (saveBtn) {
+        saveBtn.textContent = 'Обновить';
+        saveBtn.style.background = '#007aff';
+    }
+
+    // Скрываем кнопку «Добавить» и плавно разворачиваем форму, поднимая экран наверх
+    document.getElementById('btnShowAddForm').style.display = 'none';
+    document.getElementById('addInfoFormBlock').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// Расширяем функцию очистки полей формы (чтобы сбрасывать ID и стили кнопок)
+// Замени свою старую функцию clearAddFormFields() на эту обновленную:
+function clearAddFormFields() {
+    document.getElementById('editInfoId').value = '';
+    document.getElementById('newInfoTitle').value = '';
+    document.getElementById('newInfoDesc').value = '';
+    document.getElementById('newInfoContent').value = '';
+    document.getElementById('newInfoType').value = 'link';
+    
+    const formTitle = document.querySelector('#addInfoFormBlock h3');
+    if (formTitle) {
+        formTitle.textContent = 'Новый материал';
+        formTitle.style.color = '#34c759';
+    }
+    const saveBtn = document.getElementById('btnSaveInfoItem');
+    if (saveBtn) {
+        saveBtn.textContent = 'Сохранить';
+        saveBtn.style.background = '#34c759';
+    }
+}
+
+</script>
+<script src="/android.js"></script>
+<script>
+ const IS_DEBUG = true; 
+ const APP_VERSION = '1.0.0'; 
+
+ (function() {
+     const version = IS_DEBUG ? Date.now() : APP_VERSION;
+
+     const mainStyle = document.querySelector('link[href^="style.css"]');
+     if (mainStyle) {
+         mainStyle.href = 'style.css?v=' + version;
+     }
+
+     const themeScript = document.createElement('script');
+     themeScript.src = 'theme.js?v=' + version;
+     document.body.appendChild(themeScript);
+ })();
+</script>
+</body>
+</html>
+

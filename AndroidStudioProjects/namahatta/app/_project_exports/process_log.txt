@@ -1,0 +1,53 @@
+=== ЛОГ ОБРАБОТКИ ПРОЕКТА: 2026-08-07 22:02:55.611692 ===
+
+[УСПЕХ] Прочитан файл: .gitignore
+[УСПЕХ] Прочитан файл: build.gradle.kts
+[УСПЕХ] Прочитан файл: google-services.json
+[УСПЕХ] Прочитан файл: proguard-rules.pro
+[УСПЕХ] Прочитан файл: release\output-metadata.json
+[ОШИБКА] Не удалось прочесть файл: release\baselineProfiles\0\app-release.dm
+[ОШИБКА] Не удалось прочесть файл: release\baselineProfiles\1\app-release.dm
+[УСПЕХ] Прочитан файл: src\androidTest\java\com\example\namahatta\ExampleInstrumentedTest.kt
+[УСПЕХ] Прочитан файл: src\main\AndroidManifest.xml
+[УСПЕХ] Прочитан файл: src\main\java\com\example\namahatta\EventDetailActivity.kt
+[УСПЕХ] Прочитан файл: src\main\java\com\example\namahatta\GroupApplicationsActivity.kt
+[УСПЕХ] Прочитан файл: src\main\java\com\example\namahatta\GroupApplicationsFragment.kt
+[УСПЕХ] Прочитан файл: src\main\java\com\example\namahatta\GroupMembersActivity.kt
+[УСПЕХ] Прочитан файл: src\main\java\com\example\namahatta\MainActivity.kt
+[УСПЕХ] Прочитан файл: src\main\java\com\example\namahatta\MyFirebaseMessagingService.kt
+[УСПЕХ] Прочитан файл: src\main\res\drawable\ic_launcher_background.xml
+[УСПЕХ] Прочитан файл: src\main\res\drawable\ic_launcher_foreground.xml
+[УСПЕХ] Прочитан файл: src\main\res\layout\activity_event_detail.xml
+[УСПЕХ] Прочитан файл: src\main\res\layout\activity_group_applications.xml
+[УСПЕХ] Прочитан файл: src\main\res\layout\activity_group_members.xml
+[УСПЕХ] Прочитан файл: src\main\res\layout\activity_main.xml
+[УСПЕХ] Прочитан файл: src\main\res\layout\fragment_group_applications.xml
+[УСПЕХ] Прочитан файл: src\main\res\mipmap-anydpi-v26\ic_launcher.xml
+[УСПЕХ] Прочитан файл: src\main\res\mipmap-anydpi-v26\ic_launcher_round.xml
+[ОШИБКА] Не удалось прочесть файл: src\main\res\mipmap-hdpi\ic_launcher.webp
+[ОШИБКА] Не удалось прочесть файл: src\main\res\mipmap-hdpi\ic_launcher_foreground.webp
+[ОШИБКА] Не удалось прочесть файл: src\main\res\mipmap-hdpi\ic_launcher_round.webp
+[ОШИБКА] Не удалось прочесть файл: src\main\res\mipmap-mdpi\ic_launcher.webp
+[ОШИБКА] Не удалось прочесть файл: src\main\res\mipmap-mdpi\ic_launcher_foreground.webp
+[ОШИБКА] Не удалось прочесть файл: src\main\res\mipmap-mdpi\ic_launcher_round.webp
+[ОШИБКА] Не удалось прочесть файл: src\main\res\mipmap-xhdpi\ic_launcher.webp
+[ОШИБКА] Не удалось прочесть файл: src\main\res\mipmap-xhdpi\ic_launcher_foreground.webp
+[ОШИБКА] Не удалось прочесть файл: src\main\res\mipmap-xhdpi\ic_launcher_round.webp
+[ОШИБКА] Не удалось прочесть файл: src\main\res\mipmap-xxhdpi\ic_launcher.webp
+[ОШИБКА] Не удалось прочесть файл: src\main\res\mipmap-xxhdpi\ic_launcher_foreground.webp
+[ОШИБКА] Не удалось прочесть файл: src\main\res\mipmap-xxhdpi\ic_launcher_round.webp
+[ОШИБКА] Не удалось прочесть файл: src\main\res\mipmap-xxxhdpi\ic_launcher.webp
+[ОШИБКА] Не удалось прочесть файл: src\main\res\mipmap-xxxhdpi\ic_launcher_foreground.webp
+[ОШИБКА] Не удалось прочесть файл: src\main\res\mipmap-xxxhdpi\ic_launcher_round.webp
+[УСПЕХ] Прочитан файл: src\main\res\values\colors.xml
+[УСПЕХ] Прочитан файл: src\main\res\values\strings.xml
+[УСПЕХ] Прочитан файл: src\main\res\values\themes.xml
+[УСПЕХ] Прочитан файл: src\main\res\values-night\themes.xml
+[УСПЕХ] Прочитан файл: src\main\res\xml\backup_rules.xml
+[УСПЕХ] Прочитан файл: src\main\res\xml\data_extraction_rules.xml
+[УСПЕХ] Прочитан файл: src\test\java\com\example\namahatta\ExampleUnitTest.kt
+
+=== ИТОГОВАЯ СТАТИСТИКА ===
+Всего найдено файлов: 46
+Успешно прочитано: 29
+Не удалось прочесть (пропущено): 17

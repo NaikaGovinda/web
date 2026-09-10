@@ -1,0 +1,76 @@
+# Заставляем Apache обрабатывать .html файлы через PHP
+AddType application/x-httpd-php .html .htm
+# Назначаем index.html главной страницей по умолчанию
+DirectoryIndex index.html
+
+# 1. ЗАЩИТА ОТ ОБХОДА ПУТЕЙ И СТРАННЫХ ЗАПРОСОВ (Path Traversal)
+# Блокирует попытки ботов пролезть в /bin/sh или системные файлы
+RewriteEngine On
+RewriteCond %{QUERY_STRING} \.\.\/ [NC,OR]
+RewriteCond %{QUERY_STRING} boot\.ini [NC,OR]
+RewriteCond %{QUERY_STRING} tag\= [NC,OR]
+RewriteCond %{QUERY_STRING} ftp\: [NC,OR]
+RewriteCond %{QUERY_STRING} http\: [NC]
+RewriteRule ^.*$ - [F,L]
+
+# 2. РЕДИРЕКТ НА HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+# 3. ТОЧЕЧНАЯ ЗАЩИТА СЛУЖЕБНЫХ ФАЙЛОВ, БЭКАПОВ И ЛОГОВ
+# Блокирует доступ к конкретным важным файлам в корне сайта по их точному имени
+<FilesMatch "^(config\.php|wp-config\.php|composer\.json|composer\.lock|composer\.phar|database_structure\.sql|users\.sql|firewall_blocked)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>
+
+# Блокируем скачивание резервных копий и системных файлов по их расширению
+<FilesMatch "\.(bak|old|sql|log|ini|env|git)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>
+
+# Наглухо закрываем из браузера папки кэша файрвола и зависимостей composer
+RedirectMatch 403 ^/(ip_cache|vendor|ban_list)/
+
+# Запрещаем выводить список файлов (листинг) для ВСЕХ папок сайта (включая api)
+# При этом сами PHP-скрипты внутри api/ (авторизация, регистрация) будут работать идеально!
+Options -Indexes
+
+# 4. ЗАПРЕТ ПРОСМОТРА СОДЕРЖИМОГО ПАПОК
+# Чтобы хакер не мог увидеть список твоих файлов, просто введя адрес папки
+Options -Indexes
+
+# 5. БЕЗОПАСНЫЕ ЗАГОЛОВКИ
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Исправляем CORS: лучше разрешать только для своего домена
+    # Если нужно для всех - оставь "*", но для безопасности лучше namahata.ru
+    Header set Access-Control-Allow-Origin "*"
+</IfModule>
+
+# 6. БЛОКИРОВКА ДОСТУПА К .htaccess (Самозащита)
+<Files ".htaccess">
+    Require all denied
+</Files>
+
+# Редирект с http на https создан автоматически при заказе бесплатного ssl-сертификата
+#RewriteEngine On
+#RewriteCond %{SERVER_PORT} !^443$
+#RewriteRule .* https://%{SERVER_NAME}%{REQUEST_URI} [R,L]
+#Header set Access-Control-Allow-Origin "*"
+# Конец редиректа
+
+#RewriteEngine On
+#RewriteCond %{HTTPS} off
+#RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+#Header set Access-Control-Allow-Origin "*"
+
+# Разрешаем скачивание Android APK файлов как бинарный поток данных
+AddType application/vnd.android.package-archive .apk
+

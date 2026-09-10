@@ -1,0 +1,1364 @@
+<!-- group.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Группа — Нама-Хатта</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="style.css">
+	<script src="assets/custom-cropper.js"></script>
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <button class="back-btn" id="btnBack" aria-label="Назад" onclick="history.back()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <h1 class="org-name" id="groupName">Загрузка...</h1>
+      <button class="btn-icon" id="btnFavorite" aria-label="В избранное"></button>
+    </header>
+
+    <main class="content" id="groupDetail">
+      <div class="loading">Загрузка...</div>
+    </main>
+
+    <nav class="bottom-bar">
+      <a href="/index.html" class="bar-btn">
+        <span class="ico ico-home"></span>
+        <span>Домой</span>
+      </a>
+      <a href="/namahatta.html" class="bar-btn">
+        <span class="ico ico-namahatta"></span>
+        <span>Нама-Хатта</span>
+      </a>
+      <a href="/profile.html" class="bar-btn">
+        <span class="ico ico-profile"></span>
+        <span>Профиль</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- Модальное окно создания события -->
+<!-- [ИСПРАВЛЕНО] Модальное окно создания события с планировщиком будильников -->
+  <div id="eventModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3 id="eventModalTitle">Создать событие</h3>
+      <input type="text" id="eventTitle" class="input-field" placeholder="Название события" required><br><br>
+      <textarea id="eventDesc" class="textarea-field" placeholder="Описание (необязательно)"></textarea><br><br>
+      
+      <label style="font-weight: 600; display: block; margin-bottom: 5px;">Дата и время проведения:</label>
+      <input type="datetime-local" id="eventDateTime" class="input-field" required><br><br>
+      
+      <!-- [НОВОЕ] Интерактивный блок планирования ручных оповещений -->
+      <div style="background: #f8f8fa; padding: 12px; border-radius: 8px; border: 1px solid #eef0f4; margin-bottom: 20px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 8px; color: #333; font-size: 14px;">🔔 Расписание оповещений (Будильники):</label>
+          
+          <!-- Сюда JavaScript будет динамически дописывать новые строчки с датами -->
+          <div id="notificationInputsContainer" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;"></div>
+          
+          <button type="button" class="btn btn-ghost" onclick="addNotificationTimeRow()" style="margin: 0; padding: 6px 12px; font-size: 13px; border-color: #4a90e2; color: #4a90e2; background: #fff; width: auto; display: inline-flex; align-items: center; gap: 4px;">
+              <span>➕</span> Добавить напоминание
+          </button>
+      </div>
+
+      <button id="saveEvent" class="btn">Сохранить</button>
+      <button id="cancelEvent" class="btn btn-ghost">Отмена</button>
+      <input type="hidden" id="eventId">
+    </div>
+  </div>
+
+
+    <!-- Полноэкранное окно чата группы -->
+    <!-- Исправленное полноэкранное окно чата группы -->
+    <div id="groupChatModal" class="chat-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 9999; flex-direction: column;">
+
+        <!-- Шапка чата -->
+		<!-- Шапка чата с поддержкой контекстного меню удаления -->
+        <header class="app-header" style="position: static; display: flex; align-items: center; justify-content: space-between; width: 100%; box-sizing: border-box;">
+            <!-- Стандартный режим шапки -->
+            <div id="chatHeaderStandardMode" style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <button class="back-btn" onclick="closeGroupChat()" style="margin: 0; padding: 5px;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1 class="org-name" id="chatGroupTitle" style="margin: 0; font-size: 18px;">Чат группы</h1>
+            </div>
+
+            <!-- Режим выделения сообщений (По умолчанию скрыт) -->
+            <div id="chatHeaderEditMode" style="display: none; align-items: center; justify-content: space-between; width: 100%;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <button class="btn btn-ghost" onclick="clearSelectedMessages()" style="margin: 0; padding: 4px 8px; font-size: 20px; color: #333; border: none;">✕</button>
+                    <span id="selectedMessagesCount" style="font-weight: 700; font-size: 16px; color: #1e1e20;">Выбрано: 0</span>
+                </div>
+                <button class="btn btn-danger" onclick="deleteSelectedMessagesAction()" style="margin: 0; padding: 6px 14px; width: auto; background: #ff3b30; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                    🗑️ Удалить
+                </button>
+            </div>
+        </header>
+    
+        <!-- Лента сообщений -->
+        <div class="chat-history" id="chatHistoryContainer" style="flex: 1; padding: 15px; overflow-y: auto; background: #f4f4f7; display: flex; flex-direction: column;"></div>
+    
+        <!-- Панель ввода -->
+        <div class="chat-input-bar">
+            <input type="text" id="chatMessageInput" class="input-field" placeholder="Сообщение..." autocomplete="off">
+            <button class="btn" onclick="sendGroupChatMessage()" style="width: auto; padding: 10px 20px;">Отправить</button>
+        </div>
+    </div>
+
+    <!-- Кастомное окно подтверждения удаления (вместо confirm) -->
+    <div id="customConfirmModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+        <div class="card" style="width: 85%; max-width: 320px; text-align: center; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+            <h3 style="margin-top: 0; font-size: 18px;">Удалить сообщение?</h3>
+            <p style="color: var(--color-text-muted, #666); font-size: 14px; margin-bottom: 20px;">Вы действительно хотите безвозвратно удалить это сообщение?</p>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-ghost" onclick="closeCustomConfirm()" style="flex: 1; margin: 0;">Отмена</button>
+                <button class="btn btn-danger" id="btnConfirmDeleteAction" style="flex: 1; margin: 0; background: #ff3b30; color: #fff;">Удалить</button>
+            </div>
+        </div>
+    </div>
+	<!-- Кастомное окно подтверждения удаления СОБЫТИЯ (вместо confirm) -->
+	<div id="customEventDeleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+		<div class="card" style="width: 85%; max-width: 320px; text-align: center; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto;">
+			<h3 style="margin-top: 0; font-size: 18px;">Удалить событие?</h3>
+			<p style="color: var(--color-text-muted, #666); font-size: 14px; margin-bottom: 20px;">Вы действительно хотите безвозвратно удалить это событие из расписания группы?</p>
+			<div style="display: flex; gap: 10px;">
+				<button class="btn btn-ghost" id="btnCancelEventDelete" style="flex: 1; margin: 0;">Отмена</button>
+				<button class="btn btn-danger" id="btnConfirmEventDelete" style="flex: 1; margin: 0; background: #ff3b30; color: #fff; border: none;">Удалить</button>
+			</div>
+		</div>
+	</div>
+	
+	<!-- Кастомное окно подачи заявки (вместо prompt) -->
+<div id="customSubmitAppModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 90%; max-width: 360px; text-align: left; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto;">
+        <h3 style="margin-top: 0; font-size: 18px; text-align: center;">Подача заявки в группу</h3>
+        <label style="font-weight: 600; display: block; margin-bottom: 8px; font-size: 13px; color: #333;">Напишите несколько слов о себе и вашем интересе:</label>
+        <textarea id="appModalMessageInput" class="textarea-field" style="width: 100%; min-height: 100px; box-sizing: border-box; margin-bottom: 20px; padding: 10px;" placeholder="Ваше сообщение лидеру..."></textarea>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-ghost" id="btnCancelSubmitApp" style="flex: 1; margin: 0;">Отмена</button>
+            <button class="btn btn-primary" id="btnExecuteSubmitApp" style="flex: 1; margin: 0; background: #4a90e2; color: #fff; border: none;">Отправить</button>
+        </div>
+    </div>
+</div>
+	
+
+<script>
+
+  let currentGroupId = null;
+  let currentGroupName = "";
+  let currentGroupDesc = "";
+  let activeChatRecipientId = null; // null — общий чат группы, число — ID собеседника для ЛС
+  let selectedMessageIds = []; // Хранит ID выделенных для удаления сообщений
+
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  let chatInterval = null; // Переменная для автообновления сообщений
+
+    // Функция открытия ОБЩЕГО чата группы
+    // Функция открытия ОБЩЕГО чата группы
+    async function openGroupChat() {
+        activeChatRecipientId = null; // Сбрасываем в null (общий чат)
+        const groupTitle = document.getElementById('groupName')?.textContent || 'Чат группы';
+        document.getElementById('chatGroupTitle').textContent = `🌸 ${groupTitle}`;
+        startChatSession(); // Запускаем чат
+		
+		// 🔥 Уведомляем Android, что мы вошли в чат текущей группы
+		if (typeof updateActiveChatContextInAndroid === 'function') {
+			updateActiveChatContextInAndroid(currentGroupId);
+		}
+    }
+    
+    // Изменяем функцию закрытия чата
+	function closeGroupChat() {
+		// Сразу сбрасываем выделение сообщений, если оно было
+		resetChatSelectionOnClose();
+
+		const chatModal = document.getElementById('groupChatModal');
+		if (chatModal) {
+			chatModal.style.display = 'none';
+		}
+		if (chatInterval) {
+			clearInterval(chatInterval);
+			chatInterval = null;
+		}
+		activeChatRecipientId = null; // Очищаем получателя ЛС
+		
+		// 🔥 Уведомляем Android, что чат закрыт, теперь уведомления можно показывать сверху
+		if (typeof updateActiveChatContextInAndroid === 'function') {
+			updateActiveChatContextInAndroid(null);
+		}
+
+		// ==========================================================
+		// [ИСПРАВЛЕНО] УМНОЕ ВОЗВРАЩЕНИЕ НАЗАД В СПИСОК ЧАТОВ
+		// ==========================================================
+		// Проверяем через referrer, пришел ли пользователь со страницыchats.html
+		if (document.referrer && document.referrer.includes('chats.html')) {
+			window.location.href = '/chats.html'; // Уходим обратно в мессенджер
+		} else {
+			loadGroup(); // Если он зашел из обычной карточки группы, просто закрываем чат
+		}
+	}
+	
+	// Функция сбора кликов по облачкам сообщений
+	function setupMessageSelectionListeners() {
+		document.querySelectorAll('.js-selectable-msg').forEach(row => {
+			row.addEventListener('click', (e) => {
+				// Если у пользователя нет прав на удаление этого сообщения (не его и он не лидер), игнорируем
+				if (row.dataset.canDelete !== '1') {
+					showToast('ℹ️ Вы можете удалять только свои сообщения');
+					return;
+				}
+
+				const msgId = parseInt(row.dataset.msgId);
+				const index = selectedMessageIds.indexOf(msgId);
+
+				if (index === -1) {
+					// Если сообщения нет в списке — добавляем в массив выделения
+					selectedMessageIds.push(msgId);
+				} else {
+					// Если уже было — убираем (снимаем выделение)
+					selectedMessageIds.splice(index, 1);
+				}
+
+				// Обновляем состояние шапки мессенджера
+				updateChatHeaderMode();
+				
+				// Локально перерисовываем стили без перезапроса с сервера ради мгновенного отклика
+				const bubble = row.querySelector('.chat-msg-bubble');
+				const isMyMsg = row.style.flexDirection === 'row-reverse';
+				if (bubble) {
+					if (selectedMessageIds.includes(msgId)) {
+						bubble.style.cssText = 'background: #ffeebf; padding: 10px 14px; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); margin: 0 5px; position: relative; border: 1px solid #ffd080;';
+					} else {
+						bubble.style.cssText = isMyMsg
+							? 'background: #eef2ff; padding: 10px 14px; border-radius: 16px 4px 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-right: 5px; position: relative;'
+							: 'background: #ffffff; padding: 10px 14px; border-radius: 4px 16px 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-left: 5px; position: relative;';
+					}
+				}
+			});
+		});
+	}
+
+	// Функция переключения режимов шапки (Обычная / Выделение)
+	function updateChatHeaderMode() {
+		const standardHeader = document.getElementById('chatHeaderStandardMode');
+		const editHeader = document.getElementById('chatHeaderEditMode');
+		const countLabel = document.getElementById('selectedMessagesCount');
+
+		if (selectedMessageIds.length > 0) {
+			if (standardHeader) standardHeader.style.display = 'none';
+			if (editHeader) editHeader.style.display = 'flex';
+			if (countLabel) countLabel.textContent = `Выбрано: ${selectedMessageIds.length}`;
+		} else {
+			if (editHeader) editHeader.style.display = 'none';
+			if (standardHeader) standardHeader.style.display = 'flex';
+		}
+	}
+
+	// Сброс всего выделения (при нажатии на крестик в шапке)
+	function clearSelectedMessages() {
+		selectedMessageIds = [];
+		updateChatHeaderMode();
+		loadChatMessages(); // Полностью перерисовываем ленту чата к дефолтным цветам
+	}
+
+	// Сброс выделения при закрытии чата
+	// Обязательно добавь вызов этой строчки внутрь твоей готовой функции closeGroupChat()!
+	function resetChatSelectionOnClose() {
+		selectedMessageIds = [];
+		updateChatHeaderMode();
+	}
+
+	// Функция вызова удаления: вешает выполнение на твое ОРИГИНАЛЬНОЕ модальное окно подтверждения
+	function deleteSelectedMessagesAction() {
+		const confirmModal = document.getElementById('customConfirmModal');
+		if (confirmModal) {
+			// Меняем текст модалки под количество сообщений
+			const pText = confirmModal.querySelector('p');
+			if (pText) pText.textContent = `Вы действительно хотите безвозвратно удалить выбранные сообщения (${selectedMessageIds.length} шт.)?`;
+			
+			confirmModal.style.display = 'flex';
+			
+			// Перехватываем стандартную кнопку удаления модалки и отдаем её нашему новому множественному бэкенду
+			const confirmBtn = document.getElementById('btnConfirmDeleteAction');
+			if (confirmBtn) {
+				confirmBtn.onclick = executeMultipleDeleteMessages;
+			}
+		}
+	}
+
+	// Непосредственное массовое удаление в базе данных через AJAX
+	async function executeMultipleDeleteMessages() {
+		if (selectedMessageIds.length === 0) return;
+
+		// Сразу закрываем окно подтверждения
+		const confirmModal = document.getElementById('customConfirmModal');
+		if (confirmModal) confirmModal.style.display = 'none';
+
+		try {
+			const response = await fetch('/api/delete_multiple_messages.php', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body: JSON.stringify({ message_ids: selectedMessageIds })
+			});
+
+			const result = await response.json();
+			if (result.success) {
+				showToast('🗑️ Выбранные сообщения успешно удалены');
+				selectedMessageIds = []; // Полностью очищаем массив выделения
+				updateChatHeaderMode();  // Возвращаем обычную шапку
+				await loadChatMessages(); // Перезагружаем переписку
+			} else {
+				showToast('❌ Ошибка: ' + (result.error || 'не удалось удалить'));
+			}
+		} catch (err) {
+			console.error(err);
+			showToast('❌ Ошибка сети при удалении сообщений');
+		}
+	}
+
+    
+    // 3. Загрузка сообщений с сервера
+    // Изменяем функцию ЗАГРУЗКИ сообщений (добавляем recipient_id в URL)
+	async function loadChatMessages() {
+		if (!currentGroupId) return;
+
+		try {
+			let url = `/api/get_messages.php?group_id=${currentGroupId}`;
+			if (activeChatRecipientId !== null) {
+				url += `&recipient_id=${activeChatRecipientId}`;
+			}
+
+			const response = await fetch(url);
+			const data = await response.json();
+
+			if (!data.success) {
+				showToast('❌ ' + data.error);
+				closeGroupChat();
+				return;
+			}
+
+			const container = document.getElementById('chatHistoryContainer');
+			if (!container) return;
+
+			// Запоминаем, был ли скролл в самом низу перед обновлением
+			const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 60;
+			const currentUserId = parseInt(data.current_user_id || 0);
+			// Находим аватарку текущего авторизованного пользователя (тебя) среди участников
+			// или используем заглушку, если у тебя в профиле нет фото
+			const myUserObj = data.messages.find(m => parseInt(m.sender_id) === currentUserId);
+			const myAvatarUrl = (myUserObj && myUserObj.avatar_url) ? myUserObj.avatar_url : '';
+
+			let html = '';
+			data.messages.forEach(msg => {
+				const timeStr = msg.created_at ? msg.created_at.substring(11, 16) : '';
+				const isMyMsg = parseInt(msg.sender_id) === currentUserId;
+				const canDeleteThisMsg = data.is_admin || data.is_leader || isMyMsg;
+				const isSelected = selectedMessageIds.includes(parseInt(msg.id));
+
+				const rowStyle = isMyMsg 
+					? 'display: flex; gap: 8px; max-width: 85%; margin-bottom: 10px; align-self: flex-end; flex-direction: row-reverse; width: 100%; justify-content: flex-start; align-items: flex-end;' 
+					: 'display: flex; gap: 8px; max-width: 85%; margin-bottom: 10px; align-self: flex-start; width: 100%; align-items: flex-end;';
+
+				let bubbleStyle = '';
+				if (isSelected) {
+					bubbleStyle = 'background: #ffeebf; padding: 10px 14px; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); margin: 0 5px; position: relative; border: 1px solid #ffd080;';
+				} else {
+					bubbleStyle = isMyMsg
+						? 'background: #eef2ff; padding: 10px 14px; border-radius: 16px 4px 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin: 0 5px; position: relative;'
+						: 'background: #ffffff; padding: 10px 14px; border-radius: 4px 16px 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin: 0 5px; position: relative;';
+				}
+
+				// [ИСПРАВЛЕНО] Умная генерация аватарок-заглушек без битого HTML-кода
+				let avatarHtml = '';
+				const currentAvatarUrl = isMyMsg ? myAvatarUrl : msg.avatar_url;
+
+				if (currentAvatarUrl) {
+					// Если фото есть в базе данных — выводим его
+					avatarHtml = `<img class="chat-msg-avatar" src="${currentAvatarUrl}" alt="Фото" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #e0e0e0;">`;
+				} else {
+					// Если фото НЕТ — выводим красивую круглую дефолтную заглушку с силуэтом 👤
+					avatarHtml = `<div class="chat-msg-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: #f0f0f2; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; user-select: none; border: 1px solid #e0e0e2;">👤</div>`;
+				}
+
+				html += `
+				<div class="chat-msg-row js-selectable-msg" style="${rowStyle} cursor: pointer;" data-msg-id="${msg.id}" data-can-delete="${canDeleteThisMsg ? '1' : '0'}">
+					${avatarHtml}
+					<div class="chat-msg-bubble" style="${bubbleStyle}">
+						${(!isMyMsg && activeChatRecipientId === null) ? `<div class="chat-msg-author" style="font-size: 11px; font-weight: 700; color: #4a90e2; margin-bottom: 3px;">${escapeHtml(msg.first_name)} ${escapeHtml(msg.last_name || '')}</div>` : ''}
+						<div class="chat-msg-text" style="font-size: 14px; color: #1e1e20; word-break: break-word; text-align: left;">${escapeHtml(msg.message_text)}</div>
+						<div class="chat-msg-time" style="font-size: 10px; color: #888; text-align: right; margin-top: 4px;">${timeStr}</div>
+					</div>
+				</div>
+				`;
+			});
+
+			container.innerHTML = html;
+
+			// Навешиваем клики на новые перерендеренные строки сообщений чата
+			setupMessageSelectionListeners();
+
+			if (isScrolledToBottom) {
+				container.scrollTop = container.scrollHeight;
+			}
+
+		} catch (err) {
+			console.error('Ошибка загрузки чата:', err);
+		}
+	}
+
+
+    
+    // 4. Отправка сообщения
+    // Изменяем функцию ОТПРАВКИ сообщения (передаем recipient_id на бэкенд)
+    async function sendGroupChatMessage() {
+        const input = document.getElementById('chatMessageInput');
+        if (!input) return;
+        
+        const text = input.value.trim();
+        if (!text) return;
+        
+        input.value = '';
+        
+        try {
+            const response = await fetch('/api/send_message.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    group_id: currentGroupId,
+                    message_text: text,
+                    recipient_id: activeChatRecipientId // ← Передаем ID получателя (число или null)
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                await loadChatMessages();
+            } else {
+                showToast('❌ Ошибка: ' + (result.error || 'Не удалось отправить'));
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('❌ Ошибка сети при отправке');
+        }
+    }
+    
+    // Функция удаления сообщения модератором или автором
+    let pendingMessageIdToDelete = null; // Переменная для хранения ID удаляемого сообщения
+	let pendingEventIdToDelete = null; // Хранит ID удаляемого события
+
+    // Функция вызова кастомного окна подтверждения
+    function deleteChatMessage(messageId) {
+        pendingMessageIdToDelete = messageId; // Запоминаем, какое сообщение хотим удалить
+        const confirmModal = document.getElementById('customConfirmModal');
+        
+        if (confirmModal) {
+            confirmModal.style.display = 'flex';
+            
+            // Вешаем действие удаления на кнопку "Удалить"
+            const confirmBtn = document.getElementById('btnConfirmDeleteAction');
+            if (confirmBtn) {
+                confirmBtn.onclick = executeDeleteMessage;
+            }
+        }
+    }
+    
+    // Функция непосредственного удаления после клика в модалке
+    // Исправленная функция непосредственного удаления
+    async function executeDeleteMessage() {
+        if (!pendingMessageIdToDelete) return;
+        
+        // Сначала сохраняем ID в локальную переменную, чтобы он точно не стёрся
+        const idToSend = pendingMessageIdToDelete; 
+        
+        // Сразу визуально закрываем модалку подтверждения
+        const confirmModal = document.getElementById('customConfirmModal');
+        if (confirmModal) confirmModal.style.display = 'none';
+    
+        try {
+            const response = await fetch('/api/delete_message.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message_id: idToSend }) // Отправляем сохраненный ID
+            });
+    
+            const result = await response.json();
+            if (result.success) {
+                showToast('✅ Сообщение удалено');
+                await loadChatMessages(); // Обновляем переписку
+            } else {
+                showToast('❌ Ошибка: ' + (result.error || 'Не удалось удалить'));
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('❌ Ошибка сети при удалении');
+        } finally {
+            // И только в самом конце полностью очищаем глобальный ID
+            pendingMessageIdToDelete = null;
+        }
+    }
+    
+    // Функция закрытия окна подтверждения
+    function closeCustomConfirm() {
+        const confirmModal = document.getElementById('customConfirmModal');
+        if (confirmModal) {
+            confirmModal.style.display = 'none';
+        }
+        pendingMessageIdToDelete = null;
+    }
+
+
+  function getGroupIdFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('id');
+  }
+
+	let pendingGroupIdForApp = null;
+	// Подача заявки (Без алертов)
+	// Переписанная функция: теперь она просто открывает красивое окно
+	async function submitApplication(groupId) {
+		pendingGroupIdForApp = groupId;
+		
+		// Очищаем поле ввода от старого текста, если он там был
+		const input = document.getElementById('appModalMessageInput');
+		if (input) input.value = '';
+		
+		const modal = document.getElementById('customSubmitAppModal');
+		if (modal) modal.style.display = 'flex';
+	}
+
+	// Клик на кнопку "Отмена" в окне заявки
+	document.getElementById('btnCancelSubmitApp')?.addEventListener('click', () => {
+		const modal = document.getElementById('customSubmitAppModal');
+		if (modal) modal.style.display = 'none';
+		pendingGroupIdForApp = null;
+	});
+
+	// Клик на кнопку "Отправить" (Сам сетевой запрос на бэкенд без prompt и alert)
+	document.getElementById('btnExecuteSubmitApp')?.addEventListener('click', async () => {
+		if (!pendingGroupIdForApp) return;
+		
+		const textInput = document.getElementById('appModalMessageInput');
+		const messageText = textInput ? textInput.value.trim() : '';
+		
+		if (!messageText) {
+			showToast('ℹ️ Пожалуйста, напишите сообщение лидеру');
+			return;
+		}
+
+		const button = document.getElementById('btnExecuteSubmitApp');
+		button.disabled = true;
+		button.textContent = 'Отправка...';
+
+		const idToSend = pendingGroupIdForApp;
+		const modal = document.getElementById('customSubmitAppModal');
+
+		try {
+			const response = await fetch('/api/submit_application.php', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body: JSON.stringify({ group_id: idToSend, message: messageText })
+			});
+			
+			const result = await response.json();
+
+			if (result.success) {
+				if (modal) modal.style.display = 'none'; // Закрываем окно только при успехе
+				showToast('✅ Заявка успешно отправлена!');
+				pendingGroupIdForApp = null;
+			} else {
+				showToast('❌ Ошибка: ' + (result.error || 'не удалось отправить'));
+			}
+		} catch (err) {
+			if (err.message.includes('403')) {
+				showToast('⚠️ Требуется войти в аккаунт');
+			} else {
+				showToast('❌ Не удалось отправить заявку');
+			}
+			console.error(err);
+		} finally {
+			button.disabled = false;
+			button.textContent = 'Отправить';
+		}
+	});
+
+  // === РАБОТА С СОБЫТИЯМИ (только для лидеров) ===
+
+	function saveEvent() {
+		if (!currentGroupId) {
+			showToast('❌ Ошибка: группа не загружена');
+			return;
+		}
+
+		const eventId = document.getElementById('eventId').value;
+		const title = document.getElementById('eventTitle').value.trim();
+		const desc = document.getElementById('eventDesc').value.trim();
+		const localDateTime = document.getElementById('eventDateTime').value;
+
+		if (!title || !localDateTime) {
+			showToast('⚠️ Заполните название и дату события');
+			return;
+		}
+
+		const utcDateTime = localDateTime.replace('T', ' ') + ':00';
+		const notifyInputs = document.querySelectorAll('.notify-datetime-input');
+		const notificationDates = [];
+
+		for (let input of notifyInputs) {
+			if (input.value) {
+				const formattedNotifyDate = input.value.replace('T', ' ') + ':00';
+				notificationDates.push(formattedNotifyDate);
+			}
+		}
+
+		const data = {
+			id: eventId,
+			group_id: currentGroupId,
+			title: title,
+			description: desc,
+			event_date: utcDateTime,
+			notifications: notificationDates
+		};
+
+		const url = eventId ? '/api/update_event.php' : '/api/create_event.php';
+
+		fetch(url, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			credentials: 'include',
+			body: JSON.stringify(data)
+		})
+		.then(res => {
+			if (res.status === 403) {
+				throw new Error('Требуется войти в аккаунт');
+			}
+			return res.json();
+		})
+		.then(result => {
+			if (result.success) {
+				showToast(eventId ? '✅ Событие успешно обновлено!' : '🎉 Событие успешно создано!');
+				closeEventModal();
+				loadGroup();
+			} else {
+				showToast('❌ Ошибка: ' + (result.error || 'неизвестная сбой сервера'));
+			}
+		})
+		.catch(err => {
+			if (err.message.includes('403') || err.message.includes('войти')) {
+				showToast('⚠️ Требуется авторизация в аккаунте');
+			} else {
+				showToast('❌ Не удалось сохранить событие');
+			}
+			console.error(err);
+		});
+	}
+
+    function closeEventModal() {
+        document.getElementById('eventModal').style.display = 'none';
+        document.getElementById('eventId').value = '';
+        document.getElementById('eventTitle').value = '';
+        document.getElementById('eventDesc').value = '';
+        document.getElementById('eventDateTime').value = '';
+        
+        // [НОВОЕ] Полностью вычищаем блок с инпутами будильников, чтобы они не оставались при следующем открытии
+        const container = document.getElementById('notificationInputsContainer');
+        if (container) {
+            container.innerHTML = '';
+        }
+    }
+
+      window.editEvent = async function editEvent(eventId) {
+		try {
+			const res = await fetch(`/api/get_event_for_edit.php?id=${eventId}`, {
+				credentials: 'include'
+			});
+			const data = await res.json();
+			if (!data.success) {
+				showToast('❌ Ошибка: ' + (data.error || 'нет доступа к редактированию'));
+				return;
+			}
+
+			const e = data.event;
+			document.getElementById('eventId').value = e.id;
+			document.getElementById('eventTitle').value = e.title;
+			document.getElementById('eventDesc').value = e.description || '';
+
+			const modalTitle = document.getElementById('eventModalTitle');
+			if (modalTitle) modalTitle.innerText = 'Редактировать событие';
+
+			// 🔥 ИСПРАВЛЕНО: Убрали 'Z' и getTimezoneOffset, чтобы убрать ложные прыжки времени
+			// Просто превращаем строку из базы (ГГГГ-ММ-ДД ВВ:ММ:СС) в формат инпута (ГГГГ-ММ-ДДТВВ:ММ)
+			const localISO = e.event_date.replace(' ', ' ').slice(0, 16).replace(' ', 'T');
+			document.getElementById('eventDateTime').value = localISO;
+
+			const container = document.getElementById('notificationInputsContainer');
+			if (container) container.innerHTML = ''; 
+
+			if (data.notifications && data.notifications.length > 0) {
+				data.notifications.forEach(notifyAt => {
+					// 🔥 ИСПРАВЛЕНО ДЛЯ БУДИЛЬНИКОВ: выводим точное время без повторных сдвигов часового пояса
+					const localNotifyISO = notifyAt.replace(' ', ' ').slice(0, 16).replace(' ', 'T');
+					addNotificationTimeRow(localNotifyISO);
+				});
+			}
+
+			document.getElementById('eventModal').style.display = 'flex';
+		} catch (err) {
+			showToast('❌ Не удалось загрузить данные события');
+		}
+	}
+
+	// Функция вызова кастомного окна подтверждения удаления события
+	window.deleteEvent = function(eventId) {
+		pendingEventIdToDelete = eventId; // Запоминаем, какое событие хотим удалить
+		const modal = document.getElementById('customEventDeleteModal');
+		if (modal) modal.style.display = 'flex'; // Плавно открываем модалку
+	};
+
+	// Настраиваем обработчик для кнопки "Отмена" в модалке удаления события
+	document.getElementById('btnCancelEventDelete')?.addEventListener('click', () => {
+		const modal = document.getElementById('customEventDeleteModal');
+		if (modal) modal.style.display = 'none'; // Закрываем окно
+		pendingEventIdToDelete = null; // Очищаем ID
+	});
+
+	// Настраиваем обработчик для кнопки "Удалить" в модалке (Сам запрос на бэкенд)
+	document.getElementById('btnConfirmEventDelete')?.addEventListener('click', async () => {
+		if (!pendingEventIdToDelete) return;
+		
+		const idToSend = pendingEventIdToDelete;
+		const modal = document.getElementById('customEventDeleteModal');
+		if (modal) modal.style.display = 'none'; // Сразу закрываем окно интерфейса
+		
+		try {
+			const response = await fetch('/api/delete_event.php', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body: JSON.stringify({ event_id: idToSend })
+			});
+
+			const result = await response.json();
+			if (result.success) {
+				showToast('🗑️ Событие успешно удалено');
+				loadGroup(); // Перезагружаем список
+			} else {
+				showToast('❌ Ошибка: ' + (result.error || 'не удалось удалить'));
+			}
+		} catch (err) {
+			console.error(err);
+			showToast('❌ Не удалось удалить событие');
+		} finally {
+			pendingEventIdToDelete = null; // Очищаем переменную в самом конце
+		}
+	});
+
+  
+    // Переключение в режим редактирования текстовых полей
+    function initEditGroupFields() {
+        const titleCont = document.getElementById('groupTitleContainer');
+        const descCont = document.getElementById('groupDescContainer');
+        const editBtn = document.getElementById('btnToggleEditGroup');
+        
+        if (titleCont && descCont && editBtn) {
+            // Заменяем заголовок на инпут
+            titleCont.innerHTML = `<input type="text" id="editGroupNameInput" class="input-field" value="${escapeHtml(currentGroupName)}" style="width:100%; font-size:16px; margin-top:10px;" required>`;
+            // Заменяем описание на textarea
+            descCont.innerHTML = `<textarea id="editGroupDescInput" class="textarea-field" style="width:100%; min-height:100px;" required>${escapeHtml(currentGroupDesc)}</textarea>`;
+            
+            // Меняем кнопку на «Сохранить»
+            editBtn.textContent = '💾 Сохранить инфо';
+            editBtn.setAttribute('onclick', 'saveGroupTextData()');
+            editBtn.className = 'btn btn-small';
+        }
+    }
+
+    // Функция сбора данных и отправки на сервер
+    async function saveGroupTextData() {
+        const editBtn = document.getElementById('btnToggleEditGroup');
+        const newName = document.getElementById('editGroupNameInput').value.trim();
+        const newDesc = document.getElementById('editGroupDescInput').value.trim();
+        
+        if (!newName || !newDesc) {
+            showToast('❌ Заполните название и описание группы');
+            return;
+        }
+        
+        if (editBtn) {
+            editBtn.disabled = true;
+            editBtn.textContent = 'Сохранение...';
+        }
+        
+        try {
+            const response = await fetch('/api/update_group_info.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    group_id: currentGroupId,
+                    name: newName,
+                    description: newDesc
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                showToast('✅ Данные группы обновлены!');
+                loadGroup(); // Перезагружаем карточку, чтобы отобразить обновленный текст
+            } else {
+                showToast('❌ Ошибка: ' + (result.error || 'Не удалось сохранить'));
+                if (editBtn) {
+                    editBtn.disabled = false;
+                    editBtn.textContent = '💾 Сохранить инфо';
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('❌ Ошибка соединения с сервером');
+            if (editBtn) {
+                editBtn.disabled = false;
+                editBtn.textContent = '💾 Сохранить инфо';
+            }
+        }
+    }  
+  
+  // === ЗАГРУЗКА ГРУППЫ ===
+    // Функция раскрытия списка участников с разворотом стрелочки
+    function toggleMembers() {
+    const list = document.getElementById('membersListWrapper');
+    const arrow = document.getElementById('accordionArrow');
+    
+    if (list && arrow) {
+        if (list.style.display === 'none' || list.style.display === '') {
+            list.style.display = 'block';
+            arrow.style.transform = 'rotate(180deg)';
+        } else {
+            list.style.display = 'none';
+            arrow.style.transform = 'rotate(0deg)';
+        }
+    }
+}
+    
+    // Вспомогательная функция для запуска логики мессенджера
+    function startChatSession() {
+        const chatModal = document.getElementById('groupChatModal');
+        if (!chatModal) return;
+    
+        chatModal.style.display = 'flex';
+        loadChatMessages();
+    
+        // Запускаем таймер автообновления, если он ещё не запущен
+        if (!chatInterval) {
+            chatInterval = setInterval(loadChatMessages, 3000);
+        }
+    }
+    
+    // Функция открытия личного чата при клике на имя участника
+    // Функция открытия личного чата при клике на имя участника
+    function openPersonalChat(userId, userName) {
+        activeChatRecipientId = userId; // Запоминаем ID собеседника для ЛС
+        document.getElementById('chatGroupTitle').textContent = `💬 Диалог: ${userName}`;
+        startChatSession(); // Запускаем чат
+    }
+
+  async function loadGroup() {
+      currentGroupId = getGroupIdFromUrl();
+      const urlParams = new URLSearchParams(window.location.search);
+
+      // === 🔥 ТОЧЕЧНОЕ ИСПРАВЛЕНИЕ: МГНОВЕННЫЙ ВХОД В ЧАТ ГРУППЫ ИЗ ПУША ===
+      if (urlParams.get('open_chat') === '1' && currentGroupId) {
+          // Очищаем URL от параметров, чтобы при обычном обновлении чат не всплывал сам
+          window.history.replaceState({}, document.title, window.location.pathname + '?id=' + currentGroupId);
+
+          // Сбрасываем получателя ЛС, так как это общий чат группы
+          activeChatRecipientId = null;
+          document.getElementById('chatGroupTitle').textContent = `🌸 Чат группы`;
+
+          // Сразу отображаем модальное окно чата и запускаем опрос сервера
+          const chatModal = document.getElementById('groupChatModal');
+          if (chatModal) {
+              chatModal.style.display = 'flex';
+              loadChatMessages();
+              if (!chatInterval) {
+                  chatInterval = setInterval(loadChatMessages, 3000);
+              }
+          }
+      }
+
+      // === 🔥 ТОЧЕЧНОЕ ИСПРАВЛЕНИЕ ПУШЕЙ ЛС ===
+      const privateUserId = urlParams.get('open_private_chat');
+      const privateUserName = urlParams.get('open_private_name');
+
+      if (privateUserId && privateUserName) {
+          // Очищаем параметры, чтобы чат не открывался повторно при обновлении
+          window.history.replaceState({}, document.title, window.location.pathname + '?id=' + (urlParams.get('id') || ''));
+          activeChatRecipientId = parseInt(privateUserId);
+          document.getElementById('chatGroupTitle').textContent = `💬 Диалог: ${decodeURIComponent(privateUserName)}`;
+
+          const chatModal = document.getElementById('groupChatModal');
+          if (chatModal) {
+              chatModal.style.display = 'flex';
+              loadChatMessages();
+              if (!chatInterval) { chatInterval = setInterval(loadChatMessages, 3000); }
+          }
+      }
+
+      currentGroupId = getGroupIdFromUrl();
+      if (!currentGroupId) {
+          document.getElementById('groupDetail').innerHTML = '<p class="error-state">Не указан ID группы</p>';
+          return;
+      }
+
+      // [НОВОЕ] Запоминаем, открыты ли участники прямо сейчас перед обновлением HTML
+      const listWrapperBefore = document.getElementById('membersListWrapper');
+      const isMembersOpenBefore = listWrapperBefore ? (listWrapperBefore.style.display === 'block') : false;
+
+      try {
+          // 🔥 ИСПРАВЛЕНО: Добавили credentials: 'include', чтобы при переходе из шторки
+          // через мобильную сеть 4G WebView принудительно передавал сессию авторизации обычного пользователя!
+          const response = await fetch(`/api/get_group.php?id=${currentGroupId}`, {
+              credentials: 'include'
+          });
+          const data = await response.json();
+          if (!data.success) throw new Error(data.error || 'Ошибка загрузки');
+
+          const group = data.group;
+          currentGroupName = group.name;
+          currentGroupDesc = group.description;
+          const isGuest = !data.current_user_id || data.current_user_id === 0;
+          const events = data.events || [];
+          const isLeader = data.is_leader; // ← ДОЛЖНО ПРИХОДИТЬ ИЗ API!
+          const isAdmin = data.is_admin;
+          const canManageEvents = isLeader || isAdmin;
+
+          // [ДОБАВЛЕНО] Проверка роли "Наблюдатель"
+          const isObserver = data.user_role === 'observer';
+
+          const leadersArray = data.leaders || [];
+          const leadersNamesText = leadersArray.length > 0
+              ? leadersArray.map(l => `${escapeHtml(l.first_name)} ${escapeHtml(l.last_name || '')}`).join(', ')
+              : 'Не назначен';
+
+          document.getElementById('groupName').textContent = group.name;
+
+          // Проверяем наличие аватарки группы, иначе ставим заглушку
+          let groupAvatarHtml = '';
+          if (group.group_avatar_url) {
+              groupAvatarHtml = `<img id="groupAvatarPreview" src="${group.group_avatar_url}" alt="Аватар группы" style="width: 120px; height: 120px; border-radius: 16px; object-fit: cover; display: block; border: 2px solid var(--color-primary, #4A90E2);">`;
+          } else {
+              groupAvatarHtml = `<div id="groupAvatarPreview" style="width: 120px; height: 120px; border-radius: 16px; background: #f0f0f2; display: flex; align-items: center; justify-content: center; font-size: 50px; border: 2px solid var(--color-primary, #4A90E2); user-select: none;">🕉️</div>`;
+          }
+
+          let html = `
+        <div class="card" style="text-align: center;">
+        <div class="group-avatar-container" style="position: relative; display: inline-block; margin-bottom: 15px; width: 120px; height: 120px;">
+        ${groupAvatarHtml}
+
+        ${canManageEvents ? `
+        <label for="groupAvatarFile" style="position: absolute; bottom: -5px; right: -5px; background: #fff; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer; z-index: 10;">
+        📷
+        </label>
+        <input type="file" id="groupAvatarFile" accept="image/*" style="display: none;">
+        ` : ''}
+        </div>
+
+        <!-- Контейнер для названия (текст или инпут) -->
+        <div id="groupTitleContainer">
+        <h2 class="group-title" style="text-align: left; margin-top: 10px;">${escapeHtml(group.name)}</h2>
+        </div>
+
+        <p style="text-align: left;"><strong>Лидеры:</strong> ${leadersNamesText}</p>
+        <p style="text-align: left;"><strong>📍</strong> ${group.is_online ? 'Онлайн' : escapeHtml(group.city)}</p>
+        <p style="text-align: left;"><strong>👥 Участников:</strong> ${group.member_count}</p>
+
+        ${canManageEvents ? `
+        <button class="btn btn-small btn-ghost" id="btnToggleEditGroup" onclick="initEditGroupFields()" style="margin-top: 10px; width: 100%;">✏️ Редактировать инфо</button>
+        ` : ''}
+        </div>
+
+        <div class="card">
+        <h3>Описание</h3>
+        <!-- Контейнер для описания (текст или textarea) -->
+        <div id="groupDescContainer">
+        <p>${escapeHtml(group.description)}</p>
+        </div>
+        </div>
+        `;
+
+          // [НОВОЕ] Формируем блок участников группы
+          const members = data.members || [];
+
+          html += `
+        <div class="card members-accordion" id="membersAccordion" style="padding: 12px; margin-top: 12px;">
+        <div class="members-header" onclick="toggleMembers()" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; padding: 4px 0;">
+        <h3 style="margin: 0; font-size: 16px;">👥 Участники группы (${members.length})</h3>
+        <span class="members-arrow" id="accordionArrow" style="display: inline-block; transition: transform 0.2s ease; font-size: 14px; color: var(--color-muted, #888);">▼</span>
+        </div>
+        <div class="members-list-wrapper" id="membersListWrapper" style="display: none; margin-top: 15px; border-top: 1px solid #f0f0f2; padding-top: 10px;">
+        `;
+
+          if (members.length === 0) {
+              html += '<p style="color:var(--color-muted); text-align:center; padding: 10px 0;">В группе пока нет участников</p>';
+          } else {
+              members.forEach(m => {
+                  let roleBadge = '';
+                  if (m.role === 'leader') roleBadge = '<span class="member-role-badge">Лидер</span>';
+                  if (m.role === 'admin') roleBadge = '<span class="member-role-badge">Админ</span>';
+                  if (m.role === 'observer') roleBadge = '<span class="member-role-badge" style="background: #f0f0f2; color: #888;">👁️ Наблюдатель</span>';
+
+                  // Формируем отображение аватара: картинка ИЛИ текстовый кружок-заглушка
+                  let avatarHtml = '';
+                  if (m.avatar_url) {
+                      avatarHtml = `<img src="${m.avatar_url}" alt="Фото" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #eee;">`;
+                  } else {
+                      avatarHtml = `<div style="width: 36px; height: 36px; border-radius: 50%; background: #f0f0f2; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; user-select: none;">👤</div>`;
+                  }
+
+                  // Настраиваем клик на имя
+                  const isMeInList = parseInt(m.id) === parseInt(data.current_user_id || 0);
+
+                  // [ДОБАВЛЕНО] Наблюдатели не могут писать в ЛС
+                  const nameClickAttr = (isMeInList || isObserver) ? '' : `onclick="openPersonalChat(${m.id}, '${escapeHtml(m.first_name)} ${escapeHtml(m.last_name || '')}')"`;
+                  const nameCursor = (isMeInList || isObserver) ? 'default' : 'pointer';
+
+                  // Формируем индикатор непрочитанных личных сообщений
+                  let unreadBadgeHtml = '';
+                  const unreadCount = parseInt(m.unread_count || 0);
+                  if (unreadCount > 0 && !isObserver) {
+                      unreadBadgeHtml = `
+                        <span style="background: #ff3b30; color: #fff; font-size: 11px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; margin-left: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); flex-shrink: 0; animation: pulseUnread 2s infinite;">
+                            ${unreadCount}
+                        </span>
+                    `;
+                  }
+
+                  // Собираем строчку участника
+                  html += `
+                <div class="member-item" style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f8f8fa; width: 100%;">
+                    ${avatarHtml}
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex: 1; min-width: 0;">
+                        <span class="member-name" ${nameClickAttr} style="cursor:${nameCursor}; color:var(--color-primary, #4A90E2); display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; font-size: 14px; font-weight: 600;">
+                            ${escapeHtml(m.first_name)} ${escapeHtml(m.last_name || '')}
+                            ${unreadBadgeHtml}
+                        </span>
+                        ${roleBadge}
+                    </div>
+                </div>
+                `;
+              });
+          }
+
+          html += `
+        </div>
+        </div>
+        `;
+
+          if (events.length > 0) {
+              html += '<div class="card events-card"><h3>Ближайшие события</h3><ul class="events-list">';
+              events.forEach(event => {
+                  const utcDate = new Date(event.event_date.replace(' ', 'T'));
+                  const tz = new Intl.DateTimeFormat('ru-RU', {
+                      timeZone: group.timezone || 'UTC',
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                  });
+                  const formatted = tz.format(utcDate);
+                  let eventItem = `
+                    <li style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid #f0f0f2; width: 100%;">
+                        <span style="font-size: 14px; color: var(--color-text, #333); flex: 1; min-width: 0; word-break: break-word;">
+                            • <strong>${formatted}</strong> – ${escapeHtml(event.title)}
+                        </span>
+                `;
+
+                  if (canManageEvents) {
+                      eventItem += `
+                        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                            <button class="btn btn-small btn-ghost" onclick="editEvent(${event.id})" style="margin:0; padding: 4px 8px; font-size: 12px; cursor: pointer;">✏️</button>
+                            <button class="btn btn-small btn-danger" onclick="deleteEvent(${event.id})" style="margin:0; padding: 4px 8px; font-size: 12px; background:#ff3b30; color:#fff; border:none; border-radius:4px; cursor: pointer;">🗑</button>
+                        </div>
+                    `;
+                  }
+                  eventItem += '</li>';
+                  html += eventItem;
+              });
+              html += '</ul></div>';
+          }
+
+          // ==========================================================
+          // [ИСПРАВЛЕНО] УЛЬТИМАТИВНАЯ И БЕЗОПАСНАЯ ПРОВЕРКА ДОСТУПА
+          // ==========================================================
+          let hasAccessToChat = false;
+
+          if (!isObserver) {
+              if (data.is_leader || data.is_admin || (data.user_status && data.user_status.toString() === 'approved')) {
+                  hasAccessToChat = true;
+              }
+          }
+
+          // Резервный сквозной обход: если пользователь железно найден в списке одобренных участников — даем доступ!
+          if (!hasAccessToChat && !isObserver && data.current_user_id && members && members.length > 0) {
+              hasAccessToChat = members.some(m => {
+                  const memberId = parseInt(m.id || m.user_id || 0);
+                  const currentId = parseInt(data.current_user_id || 0);
+                  return memberId === currentId && memberId > 0;
+              });
+          }
+
+          // Формируем вывод кнопок на основе вычисленного статуса
+          let actionsHtml = '';
+          if (isGuest) {
+              // Неавторизованный — только просмотр
+              actionsHtml = `
+        <p style="text-align: center; color: #888; font-size: 14px; padding: 10px; margin: 0;">
+            🔒 Войдите в аккаунт, чтобы подавать заявки и общаться в чате
+        </p>
+        <a href="/login.html" class="btn btn-block btn-primary" style="text-decoration: none; display: block; padding: 12px; border-radius: 8px; background: #4a90e2; color: #fff; font-weight: 600; text-align: center;">
+            Войти или зарегистрироваться
+        </a>
+    `;
+          } else if (isObserver) {
+              // [ДОБАВЛЕНО] Наблюдатель — только просмотр
+              actionsHtml = `
+                <p style="text-align: center; color: #888; font-size: 14px; padding: 10px; margin: 0;">
+                    👁️ Вы в режиме наблюдателя. Просмотр доступен, но отправка сообщений и подача заявок отключены.
+                </p>
+            `;
+          } else if (hasAccessToChat) {
+              actionsHtml = `
+                <button class="btn btn-block btn-primary" onclick="openGroupChat()" style="margin-bottom: 10px; background: #4a90e2; font-weight: 600;">💬 Открыть чат группы</button>
+            `;
+          } else if (data.user_status && data.user_status.toString() === 'pending') {
+              actionsHtml = `
+                <button class="btn btn-block btn-ghost" disabled>⏳ Заявка на рассмотрении</button>
+            `;
+          } else {
+              actionsHtml = `
+                <button class="btn btn-block btn-primary" id="btnApply" style="font-weight: 600;">✅ Подать заявку на вступление</button>
+            `;
+          }
+
+          html += `
+        <div class="card" id="group-actions">
+            ${actionsHtml}
+        </div>
+        `;
+
+          document.getElementById('groupDetail').innerHTML = html;
+
+          // [НОВОЕ] Если список участников был открыт до обновления — возвращаем его в открытое состояние
+          if (isMembersOpenBefore) {
+              const listWrapperAfter = document.getElementById('membersListWrapper');
+              const arrowAfter = document.getElementById('accordionArrow');
+              if (listWrapperAfter && arrowAfter) {
+                  listWrapperAfter.style.display = 'block';
+                  arrowAfter.style.transform = 'rotate(180deg)';
+              }
+          }
+
+          // Логика мгновенного превью и автоматической отправки файла на сервер (только для лидеров)
+          if (canManageEvents) {
+              document.getElementById('groupAvatarFile')?.addEventListener('change', function(e) {
+                  const files = e.target.files;
+                  if (files && files.length > 0) {
+                      const file = files[0];
+
+                      if (!file.type.startsWith('image/')) {
+                          showToast('❌ Пожалуйста, выберите файл изображения');
+                          return;
+                      }
+
+                      const reader = new FileReader();
+                      reader.onload = function(event) {
+                          openCropperModal(event.target.result, '/api/upload_group_avatar.php');
+                      };
+                      reader.readAsDataURL(file);
+                  }
+              });
+          }
+
+          // Кнопка "Создать событие" для лидера
+          if (canManageEvents) {
+              const actions = document.getElementById('group-actions');
+              const createBtn = document.createElement('button');
+              createBtn.className = 'btn btn-block';
+              createBtn.textContent = '➕ Создать событие';
+              createBtn.onclick = () => {
+                  document.getElementById('eventModal').style.display = 'flex';
+
+                  const now = new Date();
+                  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+                  const year = tomorrow.getFullYear();
+                  const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+                  const day = String(tomorrow.getDate()).padStart(2, '0');
+                  const hours = String(tomorrow.getHours()).padStart(2, '0');
+                  const minutes = String(tomorrow.getMinutes()).padStart(2, '0');
+
+                  const localISO = `${year}-${month}-${day}T${hours}:${minutes}`;
+                  document.getElementById('eventDateTime').value = localISO;
+              };
+              actions.insertBefore(createBtn, actions.firstChild);
+          }
+
+          const applyButton = document.getElementById('btnApply');
+          if (applyButton) {
+              applyButton.onclick = function() {
+                  submitApplication(currentGroupId);
+              };
+          }
+
+      } catch (error) {
+          console.error('Ошибка:', error);
+          document.getElementById('groupDetail').innerHTML = '<p class="error-state">Не удалось загрузить группу</p>';
+      }
+  }
+
+  // Обработчики модального окна
+  document.getElementById('saveEvent')?.addEventListener('click', saveEvent);
+  document.getElementById('cancelEvent')?.addEventListener('click', closeEventModal);
+
+  // Инициализация
+  // 🔥 ИСПРАВЛЕНО: Принудительно закрываем чёрный кроппер при любой загрузке страницы!
+	document.addEventListener('DOMContentLoaded', () => {
+		const cropper = document.getElementById('cropperModal');
+		if (cropper) {
+			cropper.style.display = 'none'; // Жестко скрываем чёрный экран
+		}
+		
+		// НАМЕРТВО ПРИВЯЗЫВАЕМ ENTER К ПОЛЮ ВВОДА ЧАТА ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
+		const msgInput = document.getElementById('chatMessageInput');
+		if (msgInput) {
+			msgInput.addEventListener('keydown', (e) => {
+				// Если нажат Enter БЕЗ зажатого Shift
+				if (e.key === 'Enter' && !e.shiftKey) {
+					e.preventDefault(); // Блокируем дефолтное поведение браузера
+					
+					// Находим кнопку отправки и принудительно симулируем клик по ней пальцем/мышкой
+					const sendButton = document.querySelector('.chat-input-bar button');
+					if (sendButton) {
+						sendButton.click(); // Симулируем нажатие на "Отправить"
+					} else {
+						sendGroupChatMessage(); // Резервный вызов функции [🌐, 0.1.265]
+					}
+				}
+			});
+		}
+		
+		loadGroup(); // Запускаем стандартную загрузку данных группы
+	});
+  
+      // [НОВОЕ] Функция динамического добавления строки будильника в форму
+    function addNotificationTimeRow(value = '') {
+        const container = document.getElementById('notificationInputsContainer');
+        if (!container) return;
+    
+        // Ограничим лидера до 10 будильников, чтобы не перегружать интерфейс
+        if (container.children.length >= 10) {
+            showToast('⚠ Максимум 10 напоминаний для одного события');
+            return;
+        }
+    
+        // Создаем обертку для одной строчки
+        const row = document.createElement('div');
+        row.className = 'notify-time-row';
+        row.style.cssText = 'display: flex; align-items: center; gap: 10px; width: 100%;';
+    
+        // Инпут выбора даты и времени будильника
+        row.innerHTML = `
+            <input type="datetime-local" class="input-field notify-datetime-input" value="${value}" required style="margin: 0; flex: 1;">
+            <button type="button" class="btn btn-danger" onclick="removeNotificationTimeRow(this)" style="margin: 0; padding: 0 10px; height: 38px; width: 38px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: #ff3b30; border: none; border-radius: 6px; color: #fff; cursor: pointer;">
+                ❌
+            </button>
+        `;
+    
+        container.appendChild(row);
+    }
+    
+    // [НОВОЕ] Функция удаления конкретной строки будильника
+    function removeNotificationTimeRow(button) {
+        const row = button.parentElement;
+        if (row) {
+            row.remove();
+        }
+    }
+
+  
+</script>
+
+<script>
+ const IS_DEBUG = true; 
+ const APP_VERSION = '1.0.0'; 
+
+ (function() {
+     const version = IS_DEBUG ? Date.now() : APP_VERSION;
+
+     // 1. Обновляем версию файла стилей
+     const mainStyle = document.querySelector('link[href^="style.css"]');
+     if (mainStyle) {
+         mainStyle.href = 'style.css?v=' + version;
+     }
+
+     // 2. Обновляем версию скрипта обрезки картинок
+     const cropperScript = document.querySelector('script[src^="assets/custom-cropper.js"]');
+     if (cropperScript) {
+         cropperScript.src = 'assets/custom-cropper.js?v=' + version;
+     }
+
+     // 3. Динамически подключаем тему с нужным кэшем
+     const themeScript = document.createElement('script');
+     themeScript.src = 'theme.js?v=' + version;
+     document.body.appendChild(themeScript);
+ })();
+</script>
+
+
+
+<!-- Уникальный автономный редактор аватара группы (Без библиотек) -->
+<div id="cropperModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000000; z-index: 10000; flex-direction: column; user-select: none;">
+    <!-- Шапка -->
+    <header class="app-header" style="position: static; background: #1e1e20; border-bottom: 1px solid #333; display: flex; align-items: center;">
+        <button class="back-btn" onclick="closeCropperModal()" style="color: #fff; background: none; border: none; padding: 10px; cursor: pointer;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+        </button>
+        <h1 class="org-name" style="color: #fff; font-size: 18px; margin-left: 10px;">Кадрирование фото группы</h1>
+    </header>
+
+    <!-- Интерактивная зона обрезки -->
+    <div id="cropZoneContainer" style="flex: 1; position: relative; overflow: hidden; background: #121214; display: flex; align-items: center; justify-content: center;">
+        <img id="myCropImage" src="" alt="Crop" style="position: absolute; cursor: move; transform-origin: center center; max-width: none; max-height: none;">
+        <div id="cropCircleMask" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.7); border-radius: 0;"></div>
+        <div id="cropCircleBorder" style="position: absolute; border: 2px solid #4a90e2; border-radius: 50%; pointer-events: none; box-shadow: 0 0 0 2px rgba(255,255,255,0.2);"></div>
+    </div>
+
+    <!-- Панель управления -->
+    <div style="background: #1e1e20; padding: 15px 20px; border-top: 1px solid #333;">
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; color: #fff; font-size: 14px;">
+            <span>🔆</span>
+            <input type="range" id="cropZoomRange" min="1" max="3" step="0.01" value="1" style="flex: 1; accent-color: #4a90e2; cursor: pointer;">
+            <span>🔍</span>
+        </div>
+        <div style="display: flex; gap: 15px;">
+            <button class="btn btn-ghost" onclick="closeCropperModal()" style="flex: 1; margin: 0; color: #fff; border-color: #555; background: transparent;">Отмена</button>
+            <button class="btn" onclick="saveCustomCroppedAvatar()" style="flex: 1; margin: 0; background: #4a90e2; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Готово</button>
+        </div>
+    </div>
+</div>
+
+
+</body>
+</html>
