@@ -43,10 +43,11 @@ try {
         $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
         // [ИСПРАВЛЕНО] Исправлен баг с количеством параметров в execute (добавлен 4-й элемент)
-        $stmt = $pdo->prepare("INSERT INTO email_verification_codes (email, code, created_at) 
-                               VALUES (?, ?, NOW()) 
+        // [ИСПРАВЛЕНО] В SQL-запросе 3 знака ?, значит в execute должно быть 3 элемента
+        $stmt = $pdo->prepare("INSERT INTO email_verification_codes (email, code, created_at)
+                               VALUES (?, ?, NOW())
                                ON DUPLICATE KEY UPDATE code = ?, created_at = NOW()");
-        $stmt->execute([$email, $code, $code, $code]);
+        $stmt->execute([$email, $code, $code]);
 
         // Формируем текст письма
         $subject = "Сброс пароля на сайте Нама-Хатта";

@@ -82,6 +82,29 @@
             <h3 style="margin: 0; font-size: 16px;">Выберите точку на карте</h3>
             <button id="closeMapModal" class="btn btn-ghost" style="padding: 4px 8px;">✕</button>
         </div>
+        <!-- Поля ввода адреса и координат -->
+        <div style="padding: 10px 16px; background: #fff; border-bottom: 1px solid #dee2e6;">
+            <div style="margin-bottom: 8px;">
+                <label style="font-size: 12px; color: #666; display: block; margin-bottom: 4px;">📍 Адрес (улица, город)</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="inputAddress" placeholder="Красноярск, ул. Мира, 15" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                    <button id="btnSearchAddress" class="btn" style="padding: 8px 16px; font-size: 13px; white-space: nowrap;">🔍 Найти</button>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; color: #666; display: block; margin-bottom: 4px;">Широта (Lat)</label>
+                    <input type="number" step="any" id="inputLat" placeholder="56.0153" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; color: #666; display: block; margin-bottom: 4px;">Долгота (Lng)</label>
+                    <input type="number" step="any" id="inputLng" placeholder="92.8932" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <div style="align-self: flex-end;">
+                    <button id="btnGoToCoords" class="btn btn-ghost" style="padding: 8px 16px; font-size: 13px;">📌 Перейти</button>
+                </div>
+            </div>
+        </div>
         <div id="map" style="flex: 1; width: 100%;"></div>
         <div style="padding: 12px 16px; border-top: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa;">
             <div style="font-size: 13px; color: #666;">
@@ -427,19 +450,38 @@
                                 "openstreetmap.org",
                                 "/search?q=",
                                 encodeURIComponent(searchQuery),
-                                "&format=json&limit=1&accept-language=ru&email=achyutagauradas@mail.ru"
+                                "&format=json&limit=1&accept-language=ru"
                             ];
-
-                            const geoRes = await fetch(urlArray.join(""));
+                            const controller = new AbortController();
+                            const timeout = setTimeout(() => controller.abort(), 8000);
+                            const geoRes = await fetch(urlArray.join(""), { signal: controller.signal });
+                            clearTimeout(timeout);
                             const geoData = await geoRes.json();
 
                             if (geoData && Array.isArray(geoData) && geoData.length > 0 && geoData[0]) {
                                 latVal = parseFloat(geoData[0].lat);
                                 lngVal = parseFloat(geoData[0].lon);
-                                console.log("Координаты успешно зафиксированы фронтендом:", latVal, lngVal);
+                                console.log("Координаты из Nominatim:", latVal, lngVal);
                             }
-                        } catch (geoErr) {
-                            console.error('Ошибка сети или ответа геокодера:', geoErr);
+                        } catch (nominatimErr) {
+                            console.warn('Nominatim failed, trying Photon:', nominatimErr);
+                            try {
+                                const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&limit=1`;
+                                const controller2 = new AbortController();
+                                const timeout2 = setTimeout(() => controller2.abort(), 5000);
+                                const geoRes2 = await fetch(photonUrl, { signal: controller2.signal });
+                                clearTimeout(timeout2);
+                                const photonData = await geoRes2.json();
+                                
+                                if (photonData && photonData.features && photonData.features.length > 0) {
+                                    const f = photonData.features[0];
+                                    latVal = parseFloat(f.geometry.coordinates[1]);
+                                    lngVal = parseFloat(f.geometry.coordinates[0]);
+                                    console.log("Координаты из Photon:", latVal, lngVal);
+                                }
+                            } catch (photonErr) {
+                                console.error('Photon also failed:', photonErr);
+                            }
                         }
                     }
                 } catch (geoErr) {
@@ -575,6 +617,10 @@
                 attributionControl: false
             }).setView(center, zoom);
 
+            // Автозаполнение полей при открытии карты
+            document.getElementById('inputLat').value = center[0].toFixed(6);
+            document.getElementById('inputLng').value = center[1].toFixed(6);
+
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19
             }).addTo(mapPickerInstance);
@@ -592,12 +638,52 @@
                 }
 
                 document.getElementById('mapCoords').textContent = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                document.getElementById('inputLat').value = lat.toFixed(6);
+                document.getElementById('inputLng').value = lng.toFixed(6);
+
+                // Обратное геокодирование с fallback
+                const reverseGeocode = async () => {
+                    // Пробуем Nominatim
+                    try {
+                        const urlArray = [`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ru`];
+                        const controller = new AbortController();
+                        const timeout = setTimeout(() => controller.abort(), 8000);
+                        const geoRes = await fetch(urlArray.join(""), { signal: controller.signal });
+                        clearTimeout(timeout);
+                        const data = await geoRes.json();
+                        if (data && data.display_name) return data;
+                    } catch (e) {
+                        console.warn('Nominatim reverse failed:', e);
+                    }
+                    
+                    // Fallback на Photon
+                    try {
+                        const url = `https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}`;
+                        const controller = new AbortController();
+                        const timeout = setTimeout(() => controller.abort(), 5000);
+                        const geoRes = await fetch(url, { signal: controller.signal });
+                        clearTimeout(timeout);
+                        const data = await geoRes.json();
+                        if (data && data.feature && data.feature.geometry) {
+                            return {
+                                display_name: data.feature.properties.name || ''
+                            };
+                        }
+                    } catch (e) {
+                        console.warn('Photon reverse failed:', e);
+                    }
+                    
+                    return null;
+                };
 
                 try {
-                    const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ru&email=achyutagauradas@mail.ru`);
-                    const geoData = await geoRes.json();
-                    const address = geoData.display_name || 'Адрес не найден';
-                    document.getElementById('mapAddress').textContent = address.substring(0, 80) + (address.length > 80 ? '...' : '');
+                    const geoData = await reverseGeocode();
+                    if (geoData && geoData.display_name) {
+                        const address = geoData.display_name;
+                        document.getElementById('mapAddress').textContent = address.substring(0, 80) + (address.length > 80 ? '...' : '');
+                    } else {
+                        document.getElementById('mapAddress').textContent = 'Адрес не найден';
+                    }
                 } catch (err) {
                     console.error('Ошибка обратного геокодирования:', err);
                     document.getElementById('mapAddress').textContent = 'Не удалось определить адрес';
@@ -619,6 +705,8 @@
                     });
                     const lat = pos.coords.latitude;
                     const lng = pos.coords.longitude;
+                    document.getElementById('inputLat').value = lat.toFixed(6);
+                    document.getElementById('inputLng').value = lng.toFixed(6);
                     mapPickerInstance.setView([lat, lng], 16);
                     mapPickerInstance.fire('click', { latlng: L.latLng(lat, lng) });
                 } catch (err) {
@@ -632,10 +720,38 @@
                     document.getElementById('groupLat').value = selectedLat;
                     document.getElementById('groupLng').value = selectedLng;
 
+                    // Обратное геокодирование с fallback
+                    const reverseGeocode = async () => {
+                        try {
+                            const urlArray = [`https://nominatim.openstreetmap.org/reverse?lat=${selectedLat}&lon=${selectedLng}&format=json&accept-language=ru`];
+                            const controller = new AbortController();
+                            const timeout = setTimeout(() => controller.abort(), 8000);
+                            const geoRes = await fetch(urlArray.join(""), { signal: controller.signal });
+                            clearTimeout(timeout);
+                            const data = await geoRes.json();
+                            if (data && data.display_name) return data;
+                        } catch (e) {
+                            console.warn('Nominatim reverse failed:', e);
+                        }
+                        try {
+                            const url = `https://photon.komoot.io/reverse?lat=${selectedLat}&lon=${selectedLng}`;
+                            const controller = new AbortController();
+                            const timeout = setTimeout(() => controller.abort(), 5000);
+                            const geoRes = await fetch(url, { signal: controller.signal });
+                            clearTimeout(timeout);
+                            const data = await geoRes.json();
+                            if (data && data.feature) {
+                                return { display_name: data.feature.properties.name || '' };
+                            }
+                        } catch (e) {
+                            console.warn('Photon reverse failed:', e);
+                        }
+                        return null;
+                    };
+
                     try {
-                        const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${selectedLat}&lon=${selectedLng}&format=json&accept-language=ru&email=achyutagauradas@mail.ru`);
-                        const geoData = await geoRes.json();
-                        if (geoData.display_name) {
+                        const geoData = await reverseGeocode();
+                        if (geoData && geoData.display_name) {
                             const addr = geoData.address || {};
                             const street = addr.road || '';
                             const house = addr.house_number || '';
@@ -653,6 +769,158 @@
                     showToast('✅ Точка выбрана');
                 } else {
                     showToast('⚠️ Сначала выберите точку на карте');
+                }
+            };
+
+            // Кнопка "Найти" по координатам
+            document.getElementById('btnGoToCoords').onclick = function () {
+                const lat = parseFloat(document.getElementById('inputLat').value);
+                const lng = parseFloat(document.getElementById('inputLng').value);
+
+                if (isNaN(lat) || isNaN(lng)) {
+                    showToast('⚠️ Введите корректные координаты');
+                    return;
+                }
+
+                if (lat < -90 || lat > 90) {
+                    showToast('⚠️ Широта должна быть от -90 до 90');
+                    return;
+                }
+
+                if (lng < -180 || lng > 180) {
+                    showToast('⚠️ Долгота должна быть от -180 до 180');
+                    return;
+                }
+
+                mapPickerInstance.setView([lat, lng], 16);
+                selectedLat = lat;
+                selectedLng = lng;
+
+                if (mapPickerMarker) {
+                    mapPickerMarker.setLatLng([lat, lng]);
+                } else {
+                    mapPickerMarker = L.marker([lat, lng]).addTo(mapPickerInstance);
+                }
+
+                document.getElementById('mapCoords').textContent = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ru&email=achyutagauradas@mail.ru`)
+                    .then(r => r.json())
+                    .then(data => {
+                        const address = data.display_name || 'Адрес не найден';
+                        document.getElementById('mapAddress').textContent = address.substring(0, 80) + (address.length > 80 ? '...' : '');
+                    })
+                    .catch(err => console.error('Ошибка геокодирования:', err));
+            };
+
+            // Кнопка "Найти" по адресу
+            document.getElementById('btnSearchAddress').onclick = async function () {
+                const address = document.getElementById('inputAddress').value.trim();
+                if (!address) {
+                    showToast('⚠️ Введите адрес');
+                    return;
+                }
+
+                // Функция поиска через Nominatim
+                const searchNominatim = async () => {
+                    const urlArray = [
+                        "https://",
+                        "nominatim.",
+                        "openstreetmap.org",
+                        "/search?q=",
+                        encodeURIComponent(address),
+                        "&format=json&limit=1&accept-language=ru"
+                    ];
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 8000);
+                    
+                    try {
+                        const geoRes = await fetch(urlArray.join(""), { signal: controller.signal });
+                        clearTimeout(timeout);
+                        return await geoRes.json();
+                    } catch (e) {
+                        clearTimeout(timeout);
+                        throw e;
+                    }
+                };
+
+                // Функция поиска через Photon (fallback)
+                const searchPhoton = async () => {
+                    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(address)}&limit=1&lang=ru`;
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 5000);
+                    
+                    try {
+                        const geoRes = await fetch(url, { signal: controller.signal });
+                        clearTimeout(timeout);
+                        const data = await geoRes.json();
+                        
+                        // Преобразуем формат Photon в формат Nominatim
+                        if (data && data.features && data.features.length > 0) {
+                            const f = data.features[0];
+                            return [{
+                                lat: f.geometry.coordinates[1].toString(),
+                                lon: f.geometry.coordinates[0].toString(),
+                                display_name: f.properties.name || address,
+                                address: f.properties
+                            }];
+                        }
+                        return [];
+                    } catch (e) {
+                        clearTimeout(timeout);
+                        throw e;
+                    }
+                };
+
+                try {
+                    let geoData = null;
+                    
+                    // Сначала пробуем Nominatim
+                    try {
+                        geoData = await searchNominatim();
+                    } catch (nominatimErr) {
+                        console.warn('Nominatim не доступен, используем Photon:', nominatimErr);
+                        // Fallback на Photon
+                        geoData = await searchPhoton();
+                    }
+
+                    if (geoData && geoData.length > 0 && geoData[0]) {
+                        const lat = parseFloat(geoData[0].lat);
+                        const lng = parseFloat(geoData[0].lon);
+
+                        if (isNaN(lat) || isNaN(lng)) {
+                            showToast('⚠️ Не удалось определить координаты');
+                            return;
+                        }
+
+                        mapPickerInstance.setView([lat, lng], 16);
+                        selectedLat = lat;
+                        selectedLng = lng;
+
+                        if (mapPickerMarker) {
+                            mapPickerMarker.setLatLng([lat, lng]);
+                        } else {
+                            mapPickerMarker = L.marker([lat, lng]).addTo(mapPickerInstance);
+                        }
+
+                        document.getElementById('mapCoords').textContent = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                        document.getElementById('inputLat').value = lat.toFixed(6);
+                        document.getElementById('inputLng').value = lng.toFixed(6);
+
+                        const addr = geoData[0].address || {};
+                        const street = addr.road || addr.street || '';
+                        const house = addr.house_number || '';
+                        const city = addr.city || addr.town || addr.village || '';
+                        const fullAddress = `${street}${house ? ', ' + house : ''}`;
+                        document.getElementById('mapAddress').textContent = fullAddress || geoData[0].display_name?.substring(0, 80) || address;
+                        
+                        showToast('✅ Адрес найден');
+                    } else {
+                        showToast('⚠️ Адрес не найден');
+                    }
+                } catch (err) {
+                    console.error('Ошибка поиска адреса:', err);
+                    showToast('❌ Ошибка при поиске. Попробуйте позже');
                 }
             };
 
