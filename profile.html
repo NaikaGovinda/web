@@ -6,7 +6,7 @@
     <title>Мой профиль — Нама-Хатта</title>
     <!-- <link href="https://googleapis.com" rel="stylesheet"> -->
     <link rel="stylesheet" href="style.css">
-	<script src="assets/custom-cropper.js"></script>
+    <script src="assets/custom-cropper.js"></script>
 </head>
 <body>
 <div id="app">
@@ -43,7 +43,6 @@
 </div>
 
 <script>
-    
     // Защита от XSS
     function escapeHtml(text) {
         if (!text) return '';
@@ -51,137 +50,107 @@
         div.textContent = text;
         return div.innerHTML;
     }
-    /*
-    // Универсальное уведомление вместо системного alert
-    function showToast(message) {
-        // Удаляем старый toast, если он остался в деструкторе
-        const oldToast = document.getElementById('appToast');
-        if (oldToast) oldToast.remove();
-    
-        // Создаем элемент плашки
-        const toast = document.createElement('div');
-        toast.id = 'appToast';
-        toast.className = 'toast-notification';
-        toast.textContent = message;
-        document.body.appendChild(toast);
-    
-        // Триггерим анимацию появления (через таймаут, чтобы применился CSS)
-        setTimeout(() => {
-            toast.classList.add('toast-show');
-        }, 10);
-    
-        // Автоматически скрываем и удаляем через 2.5 секунды
-        setTimeout(() => {
-            toast.classList.remove('toast-show');
-            setTimeout(() => toast.remove(), 300);
-        }, 2500);
-    }
-    */
 
     // Загружаем профиль пользователя
     async function loadProfile() {
-		const contentContainer = document.getElementById('profileContent');
-		if (!contentContainer) return;
+        const contentContainer = document.getElementById('profileContent');
+        if (!contentContainer) return;
 
-		try {
-			// ШАГ 1: Запрашиваем авторизацию как сырой текст и вычищаем HTML-мусор
-			const authResponse = await fetch('/api/check_auth.php?v=' + Date.now());
-			const authRawText = await authResponse.text();
-			
-			let authData = { is_authenticated: false };
-			try {
-				const authJsonIdx = authRawText.indexOf('{');
-				if (authJsonIdx !== -1) {
-					authData = JSON.parse(authRawText.substring(authJsonIdx));
-				}
-			} catch(e) {
-				console.error("Ошибка парсинга auth:", e);
-			}
+        try {
+            // ШАГ 1: Запрашиваем авторизацию
+            const authResponse = await fetch('/api/check_auth.php?v=' + Date.now());
+            const authRawText = await authResponse.text();
 
-			// Если сессия пустая или сбросилась — мягко уводим на логин
-			if (!authData || !authData.is_authenticated) {
-				window.location.href = '/login.html';
-				return;
-			}
+            let authData = { is_authenticated: false };
+            try {
+                const authJsonIdx = authRawText.indexOf('{');
+                if (authJsonIdx !== -1) {
+                    authData = JSON.parse(authRawText.substring(authJsonIdx));
+                }
+            } catch(e) {
+                console.error("Ошибка парсинга auth:", e);
+            }
 
-			// ШАГ 2: Запрашиваем данные профиля как сырой текст и тоже вычищаем мусор
-			const response = await fetch('/api/get_profile.php?v=' + Date.now());
-			const rawText = await response.text();
+            // Если сессия пустая — уводим на логин
+            if (!authData || !authData.is_authenticated) {
+                window.location.href = '/login.html';
+                return;
+            }
 
-			let data;
-			try {
-				const jsonStartIdx = rawText.indexOf('{');
-				if (jsonStartIdx === -1) throw new Error("JSON не найден");
-				data = JSON.parse(rawText.substring(jsonStartIdx));
-			} catch (jsonErr) {
-				console.error("Не удалось раскодировать профиль. Ответ сервера:", rawText);
-				window.location.href = '/login.html';
-				return;
-			}
+            // ШАГ 2: Запрашиваем данные профиля
+            const response = await fetch('/api/get_profile.php?v=' + Date.now());
+            const rawText = await response.text();
 
-			if (!data || !data.success) {
-				window.location.href = '/login.html';
-				return;
-			}
+            let data;
+            try {
+                const jsonStartIdx = rawText.indexOf('{');
+                if (jsonStartIdx === -1) throw new Error("JSON не найден");
+                data = JSON.parse(rawText.substring(jsonStartIdx));
+            } catch (jsonErr) {
+                console.error("Не удалось раскодировать профиль. Ответ сервера:", rawText);
+                window.location.href = '/login.html';
+                return;
+            }
 
-			// Подхватываем данные (из любого формата ответа бэкенда)
-			const user_info = data.user_info || data.user || null;
-			const applications = data.applications || [];
+            if (!data || !data.success) {
+                window.location.href = '/login.html';
+                return;
+            }
 
-            // Генерируем аватарку или текстовый кружок-заглушку
+            // Подхватываем данные
+            const user_info = data.user_info || data.user || null;
+            const applications = data.applications || [];
+            localStorage.setItem('userInfo', JSON.stringify(user_info));
+
+            // Генерируем аватарку
             let avatarPreviewHtml = '';
             if (user_info.avatar_url) {
-				avatarPreviewHtml = `<img id="avatarPreview" src="${user_info.avatar_url}" alt="Аватар" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; display: block; border: 2px solid var(--color-primary, #4A90E2);">`;
-			} else {
-				avatarPreviewHtml = `<div id="avatarPreview" style="width: 100px; height: 100px; border-radius: 50%; background: #f0f0f2; display: flex; align-items: center; justify-content: center; font-size: 45px; border: 2px solid var(--color-primary, #4A90E2); user-select: none;">👤</div>`;
-			}
-            
-            let html = `
-             <div class="card" style="text-align: center;">
-             <div class="avatar-container" style="position: relative; display: inline-block; margin-bottom: 15px; width: 100px; height: 100px;">
-             ${avatarPreviewHtml}
-             <label for="avatarFile" style="position: absolute; bottom: 0; right: 0; background: #fff; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer; z-index: 10;">
-             📷
-             </label>
-             <input type="file" id="avatarFile" accept="image/*" style="display: none;">
-             </div>
-             
-             <form id="editProfileForm" style="text-align: left; margin-top: 15px;">
-             <label style="display:block; margin-bottom:5px; font-weight:600;">Имя *</label>
-             <input type="text" id="profFirstName" class="input-field" value="${escapeHtml(user_info.first_name)}" required><br><br>
-             
-             <label style="display:block; margin-bottom:5px; font-weight:600;">Фамилия</label>
-             <input type="text" id="profLastName" class="input-field" value="${escapeHtml(user_info.last_name || '')}"><br><br>
-             
-             <label style="display:block; margin-bottom:5px; font-weight:600;">Город</label>
-             <input type="text" id="profCity" class="input-field" value="${escapeHtml(user_info.city || '')}"><br><br>
-             
-             <label style="display:block; margin-bottom:5px; font-weight:600;">Телефон</label>
-             <input type="tel" id="profPhone" class="input-field" value="${escapeHtml(user_info.phone || '')}"><br><br>
-             
-           <p><strong>Роль:</strong> ${
-                user_info.role === 'leader' ? '🌿 Лидер' :
-                    user_info.role === 'admin' ? '👑 Админ' :
-                        user_info.role === 'observer' ? '👁️ Наблюдатель' :
-                            '👤 Участник'}</p>
-<p><strong>Email:</strong> ${escapeHtml(user_info.email)}</p>
-             
-             <button type="submit" class="btn btn-block" id="btnSaveProfile">💾 Сохранить изменения</button>
-			 <button type="button" class="btn btn-block btn-danger" id="btnLogout" style="margin-top: 10px; background: #ff3b30; color: #fff;">🚪 Выйти из аккаунта</button>
-             </form>
-             </div>
-				<div id="androidDownloadBlock" class="card" style="display: none; text-align: center; margin-top: 20px; border: 1px solid var(--color-primary, #4a90e2); background: #f4f8ff; border-radius: 16px; padding: 20px;">
-					<h3 style="margin-top: 0; color: #1e1e20; font-size: 16px;">📱 Мобильное приложение</h3>
-					<p style="font-size: 13px; color: #666; margin-bottom: 15px; line-height: 1.4;">
-						Скачайте наше официальное приложение для Android, чтобы мгновенно получать пуш-уведомления о новых сообщениях в чатах!
-					</p>
-					<a href="/namahatta.apk" download="namahatta.apk" class="btn btn-block" style="background: #4a90e2; color: #fff; font-weight: 600; text-decoration: none; display: inline-block; padding: 10px; border-radius: 8px;">
-						📥 Скачать APK (Прямая ссылка)
-					</a>
-				</div>
-             `;
+                avatarPreviewHtml = `<img id="avatarPreview" src="${user_info.avatar_url}" alt="Аватар" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; display: block; border: 2px solid var(--color-primary, #4A90E2);">`;
+            } else {
+                avatarPreviewHtml = `<div id="avatarPreview" style="width: 100px; height: 100px; border-radius: 50%; background: #f0f0f2; display: flex; align-items: center; justify-content: center; font-size: 45px; border: 2px solid var(--color-primary, #4A90E2); user-select: none;">👤</div>`;
+            }
 
-            // Мои личные заявки (блок участника)
+            let html = `
+<div class="card" style="text-align: center;">
+    <div class="avatar-container" style="position: relative; display: inline-block; margin-bottom: 15px; width: 100px; height: 100px;">
+        ${avatarPreviewHtml}
+        <label for="avatarFile" style="position: absolute; bottom: 0; right: 0; background: #fff; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer; z-index: 10;">
+        📷
+        </label>
+        <input type="file" id="avatarFile" accept="image/*" style="display: none;">
+    </div>
+
+    <h2 style="margin: 10px 0;">${escapeHtml(user_info.first_name)} ${escapeHtml(user_info.last_name || '')}</h2>
+
+    <div style="display: flex; justify-content: center; gap: 10px; margin: 15px 0;">
+        <button class="btn btn-small" id="btnEditProfile" style="background: #4a90e2; color: #fff; font-weight: 600; padding: 8px 16px;">
+            ✏️ Редактировать
+        </button>
+        <button type="button" class="btn btn-small btn-danger" id="btnLogout" style="padding: 8px 16px; background: #ff3b30; color: #fff; font-weight: 600;">
+            🚪 Выйти
+        </button>
+    </div>
+
+    <div style="background: #f8f9fa; border-radius: 12px; padding: 15px; text-align: left; margin-top: 15px;">
+        <p style="margin: 5px 0;"><strong>📧 Email:</strong> ${escapeHtml(user_info.email)}</p>
+        <p style="margin: 5px 0;"><strong>📱 Телефон:</strong> ${escapeHtml(user_info.phone || 'Не указан')}</p>
+        <p style="margin: 5px 0;"><strong>📍 Город:</strong> ${escapeHtml(user_info.city || 'Не указан')}</p>
+        <p style="margin: 5px 0;"><strong>👤 Роль:</strong> ${user_info.role === 'leader' ? 'Лидер' : user_info.role === 'admin' ? 'Админ' : 'Участник'}</p>
+    </div>
+</div>
+
+<div id="androidDownloadBlock" class="card" style="display: none; text-align: center; margin-top: 20px; border: 1px solid var(--color-primary, #4a90e2); background: #f4f8ff; border-radius: 16px; padding: 20px;">
+    <h3 style="margin-top: 0; color: #1e1e20; font-size: 16px;">📱 Мобильное приложение</h3>
+    <p style="font-size: 13px; color: #666; margin-bottom: 15px; line-height: 1.4;">
+        Скачайте наше официальное приложение для Android, чтобы мгновенно получать пуш-уведомления о новых сообщениях в чатах!
+    </p>
+    <a href="/namahatta.apk" download="namahatta.apk" class="btn btn-block" style="background: #4a90e2; color: #fff; font-weight: 600; text-decoration: none; display: inline-block; padding: 10px; border-radius: 8px;">
+        📥 Скачать APK (Прямая ссылка)
+    </a>
+</div>
+`;
+
+            // Мои личные заявки
             if (applications && applications.length > 0) {
                 html += '<div class="card"><h3>📬 Мои заявки</h3><ul class="applications-list">';
                 applications.forEach(app => {
@@ -205,21 +174,15 @@
                             <span class="status-badge ${statusClass}">${statusText}</span>
                     `;
 
-                    // Если заявка ожидает — показываем кнопку «Отменить»
-					if (app.status === 'pending') {
-						html += `<button class="btn btn-small btn-danger js-btn-cancel" data-app-id="${app.id}">Отменить</button>`;
-					}
-
-					// Если заявка одобрена — показываем кнопку «Выйти»
-					if (app.status === 'approved') {
-						html += `<button class="btn btn-small btn-ghost js-btn-leave" data-app-id="${app.id}" data-group-name="${escapeHtml(app.group_name)}">🚪 Выйти</button>`;
-					}
-
-					// 🔥 НОВОЕ: Если заявка ОТКЛОНЕНА — даем пользователю возможность ОЧИСТИТЬ её с экрана,
-					// используя наш готовый системный класс js-btn-cancel!
-					if (app.status === 'rejected') {
-						html += `<button class="btn btn-small btn-ghost js-btn-cancel" data-app-id="${app.id}" style="color: var(--color-text-muted, #888); border-color: #ddd;">Удалить</button>`;
-					}
+                    if (app.status === 'pending') {
+                        html += `<button class="btn btn-small btn-danger js-btn-cancel" data-app-id="${app.id}">Отменить</button>`;
+                    }
+                    if (app.status === 'approved') {
+                        html += `<button class="btn btn-small btn-ghost js-btn-leave" data-app-id="${app.id}" data-group-name="${escapeHtml(app.group_name)}">🚪 Выйти</button>`;
+                    }
+                    if (app.status === 'rejected') {
+                        html += `<button class="btn btn-small btn-ghost js-btn-cancel" data-app-id="${app.id}" style="color: var(--color-text-muted, #888); border-color: #ddd;">Удалить</button>`;
+                    }
 
                     html += '</div></li>';
                 });
@@ -227,521 +190,383 @@
             } else {
                 html += '<div class="card"><p style="color:var(--color-text-muted);">Вы пока не подавали заявок.</p></div>';
             }
+
             // Заявки на мои группы (для лидера или админа)
-			if (user_info && (user_info.role === 'leader' || user_info.role === 'admin')) {
-				let leader_applications = [];
-				try {
-					const leaderResponse = await fetch('/api/get_leader_applications.php?v=' + Date.now());
-					
-					// Если сервер вернул 403 или 401, мягко выходим из блока без генерации ошибок в консоль
-					if (leaderResponse.status === 403 || leaderResponse.status === 401) {
-						console.log("Доступ к панели лидера ограничен согласно роли аккаунта.");
-					} else {
-						const leaderData = await leaderResponse.json();
-						leader_applications = leaderData.success ? leaderData.applications : [];
-						
-						// Отрисовываем блок лидера только если данные успешно пришли
-						html += '<div class="card"><h3>📬 Заявки на мои группы</h3>';
-						if (leader_applications && leader_applications.length > 0) {
-							html += '<ul class="applications-list">';
-							leader_applications.forEach(app => {
-								html += `
-								<li class="application-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0f0f2;">
-									<div>
-										<strong>${escapeHtml(app.applicant_name)}</strong><br>
-										<small style="color:var(--color-text-muted);">${escapeHtml(app.group_name)} • ${escapeHtml(app.message)}</small>
-									</div>
-									<div style="display:flex; gap:8px;">
-										<button class="btn btn-small btn-success js-leader-approve" data-app-id="${app.id}">✅</button>
-										<button class="btn btn-small btn-danger js-leader-reject" data-app-id="${app.id}">❌</button>
-									</div>
-								</li>
-								`;
-							});
-							html += '</ul>';
-						} else {
-							html += '<p style="color:var(--color-text-muted); text-align:center; margin:0;">Нет новых заявок</p>';
-						}
-						html += '</div>';
-					}
-				} catch (e) {
-					console.warn("Внутренний пропуск чтения панели лидера:", e);
-				}
-			}
+            if (user_info && (user_info.role === 'leader' || user_info.role === 'admin')) {
+                let leader_applications = [];
+                try {
+                    const leaderResponse = await fetch('/api/get_leader_applications.php?v=' + Date.now());
+
+                    if (leaderResponse.status === 403 || leaderResponse.status === 401) {
+                        console.log("Доступ к панели лидера ограничен согласно роли аккаунта.");
+                    } else {
+                        const leaderData = await leaderResponse.json();
+                        leader_applications = leaderData.success ? leaderData.applications : [];
+
+                        html += '<div class="card"><h3>📬 Заявки на мои группы</h3>';
+                        if (leader_applications && leader_applications.length > 0) {
+                            html += '<ul class="applications-list">';
+                            leader_applications.forEach(app => {
+                                html += `
+                                <li class="application-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0f0f2;">
+                                    <div>
+                                        <strong>${escapeHtml(app.applicant_name)}</strong><br>
+                                        <small style="color:var(--color-text-muted);">${escapeHtml(app.group_name)} • ${escapeHtml(app.message)}</small>
+                                    </div>
+                                    <div style="display:flex; gap:8px;">
+                                        <button class="btn btn-small btn-success js-leader-approve" data-app-id="${app.id}">✅</button>
+                                        <button class="btn btn-small btn-danger js-leader-reject" data-app-id="${app.id}">❌</button>
+                                    </div>
+                                </li>
+                                `;
+                            });
+                            html += '</ul>';
+                        } else {
+                            html += '<p style="color:var(--color-text-muted); text-align:center; margin:0;">Нет новых заявок</p>';
+                        }
+                        html += '</div>';
+                    }
+                } catch (e) {
+                    console.warn("Внутренний пропуск чтения панели лидера:", e);
+                }
+            }
 
             if (user_info.role === 'admin') {
                 html += '<a href="/admin.html" class="btn btn-block" style="margin-top:var(--space-m);">🛠 Админка</a>';
             }
 
             contentContainer.innerHTML = html;
-			
-			// 🔥 АКТИВИРУЕМ ПРОВЕРКУ ТИПА УСТРОЙСТВА
-			// 🔥 СТАВИМ УМНЫЙ АВТОМАТИЧЕСКИЙ ПЕРЕКЛЮЧАТЕЛЬ НА МЕСТО
-			const isAndroidDevice = /Android/i.test(navigator.userAgent);
-			const apkDownloadEl = document.getElementById('androidDownloadBlock');
 
-			if (apkDownloadEl) {
-				// Показываем блок ТОЛЬКО если это Android И если пользователь зашел через обычный браузер (не из самого приложения)
-				if (isAndroidDevice && !(typeof window.Android === 'object' && window.Android !== null)) {
-					apkDownloadEl.style.display = 'block';
-				} else {
-					apkDownloadEl.style.display = 'none'; // Скрываем на компьютерах, айфонах и внутри WebView-оболочки
-				}
-			}
-			/*const apkDownloadEl = document.getElementById('androidDownloadBlock');
-			if (apkDownloadEl) {
-				apkDownloadEl.style.display = 'block'; // Меняем временно на block, чтобы увидеть глазами
-			}*/
-			
-			// 1. ПЕРЕХВАТЫВАЕМ КЛИК ПО КНОПКЕ ФОТОАППАРАТА ДЛЯ АНДРОИД
-			const avatarLabel = document.querySelector('label[for="avatarFile"]');
-			if (avatarLabel) {
-				avatarLabel.addEventListener('click', function(e) {
-					// Проверяем, открыты ли мы внутри Android WebView
-					if (typeof window.Android === 'object' && window.Android !== null && typeof window.Android.openGallery === 'function') {
-						e.preventDefault(); // Запрещаем стандартное поведение браузера
-						window.Android.openGallery(); // Вызываем нативную галерею Android!
-						return false;
-					}
-				});
-			}
-			
-            
-            // Привязываем выбор файла аватарки
-			document.getElementById('avatarFile')?.addEventListener('change', function(e) {
-				const files = e.target.files;
-				if (files && files.length > 0) {
-					const file = files[0];
-					if (!file.type.startsWith('image/')) {
-						showToast('⚠️ Пожалуйста, выберите файл изображения');
-						return;
-					}
-					const reader = new FileReader();
-					reader.onload = function(event) {
-						openCropperModal(event.target.result, '/api/update_profile.php');
-					};
-					reader.readAsDataURL(file);
-				}
-			});
-             
-            // Привязываем отправку формы (остается без изменений)
-            document.getElementById('editProfileForm')?.addEventListener('submit', saveProfileData);            
-
-            // Настраиваем изолированные обработчики событий для кнопок (остается без изменений)
+            // Навешиваем обработчики на кнопки (после создания HTML!)
             setupEventListeners();
 
         } catch (error) {
             console.error('Ошибка профиля:', error);
-        
-        // Красивое интерактивное окно сбоя с кнопкой мгновенной перезагрузки
-        contentContainer.innerHTML = `
+
+            // Красивое окно сбоя
+            contentContainer.innerHTML = `
             <div class="card" style="text-align: center; padding: 25px 20px; border: 1px solid rgba(255,59,48,0.15); box-shadow: 0 6px 16px rgba(255,59,48,0.06) !important;">
                 <div style="font-size: 40px; margin-bottom: 10px; user-select: none;">⚠️</div>
                 <h3 style="margin: 0 0 6px 0; font-size: 16px; font-weight: 700; color: #1d1d1f;">Не удалось загрузить профиль</h3>
                 <p style="color: #666; font-size: 13px; margin: 0 0 20px 0; line-height: 1.4;">Возникла временная ошибка связи с сервером или сбой кэширования данных.</p>
-                
+
                 <button onclick="window.location.reload(true)" class="btn" style="margin: 0 auto; width: auto; min-width: 160px; padding: 10px 20px; font-size: 14px; background: #007aff; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,122,255,0.2);">
                     <span>Обновить экран</span> 🔄
                 </button>
             </div>
         `;
-		}
-    }
-    
-    // Функция отправки измененных данных и аватара на бэкенд
-    async function saveProfileData(e) {
-     e.preventDefault();
-     const button = document.getElementById('btnSaveProfile');
-     if (!button) return;
-     
-     button.disabled = true;
-     button.textContent = 'Сохранение...';
-     
-     // Используем FormData, чтобы корректно передать файл на сервер
-     const formData = new FormData();
-     formData.append('first_name', document.getElementById('profFirstName').value.trim());
-     formData.append('last_name', document.getElementById('profLastName').value.trim());
-     formData.append('city', document.getElementById('profCity').value.trim());
-     formData.append('phone', document.getElementById('profPhone').value.trim());
-     
-     const fileInput = document.getElementById('avatarFile');
-    if (fileInput && fileInput.files.length > 0) {
-        formData.append('avatar', fileInput.files[0]); // Добавили [0]
-    }
-     
-    try {
-         const response = await fetch('/api/update_profile.php?v=' + Date.now(), {
-         method: 'POST',
-         body: formData, 
-         credentials: 'include',
-         });
-         
-         const result = await response.json();
-         if (result.success) {
-         showToast('✅ Профиль успешно обновлен!'); // Заменили alert
-         loadProfile();
-         } else {
-         showToast('❌ Ошибка: ' + (result.error || 'Не удалось сохранить')); // Заменили alert
-         }
-         } catch (err) {
-         console.error(err);
-         showToast('❌ Не удалось связаться с сервером'); // Заменили alert
-         } finally {
-         button.disabled = false;
-         button.textContent = '💾 Сохранить изменения';
-         }
-    }
-    // Переменные для хранения ID выбранных элементов
-	let pendingLeaveApplicationId = null;
-	let pendingCancelApplicationId = null;
-
-    // Настройка обработчиков событий (Изолированные селекторы)
-    function setupEventListeners() {
-		// 1. Логика работы модального окна ВЫХОДА ИЗ АККАУНТА
-		document.getElementById('btnLogout')?.addEventListener('click', () => {
-			const modal = document.getElementById('customLogoutModal');
-			if (modal) modal.style.display = 'flex';
-		});
-		document.getElementById('btnCancelLogout')?.addEventListener('click', () => {
-			const modal = document.getElementById('customLogoutModal');
-			if (modal) modal.style.display = 'none';
-		});
-		document.getElementById('btnConfirmLogout')?.addEventListener('click', async () => {
-			const modal = document.getElementById('customLogoutModal');
-			if (modal) modal.style.display = 'none';
-			try {
-				const response = await fetch('/api/logout.php', { method: 'POST' });
-				const result = await response.json();
-				if (result.success) {
-					window.location.href = '/login.html';
-				} else {
-					showToast('❌ Не удалось выйти: ' + (result.error || 'ошибка'));
-				}
-			} catch (err) {
-				console.error(err);
-				showToast('❌ Ошибка сети при попытке выхода');
-			}
-		});
-
-		// 2. Логика работы модального окна ВЫХОДА ИЗ ГРУППЫ (Вместо confirm)
-		document.querySelectorAll('.js-btn-leave').forEach(btn => {
-			btn.addEventListener('click', () => {
-				pendingLeaveApplicationId = btn.dataset.appId;
-				const groupName = btn.dataset.groupName || '';
-				const textEl = document.getElementById('leaveGroupModalText');
-				if (textEl) textEl.textContent = `Вы уверены, что хотите выйти из группы «${groupName}»?`;
-				
-				const modal = document.getElementById('customLeaveGroupModal');
-				if (modal) modal.style.display = 'flex';
-			});
-		});
-		document.getElementById('btnCancelLeaveGroup')?.addEventListener('click', () => {
-			const modal = document.getElementById('customLeaveGroupModal');
-			if (modal) modal.style.display = 'none';
-			pendingLeaveApplicationId = null;
-		});
-		document.getElementById('btnConfirmLeaveGroup')?.addEventListener('click', async () => {
-			if (!pendingLeaveApplicationId) return;
-			const modal = document.getElementById('customLeaveGroupModal');
-			if (modal) modal.style.display = 'none';
-			
-			try {
-				const response = await fetch('/api/leave_group.php', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ application_id: parseInt(pendingLeaveApplicationId) })
-				});
-				const result = await response.json();
-				if (result.success) {
-					showToast('✅ Вы успешно покинули группу');
-					loadProfile();
-				} else {
-					showToast('❌ Ошибка: ' + (result.error || 'не удалось выйти'));
-				}
-			} catch (err) {
-				console.error(err);
-				showToast('❌ Ошибка соединения с сервером');
-			} finally {
-				pendingLeaveApplicationId = null;
-			}
-		});
-
-		// 3. Логика работы модального окна ОТМЕНЫ СВОЕЙ ЗАЯВКИ (Вместо confirm)
-		document.querySelectorAll('.js-btn-cancel').forEach(btn => {
-			btn.addEventListener('click', () => {
-				pendingCancelApplicationId = btn.dataset.appId;
-				const modal = document.getElementById('customCancelAppModal');
-				if (modal) modal.style.display = 'flex';
-			});
-		});
-		document.getElementById('btnCancelAppModalClose')?.addEventListener('click', () => {
-			const modal = document.getElementById('customCancelAppModal');
-			if (modal) modal.style.display = 'none';
-			pendingCancelApplicationId = null;
-		});
-		document.getElementById('btnConfirmCancelApp')?.addEventListener('click', async () => {
-			if (!pendingCancelApplicationId) return;
-			const modal = document.getElementById('customCancelAppModal');
-			if (modal) modal.style.display = 'none';
-			
-			await cancelApplication(pendingCancelApplicationId);
-			pendingCancelApplicationId = null;
-		});
-
-		// 4. Кнопки одобрения / отклонения чужих заявок лидерами (Здесь подтверждение не требуется)
-		document.querySelectorAll('.js-leader-approve, .js-leader-reject').forEach(btn => {
-			btn.addEventListener('click', async () => {
-				const appId = btn.dataset.appId;
-				const status = btn.classList.contains('js-leader-approve') ? 'approved' : 'rejected';
-				await updateApplicationStatus(appId, status);
-			});
-		});
-	}
-
-    // AJAX: Отмена своей заявки
-    // AJAX: Отмена своей заявки (Без алертов)
-	async function cancelApplication(appId) {
-		try {
-			const response = await fetch('/api/cancel_application.php', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ application_id: parseInt(appId) })
-			});
-			const result = await response.json();
-			if (result.success) {
-				showToast('✅ Заявка успешно отменена');
-				loadProfile();
-			} else {
-				showToast('❌ Ошибка: ' + (result.error || 'не удалось отменить'));
-			}
-		} catch (err) {
-			console.error(err);
-			showToast('❌ Не удалось отменить заявку');
-		}
-	}
-
-    // AJAX: Изменение статуса чужой заявки лидером
-    // AJAX: Изменение статуса чужой заявки лидером (Без алертов)
-	async function updateApplicationStatus(appId, status) {
-		try {
-			const response = await fetch('/api/update_application_status.php', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ application_id: parseInt(appId), status: status })
-			});
-			
-			const text = await response.text();
-			let result;
-			try {
-				result = JSON.parse(text);
-			} catch(e) {
-				showToast('❌ Фатальный сбой ответа сервера');
-				console.error("Критический ответ PHP:", text);
-				return;
-			}
-			
-			if (result.success) {
-				if (status === 'approved') {
-					showToast('✅ Заявка успешно одобрена');
-				} else {
-					showToast('ℹ️ Заявка отклонена');
-				}
-				loadProfile(); // Перезагружаем экран
-			} else {
-				showToast('❌ Ошибка бэкенда: ' + (result.error || 'не удалось обновить'));
-			}
-		} catch (err) {
-			console.error(err);
-			showToast('❌ Не удалось связаться с сервером');
-		}
-	}
-
-
-    // Инициализация загрузки страницы
-    document.addEventListener('DOMContentLoaded', loadProfile);
-</script>
-
-<script>
-/*
-    // =========================================================================
-// НАШ УНИКАЛЬНЫЙ АВТОНОМНЫЙ ДВИЖОК КАДРИРОВАНИЯ (БЕЗ ВНЕШНИХ ФАЙЛОВ)
-// =========================================================================
-let imgX = 0, imgY = 0;       
-let startX = 0, startY = 0;   
-let isDragging = false;       
-let currentScale = 1;         
-let baseWidth = 0, baseHeight = 0; 
-let circleRadius = 120;       
-
-function initCustomCropperEvents() {
-    const containerEl = document.getElementById('cropZoneContainer');
-    if (!containerEl) return;
-
-    containerEl.addEventListener('mousedown', startDrag);
-    containerEl.addEventListener('mousemove', doDrag);
-    window.addEventListener('mouseup', stopDrag);
-
-    containerEl.addEventListener('touchstart', startDrag, {passive: true});
-    containerEl.addEventListener('touchmove', doDrag, {passive: true});
-    window.addEventListener('touchend', stopDrag);
-
-    const zoomRange = document.getElementById('cropZoomRange');
-    if (zoomRange) {
-        zoomRange.oninput = function() {
-            currentScale = parseFloat(this.value);
-            updateImageTransform();
-        };
-    }
-}
-
-function openCropperModal(imageSrc) {
-    const modal = document.getElementById('cropperModal');
-    const img = document.getElementById('myCropImage');
-    const container = document.getElementById('cropZoneContainer');
-    const mask = document.getElementById('cropCircleMask');
-    const border = document.getElementById('cropCircleBorder');
-    const zoomInput = document.getElementById('cropZoomRange');
-
-    if (!modal || !img || !container) return;
-
-    modal.style.display = 'flex';
-    img.src = imageSrc;
-    if (zoomInput) zoomInput.value = 1;
-    currentScale = 1;
-
-    img.onload = function() {
-        const contW = container.clientWidth;
-        const contH = container.clientHeight;
-        circleRadius = Math.min(contW, contH) * 0.35;
-        
-        border.style.width = (circleRadius * 2) + 'px';
-        border.style.height = (circleRadius * 2) + 'px';
-        border.style.left = (contW / 2 - circleRadius) + 'px';
-        border.style.top = (contH / 2 - circleRadius) + 'px';
-
-        mask.style.boxShadow = `inset 0 0 0 9999px rgba(18, 18, 20, 0.85)`;
-        mask.style.clipPath = `polygon(0% 0%, 0% 100%, 100% 100%, 100% 0%, 0% 0%, calc(50% - ${circleRadius}px) calc(50% - ${circleRadius}px), calc(50% + ${circleRadius}px) calc(50% - ${circleRadius}px), calc(50% + ${circleRadius}px) calc(50% + ${circleRadius}px), calc(50% - ${circleRadius}px) calc(50% + ${circleRadius}px), calc(50% - ${circleRadius}px) calc(50% - ${circleRadius}px))`;
-        
-        const ratio = img.naturalWidth / img.naturalHeight;
-        if (ratio > 1) {
-            baseHeight = circleRadius * 2.2;
-            baseWidth = baseHeight * ratio;
-        } else {
-            baseWidth = circleRadius * 2.2;
-            baseHeight = baseWidth / ratio;
         }
-
-        img.style.width = baseWidth + 'px';
-        img.style.height = baseHeight + 'px';
-        imgX = contW / 2;
-        imgY = contH / 2;
-        updateImageTransform();
-        initCustomCropperEvents(); 
-    };
-}
-
-function updateImageTransform() {
-    const img = document.getElementById('myCropImage');
-    if (img) {
-        img.style.transform = `translate(calc(-50% + ${imgX}px), calc(-50% + ${imgY}px)) scale(${currentScale})`;
     }
-}
 
-function startDrag(e) {
-    isDragging = true;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    startX = clientX - imgX;
-    startY = clientY - imgY;
-}
+    // Функция отправки измененных данных
+    async function saveProfileData(e) {
+        e.preventDefault();
+        const button = document.getElementById('btnSaveProfile');
+        if (!button) return;
 
-function doDrag(e) {
-    if (!isDragging) return;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    imgX = clientX - startX;
-    imgY = clientY - startY;
-    updateImageTransform();
-}
-
-function stopDrag() { isDragging = false; }
-
-function closeCropperModal() {
-    document.getElementById('cropperModal').style.display = 'none';
-    const fileInput = document.getElementById('avatarFile');
-    if (fileInput) fileInput.value = '';
-}
-
-function saveCustomCroppedAvatar() {
-    const img = document.getElementById('myCropImage');
-    const container = document.getElementById('cropZoneContainer');
-    if (!img || !container) return;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = 400;
-    canvas.height = 400;
-    const ctx = canvas.getContext('2d');
-
-    const contW = container.clientWidth;
-    const contH = container.clientHeight;
-    const renderW = baseWidth * currentScale;
-    const renderHeight = baseHeight * currentScale;
-
-    const cropLeftOnRender = (contW / 2 - circleRadius) - (imgX - renderW / 2);
-    const cropTopOnRender = (contH / 2 - circleRadius) - (imgY - renderHeight / 2);
-
-    const scaleFactor = img.naturalWidth / renderW;
-    const sX = cropLeftOnRender * scaleFactor;
-    const sY = cropTopOnRender * scaleFactor;
-    const sW = (circleRadius * 2) * scaleFactor;
-    const sH = (circleRadius * 2) * scaleFactor;
-
-    ctx.drawImage(img, sX, sY, sW, sH, 0, 0, 400, 400);
-
-    canvas.toBlob(async (blob) => {
-        if (!blob) return;
-        closeCropperModal();
-        showToast('⏳ Сохранение аватара...');
+        button.disabled = true;
+        button.textContent = 'Сохранение...';
 
         const formData = new FormData();
-        formData.append('avatar', blob, 'avatar.jpg');
+        formData.append('first_name', document.getElementById('profFirstName').value.trim());
+        formData.append('last_name', document.getElementById('profLastName').value.trim());
+        formData.append('city', document.getElementById('profCity').value.trim());
+        formData.append('phone', document.getElementById('profPhone').value.trim());
+
+        const fileInput = document.getElementById('avatarFile');
+        if (fileInput && fileInput.files.length > 0) {
+            formData.append('avatar', fileInput.files[0]);
+        }
 
         try {
-            const response = await fetch('/api/update_profile.php?v=' + Date.now(), { method: 'POST', credentials: 'include', body: formData });
+            const response = await fetch('/api/update_profile.php?v=' + Date.now(), {
+                method: 'POST',
+                body: formData,
+                credentials: 'include',
+            });
+
             const result = await response.json();
             if (result.success) {
-                showToast('✅ Аватар успешно обновлен!');
-                const previewEl = document.getElementById('avatarPreview');
-                const t = new Date().getTime();
-                if (previewEl) {
-                    if (previewEl.tagName === 'DIV') {
-                        const newImg = document.createElement('img');
-                        newImg.id = 'avatarPreview';
-                        newImg.style.cssText = previewEl.style.cssText;
-                        newImg.style.objectFit = 'cover';
-                        newImg.src = result.avatar_url + '?t=' + t;
-                        previewEl.replaceWith(newImg);
-                    } else {
-                        previewEl.src = result.avatar_url + '?t=' + t;
-                    }
-                }
+                showToast('✅ Профиль успешно обновлен!');
+                loadProfile();
             } else {
                 showToast('❌ Ошибка: ' + (result.error || 'Не удалось сохранить'));
             }
         } catch (err) {
             console.error(err);
-            showToast('❌ Ошибка соединения с сервером');
+            showToast('❌ Не удалось связаться с сервером');
+        } finally {
+            button.disabled = false;
+            button.textContent = '💾 Сохранить изменения';
         }
-    }, 'image/jpeg', 0.85);
-}
-*/
+    }
+
+    // Переменные для хранения ID выбранных элементов
+    let pendingLeaveApplicationId = null;
+    let pendingCancelApplicationId = null;
+
+    // Настройка обработчиков событий
+    function setupEventListeners() {
+        // ==========================================
+        // [ДОБАВЛЕНО] ЗАГРУЗКА АВАТАРА
+        // ==========================================
+
+        // Перехват клика по кнопке камеры (для Android WebView)
+        const avatarLabel = document.querySelector('label[for="avatarFile"]');
+        if (avatarLabel) {
+            avatarLabel.addEventListener('click', function(e) {
+                if (typeof window.Android === 'object' && window.Android !== null && typeof window.Android.openGallery === 'function') {
+                    e.preventDefault();
+                    window.Android.openGallery();
+                    return false;
+                }
+            });
+        }
+
+        // Обработчик выбора файла из галереи
+        document.getElementById('avatarFile')?.addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files && files.length > 0) {
+                const file = files[0];
+
+                // Убираем проверку типа — пусть кроппер сам разбирается
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    openCropperModal(event.target.result, '/api/update_profile.php');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // ==========================================
+        // РЕДАКТИРОВАНИЕ ПРОФИЛЯ
+        // ==========================================
+
+        // Открыть модальное окно
+        document.getElementById('btnEditProfile')?.addEventListener('click', () => {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+
+            document.getElementById('editProfFirstName').value = userInfo.first_name || '';
+            document.getElementById('editProfLastName').value = userInfo.last_name || '';
+            document.getElementById('editProfCity').value = userInfo.city || '';
+            document.getElementById('editProfPhone').value = userInfo.phone || '';
+
+            document.getElementById('editProfileModal').style.display = 'flex';
+        });
+
+        // Закрыть модальное окно
+        document.getElementById('btnCancelEditProfile')?.addEventListener('click', () => {
+            document.getElementById('editProfileModal').style.display = 'none';
+        });
+
+        // Сохранить изменения
+        document.getElementById('btnSaveEditProfile')?.addEventListener('click', async () => {
+            const button = document.getElementById('btnSaveEditProfile');
+            button.disabled = true;
+            button.textContent = 'Сохранение...';
+
+            try {
+                const formData = new FormData();
+                formData.append('first_name', document.getElementById('editProfFirstName').value.trim());
+                formData.append('last_name', document.getElementById('editProfLastName').value.trim());
+                formData.append('city', document.getElementById('editProfCity').value.trim());
+                formData.append('phone', document.getElementById('editProfPhone').value.trim());
+
+                const response = await fetch('/api/update_profile.php?v=' + Date.now(), {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('✅ Профиль успешно обновлен!');
+                    document.getElementById('editProfileModal').style.display = 'none';
+                    loadProfile();
+                } else {
+                    showToast('❌ Ошибка: ' + (result.error || 'Не удалось сохранить'));
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('❌ Не удалось связаться с сервером');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Сохранить';
+            }
+        });
+
+        // ==========================================
+        // ВЫХОД ИЗ АККАУНТА
+        // ==========================================
+        document.getElementById('btnLogout')?.addEventListener('click', () => {
+            const modal = document.getElementById('customLogoutModal');
+            if (modal) modal.style.display = 'flex';
+        });
+        document.getElementById('btnCancelLogout')?.addEventListener('click', () => {
+            const modal = document.getElementById('customLogoutModal');
+            if (modal) modal.style.display = 'none';
+        });
+        document.getElementById('btnConfirmLogout')?.addEventListener('click', async () => {
+            const modal = document.getElementById('customLogoutModal');
+            if (modal) modal.style.display = 'none';
+            try {
+                const response = await fetch('/api/logout.php', { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    window.location.href = '/login.html';
+                } else {
+                    showToast('❌ Не удалось выйти: ' + (result.error || 'ошибка'));
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('❌ Ошибка сети при попытке выхода');
+            }
+        });
+
+        // ==========================================
+        // ВЫХОД ИЗ ГРУППЫ
+        // ==========================================
+        document.querySelectorAll('.js-btn-leave').forEach(btn => {
+            btn.addEventListener('click', () => {
+                pendingLeaveApplicationId = btn.dataset.appId;
+                const groupName = btn.dataset.groupName || '';
+                const textEl = document.getElementById('leaveGroupModalText');
+                if (textEl) textEl.textContent = `Вы уверены, что хотите выйти из группы «${groupName}»?`;
+
+                const modal = document.getElementById('customLeaveGroupModal');
+                if (modal) modal.style.display = 'flex';
+            });
+        });
+        document.getElementById('btnCancelLeaveGroup')?.addEventListener('click', () => {
+            const modal = document.getElementById('customLeaveGroupModal');
+            if (modal) modal.style.display = 'none';
+            pendingLeaveApplicationId = null;
+        });
+        document.getElementById('btnConfirmLeaveGroup')?.addEventListener('click', async () => {
+            if (!pendingLeaveApplicationId) return;
+            const modal = document.getElementById('customLeaveGroupModal');
+            if (modal) modal.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/leave_group.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ application_id: parseInt(pendingLeaveApplicationId) })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('✅ Вы успешно покинули группу');
+                    loadProfile();
+                } else {
+                    showToast('❌ Ошибка: ' + (result.error || 'не удалось выйти'));
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('❌ Ошибка соединения с сервером');
+            } finally {
+                pendingLeaveApplicationId = null;
+            }
+        });
+
+        // ==========================================
+        // ОТМЕНА СВОЕЙ ЗАЯВКИ
+        // ==========================================
+        document.querySelectorAll('.js-btn-cancel').forEach(btn => {
+            btn.addEventListener('click', () => {
+                pendingCancelApplicationId = btn.dataset.appId;
+                const modal = document.getElementById('customCancelAppModal');
+                if (modal) modal.style.display = 'flex';
+            });
+        });
+        document.getElementById('btnCancelAppModalClose')?.addEventListener('click', () => {
+            const modal = document.getElementById('customCancelAppModal');
+            if (modal) modal.style.display = 'none';
+            pendingCancelApplicationId = null;
+        });
+        document.getElementById('btnConfirmCancelApp')?.addEventListener('click', async () => {
+            if (!pendingCancelApplicationId) return;
+            const modal = document.getElementById('customCancelAppModal');
+            if (modal) modal.style.display = 'none';
+
+            await cancelApplication(pendingCancelApplicationId);
+            pendingCancelApplicationId = null;
+        });
+
+        // ==========================================
+        // КНОПКИ ОДОБРЕНИЯ / ОТКЛОНЕНИЯ ЗАЯВОК
+        // ==========================================
+        document.querySelectorAll('.js-leader-approve, .js-leader-reject').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const appId = btn.dataset.appId;
+                const status = btn.classList.contains('js-leader-approve') ? 'approved' : 'rejected';
+                await updateApplicationStatus(appId, status);
+            });
+        });
+    }
+
+    // AJAX: Отмена своей заявки
+    async function cancelApplication(appId) {
+        try {
+            const response = await fetch('/api/cancel_application.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ application_id: parseInt(appId) })
+            });
+            const result = await response.json();
+            if (result.success) {
+                showToast('✅ Заявка успешно отменена');
+                loadProfile();
+            } else {
+                showToast('❌ Ошибка: ' + (result.error || 'не удалось отменить'));
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('❌ Не удалось отменить заявку');
+        }
+    }
+
+    // AJAX: Изменение статуса чужой заявки лидером
+    async function updateApplicationStatus(appId, status) {
+        try {
+            const response = await fetch('/api/update_application_status.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ application_id: parseInt(appId), status: status })
+            });
+
+            const text = await response.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch(e) {
+                showToast('❌ Фатальный сбой ответа сервера');
+                console.error("Критический ответ PHP:", text);
+                return;
+            }
+
+            if (result.success) {
+                if (status === 'approved') {
+                    showToast('✅ Заявка успешно одобрена');
+                } else {
+                    showToast('ℹ️ Заявка отклонена');
+                }
+                loadProfile();
+            } else {
+                showToast('❌ Ошибка бэкенда: ' + (result.error || 'не удалось обновить'));
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('❌ Не удалось связаться с сервером');
+        }
+    }
+
+    // Инициализация загрузки страницы
+    document.addEventListener('DOMContentLoaded', loadProfile);
 </script>
 
-
-
-<!-- Уникальный автономный редактор аватара (Без библиотек) -->
+<!-- Уникальный автономный редактор аватара -->
 <div id="cropperModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000000; z-index: 10000; flex-direction: column; user-select: none;">
-    <!-- Шапка -->
     <header class="app-header" style="position: static; background: #1e1e20; border-bottom: 1px solid #333; display: flex; align-items: center;">
         <button class="back-btn" onclick="closeCropperModal()" style="color: #fff; background: none; border: none; padding: 10px; cursor: pointer;">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -751,29 +576,45 @@ function saveCustomCroppedAvatar() {
         <h1 class="org-name" style="color: #fff; font-size: 18px; margin-left: 10px;">Кадрирование фото</h1>
     </header>
 
-    <!-- Интерактивная зона обрезки -->
     <div id="cropZoneContainer" style="flex: 1; position: relative; overflow: hidden; background: #121214; display: flex; align-items: center; justify-content: center;">
-        <!-- Двигаемая картинка -->
         <img id="myCropImage" src="" alt="Crop" style="position: absolute; cursor: move; transform-origin: center center; max-width: none; max-height: none;">
-        
-        <!-- Круглая маска-затемнение поверх картинки -->
         <div id="cropCircleMask" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.7); border-radius: 0;"></div>
-        <!-- Синяя рамка круга -->
         <div id="cropCircleBorder" style="position: absolute; border: 2px solid #4a90e2; border-radius: 50%; pointer-events: none; box-shadow: 0 0 0 2px rgba(255,255,255,0.2);"></div>
     </div>
 
-    <!-- Панель управления (Масштаб и Кнопки) -->
     <div style="background: #1e1e20; padding: 15px 20px; border-top: 1px solid #333;">
-        <!-- Ползунок масштаба -->
         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; color: #fff; font-size: 14px;">
             <span>🔆</span>
             <input type="range" id="cropZoomRange" min="1" max="3" step="0.01" value="1" style="flex: 1; accent-color: #4a90e2; cursor: pointer;">
             <span>🔍</span>
         </div>
-        <!-- Кнопки -->
         <div style="display: flex; gap: 15px;">
             <button class="btn btn-ghost" onclick="closeCropperModal()" style="flex: 1; margin: 0; color: #fff; border-color: #555; background: transparent;">Отмена</button>
             <button class="btn" onclick="saveCustomCroppedAvatar()" style="flex: 1; margin: 0; background: #4a90e2; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Готово</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования профиля -->
+<div id="editProfileModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 90%; max-width: 400px; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto;">
+        <h3 style="margin-top: 0; font-size: 18px; text-align: center;">✏️ Редактировать профиль</h3>
+
+        <label for="editProfFirstName" style="display:block; margin-bottom:5px; font-weight:600;">Имя *</label>
+        <input type="text" id="editProfFirstName" class="input-field" required>
+
+        <label for="editProfLastName" style="display:block; margin-bottom:5px; font-weight:600;">Фамилия</label>
+        <input type="text" id="editProfLastName" class="input-field">
+
+        <label for="editProfCity" style="display:block; margin-bottom:5px; font-weight:600;">Город</label>
+        <input type="text" id="editProfCity" class="input-field">
+
+        <label for="editProfPhone" style="display:block; margin-bottom:5px; font-weight:600;">Телефон</label>
+        <input type="tel" id="editProfPhone" class="input-field">
+
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button class="btn btn-ghost" id="btnCancelEditProfile" style="flex: 1; margin: 0;">Отмена</button>
+            <button class="btn" id="btnSaveEditProfile" style="flex: 1; margin: 0; background: #4a90e2; color: #fff;">Сохранить</button>
         </div>
     </div>
 </div>
@@ -790,7 +631,7 @@ function saveCustomCroppedAvatar() {
     </div>
 </div>
 
-<!-- Кастомное окно подтверждения отмены своей поданной заявки -->
+<!-- Кастомное окно подтверждения отмены заявки -->
 <div id="customCancelAppModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
     <div class="card" style="width: 85%; max-width: 320px; text-align: center; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto;">
         <h3 style="margin-top: 0; font-size: 18px;">Отменить заявку?</h3>
@@ -802,7 +643,7 @@ function saveCustomCroppedAvatar() {
     </div>
 </div>
 
-<!-- Кастомное окно подтверждения (вместо confirm) -->
+<!-- Кастомное окно подтверждения выхода из аккаунта -->
 <div id="customLogoutModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
     <div class="card" style="width: 85%; max-width: 320px; text-align: center; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto;">
         <h3 style="margin-top: 0; font-size: 18px;">Выйти из аккаунта?</h3>
@@ -813,33 +654,30 @@ function saveCustomCroppedAvatar() {
         </div>
     </div>
 </div>
+
 <script src="/android.js"></script>
 <script>
- const IS_DEBUG = true; 
- const APP_VERSION = '1.0.0'; 
+    const IS_DEBUG = true;
+    const APP_VERSION = '1.0.0';
 
- (function() {
-     const version = IS_DEBUG ? Date.now() : APP_VERSION;
+    (function() {
+        const version = IS_DEBUG ? Date.now() : APP_VERSION;
 
-     // 1. Сбрасываем кэш стилей
-     const mainStyle = document.querySelector('link[href^="style.css"]');
-     if (mainStyle) {
-         mainStyle.href = 'style.css?v=' + version;
-     }
+        const mainStyle = document.querySelector('link[href^="style.css"]');
+        if (mainStyle) {
+            mainStyle.href = 'style.css?v=' + version;
+        }
 
-     // 2. Сбрасываем кэш кроппера аватарок
-     const cropperScript = document.querySelector('script[src^="assets/custom-cropper.js"]');
-     if (cropperScript) {
-         cropperScript.src = 'assets/custom-cropper.js?v=' + version;
-     }
+        const cropperScript = document.querySelector('script[src^="assets/custom-cropper.js"]');
+        if (cropperScript) {
+            cropperScript.src = 'assets/custom-cropper.js?v=' + version;
+        }
 
-     // 3. Динамически загружаем тему
-     const themeScript = document.createElement('script');
-     themeScript.src = 'theme.js?v=' + version;
-     document.body.appendChild(themeScript);
- })();
+        const themeScript = document.createElement('script');
+        themeScript.src = 'theme.js?v=' + version;
+        document.body.appendChild(themeScript);
+    })();
 </script>
-
 
 </body>
 </html>
