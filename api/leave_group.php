@@ -40,8 +40,9 @@ try {
 
     // Сохраняем уведомление в БД
     try {
-        $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, `read`) VALUES (?, ?, ?, ?, 0)");
-        $notifStmt->execute([$user_id, 'group_removed', 'Вы покинули группу 🚪', 'Вы успешно вышли из группы «' . $app['group_name'] . '».', 0]);
+        $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, group_id, target_page, target_params, `read`) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
+        $targetParams = json_encode(['group_id' => $app['group_id']], JSON_UNESCAPED_UNICODE);
+        $notifStmt->execute([$user_id, 'group_removed', 'Вы покинули группу 🚪', 'Вы успешно вышли из группы «' . $app['group_name'] . '».', $app['group_id'], 'profile.html', $targetParams]);
     } catch (Exception $e) {
         error_log("Ошибка сохранения уведомления: " . $e->getMessage());
     }

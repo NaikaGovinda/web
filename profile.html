@@ -74,6 +74,43 @@
         if (panel) panel.style.display = 'none';
     }
 
+    // Определение целевой страницы для legacy-уведомлений (без target_page)
+    function getLegacyTargetPage(type, groupId) {
+        // По умолчанию все уведомления ведут на профиль
+        let targetPage = 'profile.html';
+        
+        if (type === 'chat_message' && groupId) {
+            targetPage = 'group.html';
+        }
+        
+        return targetPage;
+    }
+
+    // Формирование URL из target_page и target_params
+    function buildNavigationUrl(targetPage, targetParams) {
+        if (!targetPage) return '';
+        
+        let params = {};
+        
+        // Парсим target_params если есть
+        if (targetParams) {
+            try {
+                const decoded = decodeURIComponent(targetParams);
+                params = JSON.parse(decoded);
+            } catch(e) {
+                console.error('Ошибка парсинга target_params:', e, 'raw:', targetParams);
+            }
+        }
+        
+        // Для group.html используем id из group_id
+        if (targetPage.includes('group.html') && params.group_id && !params.id) {
+            params.id = params.group_id;
+        }
+        
+        const queryString = new URLSearchParams(params).toString();
+        return queryString ? `${targetPage}?${queryString}` : targetPage;
+    }
+
     // Загрузить уведомления
     async function loadNotifications() {
         const listEl = document.getElementById('notificationsList');
@@ -96,7 +133,19 @@
 
             const notifications = data.notifications || [];
             console.log('Загружено уведомлений:', notifications.length, notifications);
-            updateNotifBadge(notifications.filter(n => !n.is_read).length);
+            
+            // Подсчёт непрочитанных (включая сгруппированные)
+            let unreadCount = 0;
+            notifications.forEach(n => {
+                if (!n.is_read) {
+                    if (n.is_grouped) {
+                        unreadCount += n.count;
+                    } else {
+                        unreadCount++;
+                    }
+                }
+            });
+            updateNotifBadge(unreadCount);
 
             if (notifications.length === 0) {
                 listEl.innerHTML = '<div class="notif-empty"><div class="notif-empty-icon">🔔</div><p>Нет уведомлений</p></div>';
@@ -114,36 +163,176 @@
                     'group_created': '🎉',
                     'default': '🔔'
                 };
-                const icon = iconMap[notif.type] || iconMap['default'];
-                const iconClass = notif.type.replace(/_/g, '-');
+                const notifType = notif.type || 'default';
+                const icon = iconMap[notifType] || iconMap['default'];
+                const iconClass = notifType.replace(/_/g, '-');
                 const timeStr = formatNotifTime(notif.created_at || '');
 
-                html += `
-                <div class="notif-item ${notif.is_read ? '' : 'unread'}" data-id="${notif.id}">
-                    <div class="notif-icon ${iconClass}">${icon}</div>
-                    <div class="notif-content">
-                        <p class="notif-title">${escapeHtml(notif.title || 'Уведомление')}</p>
-                        <p class="notif-text">${escapeHtml(notif.message || '')}</p>
-                        <p class="notif-time">${timeStr}</p>
+                if (notif.is_grouped) {
+                    // ГРУППИРОВАННЫЕ УВЕДОМЛЕНИЯ
+                    const items = notif.items || [];
+                    // Сортируем по дате (новые первые)
+                    items.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+                    
+                    const firstNotif = items[0] || {};
+                    const isUnread = !notif.is_read;
+                    const extraCount = items.length - 1;
+                    
+                    html += `
+                    <div class="notif-group ${isUnread ? 'unread' : ''}" data-group-id="${notif.group_id}">
+                        <div class="notif-group-header js-notif-group-header" data-group-key="${notif.group_key}">
+                            <div class="notif-icon ${iconClass}">${icon}</div>
+                            <div class="notif-content js-notif-group-content" style="flex:1;">
+                                <p class="notif-title">${escapeHtml(firstNotif.title || 'Уведомление')}</p>
+                                <p class="notif-text">${escapeHtml(firstNotif.message || '')}</p>
+                                <p class="notif-time">${timeStr}</p>
+                            </div>
+                            <div class="js-notif-group-actions" style="display:flex; align-items:center; gap:8px;">
+                                ${extraCount > 0 ? `<span class="notif-group-count">+${extraCount}</span>` : ''}
+                                <span class="notif-group-arrow" style="transition:transform 0.2s ease;font-size:12px;color:var(--color-muted);">▶</span>
+                            </div>
+                        </div>
+                        <div class="notif-group-items" style="display:none;">
+                            ${items.slice(1).map(item => {
+                                const itemTime = formatNotifTime(item.created_at || '');
+                                // Для legacy-уведомлений без target_page предоставляем значение по умолчанию
+                                const itemType = item.type || 'default';
+                                const defaultTarget = itemType === 'chat_message' && item.group_id ? 'group.html' : 'profile.html';
+                                const targetPage = item.target_page || defaultTarget;
+                                const targetParams = item.target_params || JSON.stringify({});
+                                return `
+                                <div class="notif-item-single ${!item.is_read ? 'unread' : ''}" 
+                                     data-id="${item.id}" 
+                                     data-target-page="${targetPage}" 
+                                     data-target-params="${encodeURIComponent(targetParams)}" 
+                                     data-group-id="${item.group_id || ''}">
+                                    <div class="notif-content" style="padding-left:44px;">
+                                        <p class="notif-text" style="font-size:13px;">${escapeHtml(item.message || '')}</p>
+                                        <p class="notif-time">${itemTime}</p>
+                                    </div>
+                                </div>
+                                `;
+                            }).join('')}
+                        </div>
                     </div>
-                </div>
-                `;
+                    `;
+                } else {
+                    // ОТДЕЛЬНЫЕ УВЕДОМЛЕНИЯ
+                    // Для legacy-уведомлений без target_page предоставляем значение по умолчанию
+                    const defaultTarget = getLegacyTargetPage(notifType, notif.group_id);
+                    const targetPage = notif.target_page || defaultTarget;
+                    const targetParams = notif.target_params || JSON.stringify({});
+                    
+                    html += `
+                    <div class="notif-item ${notif.is_read ? '' : 'unread'}" 
+                         data-id="${notif.id}" 
+                         data-target-page="${targetPage}" 
+                         data-target-params="${encodeURIComponent(targetParams)}" 
+                         data-group-id="${notif.group_id || ''}">
+                        <div class="notif-icon ${iconClass}">${icon}</div>
+                        <div class="notif-content">
+                            <p class="notif-title">${escapeHtml(notif.title || 'Уведомление')}</p>
+                            <p class="notif-text">${escapeHtml(notif.message || '')}</p>
+                            <p class="notif-time">${timeStr}</p>
+                        </div>
+                    </div>
+                    `;
+                }
             });
 
             listEl.innerHTML = html;
 
-            // Обработчик клика по уведомлению
-            listEl.querySelectorAll('.notif-item').forEach(item => {
+            // Обработчик клика по уведомлению (навигация)
+            listEl.querySelectorAll('.notif-item[data-id]').forEach(item => {
                 item.addEventListener('click', () => {
                     const notifId = item.dataset.id;
+                    const targetPage = item.dataset.targetPage;
+                    const targetParams = item.dataset.targetParams;
+                    
+                    console.log('Клик по уведомлению:', { notifId, targetPage, targetParams });
+                    
                     markNotificationRead(notifId);
                     item.classList.remove('unread');
+                    
+                    // Навигация если есть target_page
+                    const url = buildNavigationUrl(targetPage, targetParams);
+                    if (url) {
+                        window.location.href = url;
+                    }
+                });
+            });
+
+            // Обработчик клика по группе уведомлений (раскрытие + навигация)
+            listEl.querySelectorAll('.notif-group').forEach(group => {
+                group.addEventListener('click', () => {
+                    // Получаем заголовок и содержимое группы
+                    const header = group.querySelector('.js-notif-group-header');
+                    const firstItem = group.querySelector('.notif-item-single[data-id]');
+                    
+                    // Раскрытие/скрытие группы
+                    if (header) toggleNotifGroup(header);
+                    
+                    // Получаем данные для навигации
+                    const targetPage = firstItem?.dataset.targetPage;
+                    const targetParams = firstItem?.dataset.targetParams;
+                    const notifId = firstItem?.dataset.id;
+                    
+                    if (notifId) {
+                        markNotificationRead(notifId);
+                        group.classList.remove('unread');
+                        
+                        // Навигация если есть target_page
+                        const url = buildNavigationUrl(targetPage, targetParams);
+                        if (url) {
+                            window.location.href = url;
+                        }
+                    }
+                });
+            });
+
+            // Обработчик клика по сгруппированным уведомлениям
+            listEl.querySelectorAll('.notif-group-items .notif-item-single[data-id]').forEach(item => {
+                item.addEventListener('click', () => {
+                    const notifId = item.dataset.id;
+                    const targetPage = item.dataset.targetPage;
+                    const targetParams = item.dataset.targetParams;
+                    
+                    markNotificationRead(notifId);
+                    item.classList.remove('unread');
+                    
+                    // Навигация если есть target_page
+                    const url = buildNavigationUrl(targetPage, targetParams);
+                    if (url) {
+                        window.location.href = url;
+                    }
                 });
             });
 
         } catch (error) {
             console.error('Ошибка загрузки уведомлений:', error);
             listEl.innerHTML = '<div class="notif-empty"><p>Не удалось загрузить</p></div>';
+        }
+    }
+
+    // Раскрыть/скрыть группу уведомлений
+    function toggleNotifGroup(headerEl) {
+        const group = headerEl.closest('.notif-group');
+        const itemsContainer = group?.querySelector('.notif-group-items');
+        const actionsContainer = headerEl.querySelector('.js-notif-group-actions');
+        const arrow = actionsContainer?.querySelector('.notif-group-arrow');
+        
+        if (group && itemsContainer) {
+            const isExpanded = group.classList.contains('expanded');
+            
+            if (isExpanded) {
+                group.classList.remove('expanded');
+                itemsContainer.style.display = 'none';
+                if (arrow) arrow.style.transform = 'rotate(0deg)';
+            } else {
+                group.classList.add('expanded');
+                itemsContainer.style.display = 'block';
+                if (arrow) arrow.style.transform = 'rotate(90deg)';
+            }
         }
     }
 

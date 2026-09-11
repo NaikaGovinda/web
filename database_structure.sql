@@ -262,6 +262,12 @@ CREATE TABLE `users` (
   KEY `idx_email` (`email`),
   KEY `idx_auth_token` (`auth_token`)
 ) ENGINE=InnoDB AUTO_INCREMENT=156 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `notifications`
+    ADD COLUMN `group_id` int(11) DEFAULT NULL AFTER `message`,
+ADD COLUMN `target_page` varchar(100) DEFAULT NULL AFTER `group_id`,
+ADD COLUMN `target_params` text DEFAULT NULL AFTER `target_page`;
+
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

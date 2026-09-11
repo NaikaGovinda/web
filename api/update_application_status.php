@@ -63,8 +63,9 @@ try {
         $notifMessage = $status === 'approved' 
             ? "Ваша заявка в группу «{$app['group_name']}» одобрена!" 
             : "Ваша заявка в группу «{$app['group_name']}» отклонена.";
-        $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, `read`) VALUES (?, ?, ?, ?, 0)");
-        $notifStmt->execute([$app['user_id'], $status === 'approved' ? 'application_approved' : 'application_rejected', $notifTitle, $notifMessage]);
+        $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, group_id, target_page, target_params, `read`) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
+        $targetParams = json_encode(['group_id' => $app['group_id']], JSON_UNESCAPED_UNICODE);
+        $notifStmt->execute([$app['user_id'], $status === 'approved' ? 'application_approved' : 'application_rejected', $notifTitle, $notifMessage, $app['group_id'], 'profile.html', $targetParams]);
     } catch (Exception $e) {
         // Таблица notifications может ещё не существовать
         error_log("Ошибка сохранения уведомления: " . $e->getMessage());

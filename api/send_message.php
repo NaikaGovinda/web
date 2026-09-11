@@ -214,12 +214,16 @@ try {
     try {
         if ($recipientId !== null) {
             // Личное сообщение — уведомляем получателя
-            $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, `read`) VALUES (?, ?, ?, ?, 0)");
+            $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, group_id, target_page, target_params, `read`) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
+            $targetParams = json_encode(['id' => $groupId, 'open_private_chat' => $recipientId, 'open_private_name' => urlencode($senderName)], JSON_UNESCAPED_UNICODE);
             $notifStmt->execute([
                 $recipientId,
                 'chat_message',
                 'Личное сообщение 💬',
-                "{$senderName}: {$messageText}"
+                "{$senderName}: {$messageText}",
+                $groupId,
+                'group.html',
+                $targetParams
             ]);
         } else {
             // Сообщение в общий чат — уведомляем всех участников группы, кроме отправителя
@@ -227,14 +231,18 @@ try {
             $stmtNotifMembers->execute([$groupId, $userId]);
             $memberIds = $stmtNotifMembers->fetchAll(PDO::FETCH_COLUMN);
             
-            $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, `read`) VALUES (?, ?, ?, ?, 0)");
+            $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, group_id, target_page, target_params, `read`) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
             foreach ($memberIds as $memberId) {
                 try {
+                    $targetParams = json_encode(['id' => $groupId, 'open_chat' => 1], JSON_UNESCAPED_UNICODE);
                     $notifStmt->execute([
                         $memberId,
                         'chat_message',
                         'Новое сообщение в чате 💬',
-                        "{$senderName}: {$messageText}"
+                        "{$senderName}: {$messageText}",
+                        $groupId,
+                        'group.html',
+                        $targetParams
                     ]);
                 } catch (Exception $innerEx) {
                     // Таблица notifications может ещё не существовать

@@ -38,8 +38,13 @@ try {
 
     // Сохраняем уведомление в БД
     try {
-        $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, `read`) VALUES (?, ?, ?, ?, 0)");
-        $notifStmt->execute([$_SESSION['user_id'], 'application_cancelled', 'Заявка отменена ↩️', 'Вы отменили заявку на вступление в группу.', 0]);
+        // Получаем group_id для навигации
+        $stmtGroup = $pdo->prepare("SELECT group_id FROM applications WHERE id = ?");
+        // Заявка уже удалена, поэтому нужно получить group_id до удаления или использовать другой подход
+        // Используем profile.html как целевую страницу
+        $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, group_id, target_page, target_params, `read`) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
+        $targetParams = json_encode([], JSON_UNESCAPED_UNICODE);
+        $notifStmt->execute([$_SESSION['user_id'], 'application_cancelled', 'Заявка отменена ↩️', 'Вы отменили заявку на вступление в группу.', null, 'profile.html', $targetParams]);
     } catch (Exception $e) {
         error_log("Ошибка сохранения уведомления: " . $e->getMessage());
     }

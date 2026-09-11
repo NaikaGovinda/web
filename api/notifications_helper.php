@@ -14,13 +14,13 @@
  * sendNotification($user_id, 'group_removed', 'Вы покинули группу', 'Вы были удалены из группы "Кружок йоги"');
  */
 
-function sendNotification($user_id, $type, $title, $message) {
+function sendNotification($user_id, $type, $title, $message, $group_id = null, $target_page = null, $target_params = null) {
     if (!$user_id || !$type || !$title || !$message) {
         return false;
     }
 
-    // Сохраняем уведомление в БД
-    $sql = "INSERT INTO notifications (user_id, type, title, message, read) VALUES (?, ?, ?, ?, 0)";
+    // Сохраняем уведомление в БД с новыми полями
+    $sql = "INSERT INTO notifications (user_id, type, title, message, group_id, target_page, target_params, read) VALUES (?, ?, ?, ?, ?, ?, ?, 0)";
     
     // Подключение к БД (адаптируйте под вашу конфигурацию)
     $host = 'localhost';
@@ -33,7 +33,7 @@ function sendNotification($user_id, $type, $title, $message) {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$user_id, $type, $title, $message]);
+        $stmt->execute([$user_id, $type, $title, $message, $group_id, $target_page, $target_params]);
         
         $notification_id = $pdo->lastInsertId();
         
