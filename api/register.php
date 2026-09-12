@@ -20,13 +20,6 @@ $email = trim($_POST['email'] ?? $inputJSON['email'] ?? '');
 $phone = trim($_POST['phone'] ?? $inputJSON['phone'] ?? '');
 $password = $_POST['password'] ?? $inputJSON['password'] ?? '';
 
-// Логируем для отладки, что именно пришло в переменные
-file_put_contents(__DIR__ . '/register_debug.log', 
-    date('Y-m-d H:i:s') . " | IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown') . 
-    " | Email: [$email] | Name: [$first_name] | UA: " . ($_SERVER['HTTP_USER_AGENT'] ?? 'none') . "\n", 
-    FILE_APPEND
-);
-
 // Валидация
 if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     http_response_code(400);
@@ -78,13 +71,20 @@ try {
     // Отправка email
     if (sendVerificationEmail($email, $code)) {
         $_SESSION['pending_email'] = $email;
+        
+        // [БЕЗОПАСНОСТЬ] Регенерация сессии после регистрации
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
+        
         echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
     } else {
         throw new Exception('Ошибка при отправке письма через sendVerificationEmail');
     }
 
 } catch (Exception $e) {
-    file_put_contents(__DIR__ . '/register_debug.log', date('Y-m-d H:i:s') . " | CRITICAL ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
+    // В production режиме логируем ошибки на сервере
+    error_log("Register error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Ошибка сервера. Попробуйте позже.'], JSON_UNESCAPED_UNICODE);
 }

@@ -4,6 +4,7 @@ header('Content-Type: application/json; charset=utf8mb4');
 
 // [АРХИТЕКТУРА] db.php подключен на самом верху, ручной вызов session_start() полностью удален
 $pdo = require __DIR__ . '/db.php';
+$config = require __DIR__ . '/config.php';
 
 // 1. Проверяем авторизацию с корректным HTTP-статусом
 if (!isset($_SESSION['user_id'])) {
@@ -33,6 +34,15 @@ try {
     
     $stmtOnline = $pdo->prepare("REPLACE INTO user_chat_online (user_id, active_context, updated_at) VALUES (?, ?, NOW())");
     $stmtOnline->execute([$userId, $contextMarker]);
+
+    // Проверяем, существует ли колонка updated_at
+    $hasUpdatedAt = false;
+    try {
+        $colCheck = $pdo->query("SHOW COLUMNS FROM group_messages LIKE 'updated_at'");
+        $hasUpdatedAt = ($colCheck && $colCheck->rowCount() > 0);
+    } catch (\Exception $e) {
+        $hasUpdatedAt = false;
+    }
 	
     // 3. ПРОВЕРКА ДОСТУПА (писать и читать чаты этой группы могут только её участники, лидеры или админы)
     // [ИСПРАВЛЕНО] Проверка админа переведена на числовой флаг is_admin по стандарту проекта
@@ -72,14 +82,11 @@ try {
     // 4. ЗАПРОС СООБЩЕНИЙ: Разделяем логику на Общий чат и Личный чат (ЛС)
     if ($recipientId === null) {
         // --- ОБЩИЙ ЧАТ ГРУППЫ ---
-        $sql = "SELECT 
-                    m.id,
-                    m.sender_id,
-                    m.message_text,
-                    m.created_at,
-                    u.first_name,
-                    u.last_name,
-                    u.avatar_url
+        $selectFields = $hasUpdatedAt
+            ? "m.id, m.sender_id, m.message_text, m.created_at, m.updated_at, u.first_name, u.last_name, u.avatar_url"
+            : "m.id, m.sender_id, m.message_text, m.created_at, u.first_name, u.last_name, u.avatar_url";
+        
+        $sql = "SELECT $selectFields
                 FROM group_messages m
                 JOIN users u ON m.sender_id = u.id
                 WHERE m.group_id = :group_id AND m.recipient_id IS NULL
@@ -98,14 +105,11 @@ try {
         ");
         $updateReadStmt->execute([$recipientId, $userId]);
         
-        $sql = "SELECT 
-                    m.id,
-                    m.sender_id,
-                    m.message_text,
-                    m.created_at,
-                    u.first_name,
-                    u.last_name,
-                    u.avatar_url
+        $selectFields = $hasUpdatedAt
+            ? "m.id, m.sender_id, m.message_text, m.created_at, m.updated_at, u.first_name, u.last_name, u.avatar_url"
+            : "m.id, m.sender_id, m.message_text, m.created_at, u.first_name, u.last_name, u.avatar_url";
+        
+        $sql = "SELECT $selectFields
                 FROM group_messages m
                 JOIN users u ON m.sender_id = u.id
                 WHERE (
@@ -129,15 +133,29 @@ try {
     $messages = $stmt->fetchAll();
     
     // [ОПТИМИЗАЦИЯ] Строгое приведение ID к типам данных int для WebView
+    // [ИСПРАВЛЕНО] Проверяем существование файла аватара — убираем 404
+    $rootDir = $config['paths']['root_dir'];
     foreach ($messages as &$msg) {
         $msg['id'] = (int)$msg['id'];
         $msg['sender_id'] = (int)$msg['sender_id'];
+        $msg['is_edited'] = $hasUpdatedAt && $msg['updated_at'] !== null && $msg['updated_at'] !== $msg['created_at'];
+        
+        // Проверяем существование файла аватара
+        if (!empty($msg['avatar_url'])) {
+            $avatarPath = $rootDir . '/' . ltrim($msg['avatar_url'], '/');
+            if (!file_exists($avatarPath)) {
+                $msg['avatar_url'] = null;
+            }
+        }
     }
+    unset($msg);
     
     echo json_encode([
         'success' => true,
         'messages' => $messages,
-        'current_user_id' => $userId
+        'current_user_id' => $userId,
+        'is_admin' => $isAdmin,
+        'is_leader' => ($userRow && (int)$userRow['is_admin'] === 1)
     ], JSON_UNESCAPED_UNICODE);
     
 } catch (\PDOException $e) {

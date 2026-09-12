@@ -76,7 +76,7 @@ async function loadChatsList() {
             html += '<p style="color:var(--color-text-muted); font-size:14px;">Вы пока не состоите ни в одной группе.</p>';
         } else {
             data.groups.forEach(g => {
-                // [ИСПРАВЛЕНО] Красивая круглая заглушка, если у группы нет фото
+                // Бэкенд возвращает null для несуществующих аватаров
                 let avatarHtml = '';
                 if (g.group_avatar_url) {
                     avatarHtml = `<img src="${g.group_avatar_url}" style="width:44px; height:44px; border-radius:12px; object-fit:cover; background:#eee; flex-shrink:0;">`;
@@ -105,7 +105,7 @@ async function loadChatsList() {
             html += '<p style="color:var(--color-text-muted); font-size:14px;">В ваших группах пока нет других участников.</p>';
         } else {
             data.friends.forEach(f => {
-                // [ИСПРАВЛЕНО] Красивый круглый аватар-заглушка для пользователей
+                // Бэкенд возвращает null для несуществующих аватаров
                 let avatarHtml = '';
                 if (f.avatar_url) {
                     avatarHtml = `<img src="${f.avatar_url}" style="width:44px; height:44px; border-radius:50%; object-fit:cover; background:#eee; flex-shrink:0;">`;

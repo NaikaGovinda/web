@@ -1,5 +1,42 @@
 // android.js — интеграция с Android-приложением через WebView
-// Теперь работает только через PHP-сессию (без Telegram, без кук)
+// Теперь работает через сессию + токен (пароли не передаются!)
+
+/**
+ * Получает auth_token из localStorage
+ * @returns {string|null}
+ */
+function getAuthToken() {
+    return localStorage.getItem('auth_token');
+}
+
+/**
+ * Добавляет auth_token ко всем fetch запросам (через прокси)
+ * Это глобальная настройка — все fetch в коде будут использовать токен
+ */
+(function injectAuthToken() {
+    const originalFetch = window.fetch;
+    
+    window.fetch = function(...args) {
+        let [url, options] = args;
+        const token = getAuthToken();
+        
+        if (token) {
+            // Добавляем токен к заголовкам
+            options = options || {};
+            options.headers = options.headers || {};
+            
+            // Если ещё нет Authorization, добавляем наш токен
+            if (!options.headers['X-Auth-Token']) {
+                options.headers['X-Auth-Token'] = token;
+            }
+            
+            // Обновляем args, чтобы fetch получил изменённые options
+            args[1] = options;
+        }
+        
+        return originalFetch.apply(window, args);
+    };
+})();
 
 /**
  * Получает внутренний user_id для отправки в Android-приложение
@@ -14,7 +51,6 @@ async function getUserIdForAndroid() {
     });
 
     if (!res.ok) {
-      console.warn('HTTP ошибка при получении user_id:', res.status);
       return null;
     }
 
@@ -23,11 +59,9 @@ async function getUserIdForAndroid() {
     if (data.success && typeof data.user_id === 'number') {
       return String(data.user_id);
     } else {
-      console.warn('Некорректный ответ от /api/get_user_id.php:', data);
       return null;
     }
   } catch (e) {
-    console.warn('Не удалось получить user_id для Android:', e);
     return null;
   }
 }
@@ -37,25 +71,18 @@ async function getUserIdForAndroid() {
  */
 async function sendUserIdToAndroid() {
     if (!window.Android || typeof window.Android.setUser !== 'function') {
-        // Убираем беззвучный режим, пусть сайт скажет, видит ли он Android!
-        console.log('Мост Android еще не готов, запускаем ожидание...');
         setTimeout(sendUserIdToAndroid, 500);
         return;
     }
 
     const userId = await getUserIdForAndroid();
-    // 🔥 ДОБАВЛЕНО ДЛЯ ТЕСТА: Показывает, какой ID сайт считал из сессии
-    console.log('Мост зафиксирован! Сайт считал из сессии User ID: ' + userId);
 
     if (userId) {
         try {
             window.Android.setUser(userId);
-            console.log('УСПЕХ: user_id ' + userId + ' отправлен в Android!');
         } catch (e) {
-            console.log('Ошибка вызова setUser: ' + e.message);
+            // silently fail
         }
-    } else {
-        console.log('Внимание: Вы залогинены на сайте? Сессия вернула пустой User ID!');
     }
 }
 
@@ -79,8 +106,6 @@ if (typeof window.Android === 'object' && window.Android !== null) {
  * @param {string} imageUri - Внутренний локальный путь к изображению в Android
  */
 function receiveImageFromAndroid(imageUri) {
-    console.log("Мост Android -> JS сработал. Путь к фото:", imageUri);
-    
     // Проверяем, загружен ли наш кастомный кроппер на странице
     if (typeof openCropperModal === 'function') {
         
@@ -103,7 +128,7 @@ function updateActiveChatContextInAndroid(groupId) {
         try {
             window.Android.setActiveChat(groupId ? String(groupId) : "");
         } catch (e) {
-            console.warn("Ошибка передачи контекста чата в Android:", e);
+            // silently fail
         }
     }
 }

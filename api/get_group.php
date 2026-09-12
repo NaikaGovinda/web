@@ -3,6 +3,7 @@
 header('Content-Type: application/json; charset=utf8mb4');
 
 $pdo = require __DIR__ . '/db.php';
+$config = require __DIR__ . '/config.php';
 
 // [ИЗМЕНЕНО] Разрешаем просмотр без авторизации
 $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
@@ -134,7 +135,14 @@ try {
     ]);
     $groupMembers = $membersStmt->fetchAll();
 
-    // Форматирование типов
+    // [ИСПРАВЛЕНО] Проверяем аватар группы (может быть в assets/groups/ или assets/avatars/)
+    if (!empty($group['group_avatar_url'])) {
+        $groupAvatarPath = $config['paths']['root_dir'] . '/' . ltrim($group['group_avatar_url'], '/');
+        if (!file_exists($groupAvatarPath)) {
+            $group['group_avatar_url'] = null;
+        }
+    }
+    
     $group['id'] = (int)$group['id'];
     $group['is_online'] = (int)$group['is_online'];
     $group['member_count'] = (int)$group['member_count'];
@@ -146,9 +154,18 @@ try {
     }
     unset($e);
 
+    // [ИСПРАВЛЕНО] Проверяем аватары участников
+    $rootDir = $config['paths']['root_dir'];
     foreach ($groupMembers as &$m) {
         $m['id'] = (int)$m['id'];
         $m['unread_count'] = (int)$m['unread_count'];
+        
+        if (!empty($m['avatar_url'])) {
+            $avatarPath = $rootDir . '/' . ltrim($m['avatar_url'], '/');
+            if (!file_exists($avatarPath)) {
+                $m['avatar_url'] = null;
+            }
+        }
     }
     unset($m);
 

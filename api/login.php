@@ -4,6 +4,7 @@ header('Content-Type: application/json; charset=utf8mb4');
 
 // [АРХИТЕКТУРА] db.php подключен на самом верху, ручная настройка cookie и сессий удалена
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/rate_limiter.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 $email = trim($input['email'] ?? '');
@@ -12,6 +13,18 @@ $password = $input['password'] ?? '';
 if (!filter_var($email, FILTER_VALIDATE_EMAIL) || empty($password)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Email и пароль обязательны'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// [БЕЗОПАСНОСТЬ] Rate limiting для защиты от brute force
+$rateLimit = checkRateLimit('login', 5, 900); // 5 попыток в 15 минут
+if (!$rateLimit['allowed']) {
+    http_response_code(429);
+    echo json_encode([
+        'success' => false, 
+        'error' => 'Слишком много попыток. Попробуйте через ' . $rateLimit['retry_after'] . ' секунд',
+        'retry_after' => $rateLimit['retry_after']
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 

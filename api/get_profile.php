@@ -3,6 +3,7 @@
 header('Content-Type: application/json; charset=utf8mb4');
 
 $pdo = require __DIR__ . '/db.php';
+$config = require __DIR__ . '/config.php';
 
 if (!isset($_SESSION['user_id'])) {
     http_response_code(403);
@@ -29,6 +30,15 @@ try {
     }
 
     // [ИСПРАВЛЕНО] Приоритет: is_admin → role из БД → 'user'
+    // [ИСПРАВЛЕНО] Проверяем аватар пользователя
+    $rootDir = $config['paths']['root_dir'];
+    if (!empty($user_info['avatar_url'])) {
+        $avatarPath = $rootDir . '/' . ltrim($user_info['avatar_url'], '/');
+        if (!file_exists($avatarPath)) {
+            $user_info['avatar_url'] = null;
+        }
+    }
+    
     $user_info['id'] = (int)$user_info['id'];
     $user_info['is_admin'] = (int)$user_info['is_admin'];
 

@@ -4,6 +4,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Группа — Нама-Хатта</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="style.css">
@@ -105,8 +108,50 @@
     
         <!-- Панель ввода -->
         <div class="chat-input-bar">
-            <input type="text" id="chatMessageInput" class="input-field" placeholder="Сообщение..." autocomplete="off">
-            <button class="btn" onclick="sendGroupChatMessage()" style="width: auto; padding: 10px 20px;">Отправить</button>
+            <textarea id="chatMessageInput" class="chat-textarea" placeholder="Сообщение..." autocomplete="off" rows="1"></textarea>
+            <button class="btn btn-send" onclick="sendGroupChatMessage()" style="width: auto; padding: 10px 20px;">Отправить</button>
+        </div>
+    </div>
+
+    <!-- Затемнение фона -->
+    <div id="messageMenuBackdrop" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 10001;">
+    </div>
+
+    <!-- Меню действий (как в Telegram) -->
+    <div id="messageContextMenu" style="display: none; position: fixed; background: #ffffff; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); z-index: 10002; min-width: 280px; max-width: 90%; overflow: hidden;">
+        <div class="context-menu-item" data-action="reply" style="padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 400; color: #1e1e20;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14L4 19l5-5"/><path d="M4 19h11a5 5 0 0 0 5-5v-1"/></svg>
+            Ответить
+        </div>
+        <div class="context-menu-item" data-action="edit" style="padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 400; color: #1e1e20;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Редактировать
+        </div>
+        <div class="context-menu-item" data-action="copy" style="padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 400; color: #1e1e20;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Копировать
+        </div>
+        <div style="height: 1px; background: #e5e5e7; margin: 0 8px;"></div>
+        <div class="context-menu-item" data-action="delete" style="padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 400; color: #ff3b30;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Удалить
+        </div>
+        <div style="height: 1px; background: #e5e5e7; margin: 0 8px;"></div>
+        <div class="context-menu-item" data-action="select" style="padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 400; color: #4a90e2;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Выбрать
+        </div>
+    </div>
+
+    <!-- Окно редактирования сообщения -->
+    <div id="editMessageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10002; align-items: center; justify-content: center;">
+        <div class="card" style="width: 85%; max-width: 400px; text-align: center; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+            <h3 style="margin-top: 0; font-size: 18px;">Редактировать сообщение</h3>
+            <textarea id="editMessageInput" class="textarea-field" style="width: 100%; min-height: 100px; box-sizing: border-box; margin: 15px 0; padding: 12px; font-size: 15px; font-family: inherit;" placeholder="Ваше сообщение..."></textarea>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-ghost" onclick="closeEditMessageModal()" style="flex: 1; margin: 0;">Отмена</button>
+                <button class="btn" onclick="saveEditedMessage()" style="flex: 1; margin: 0; background: #4a90e2; color: #fff; border: none; border-radius: 8px; font-weight: 600;">Сохранить</button>
+            </div>
         </div>
     </div>
 
@@ -154,6 +199,10 @@
   let currentGroupDesc = "";
   let activeChatRecipientId = null; // null — общий чат группы, число — ID собеседника для ЛС
   let selectedMessageIds = []; // Хранит ID выделенных для удаления сообщений
+  let contextMessageId = null; // ID сообщения для контекстного меню
+  let contextMessageText = ''; // Текст сообщения для копирования/редактирования
+  let contextCanDelete = false; // Может ли пользователь удалять сообщение
+  let contextCanEdit = false; // Может ли пользователь редактировать сообщение
 
 
   function escapeHtml(text) {
@@ -162,7 +211,7 @@
     return div.innerHTML;
   }
   
-  let chatInterval = null; // Переменная для автообновления сообщений
+  // Автообновление чата убрано — запросы накапливаются, обновление по факту нужно
 
     // Функция открытия ОБЩЕГО чата группы
     // Функция открытия ОБЩЕГО чата группы
@@ -187,10 +236,7 @@
 		if (chatModal) {
 			chatModal.style.display = 'none';
 		}
-		if (chatInterval) {
-			clearInterval(chatInterval);
-			chatInterval = null;
-		}
+		// Автообновление убрано, clearInterval не нужен
 		activeChatRecipientId = null; // Очищаем получателя ЛС
 		
 		// 🔥 Уведомляем Android, что чат закрыт, теперь уведомления можно показывать сверху
@@ -366,9 +412,11 @@
 				const isMyMsg = parseInt(msg.sender_id) === currentUserId;
 				const canDeleteThisMsg = data.is_admin || data.is_leader || isMyMsg;
 				const isSelected = selectedMessageIds.includes(parseInt(msg.id));
+				// Защита от отсутствия поля is_edited
+				const isEdited = msg.is_edited === true;
 
-				const rowStyle = isMyMsg 
-					? 'display: flex; gap: 8px; max-width: 85%; margin-bottom: 10px; align-self: flex-end; flex-direction: row-reverse; width: 100%; justify-content: flex-start; align-items: flex-end;' 
+				const rowStyle = isMyMsg
+					? 'display: flex; gap: 8px; max-width: 85%; margin-bottom: 10px; align-self: flex-end; flex-direction: row-reverse; width: 100%; justify-content: flex-start; align-items: flex-end;'
 					: 'display: flex; gap: 8px; max-width: 85%; margin-bottom: 10px; align-self: flex-start; width: 100%; align-items: flex-end;';
 
 				let bubbleStyle = '';
@@ -380,25 +428,23 @@
 						: 'background: #ffffff; padding: 10px 14px; border-radius: 4px 16px 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin: 0 5px; position: relative;';
 				}
 
-				// [ИСПРАВЛЕНО] Умная генерация аватарок-заглушек без битого HTML-кода
+				// Бэкенд возвращает null для несуществующих аватаров
 				let avatarHtml = '';
 				const currentAvatarUrl = isMyMsg ? myAvatarUrl : msg.avatar_url;
 
 				if (currentAvatarUrl) {
-					// Если фото есть в базе данных — выводим его
 					avatarHtml = `<img class="chat-msg-avatar" src="${currentAvatarUrl}" alt="Фото" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #e0e0e0;">`;
 				} else {
-					// Если фото НЕТ — выводим красивую круглую дефолтную заглушку с силуэтом 👤
 					avatarHtml = `<div class="chat-msg-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: #f0f0f2; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; user-select: none; border: 1px solid #e0e0e2;">👤</div>`;
 				}
 
 				html += `
-				<div class="chat-msg-row js-selectable-msg" style="${rowStyle} cursor: pointer;" data-msg-id="${msg.id}" data-can-delete="${canDeleteThisMsg ? '1' : '0'}">
+				<div class="chat-msg-row js-selectable-msg" style="${rowStyle} cursor: pointer;" data-msg-id="${msg.id}" data-can-delete="${canDeleteThisMsg ? '1' : '0'}" data-can-edit="${canDeleteThisMsg || isMyMsg ? '1' : '0'}">
 					${avatarHtml}
 					<div class="chat-msg-bubble" style="${bubbleStyle}">
 						${(!isMyMsg && activeChatRecipientId === null) ? `<div class="chat-msg-author" style="font-size: 11px; font-weight: 700; color: #4a90e2; margin-bottom: 3px;">${escapeHtml(msg.first_name)} ${escapeHtml(msg.last_name || '')}</div>` : ''}
 						<div class="chat-msg-text" style="font-size: 14px; color: #1e1e20; word-break: break-word; text-align: left;">${escapeHtml(msg.message_text)}</div>
-						<div class="chat-msg-time" style="font-size: 10px; color: #888; text-align: right; margin-top: 4px;">${timeStr}</div>
+						<div class="chat-msg-time" style="font-size: 10px; color: #888; text-align: right; margin-top: 4px;">${timeStr}${isEdited ? ' ✏️' : ''}</div>
 					</div>
 				</div>
 				`;
@@ -406,15 +452,15 @@
 
 			container.innerHTML = html;
 
-			// Навешиваем клики на новые перерендеренные строки сообщений чата
-			setupMessageSelectionListeners();
+			// Навешиваем контекстное меню для сообщений (по клику открывается меню)
+			setupMessageContextMenu();
 
 			if (isScrolledToBottom) {
 				container.scrollTop = container.scrollHeight;
 			}
 
 		} catch (err) {
-			console.error('Ошибка загрузки чата:', err);
+			// silently fail - errors handled via showToast
 		}
 	}
 
@@ -430,6 +476,8 @@
         if (!text) return;
         
         input.value = '';
+        // Сбрасываем высоту textarea
+        input.style.height = 'auto';
         
         try {
             const response = await fetch('/api/send_message.php', {
@@ -516,6 +564,297 @@
             confirmModal.style.display = 'none';
         }
         pendingMessageIdToDelete = null;
+    }
+
+    // === ФУНКЦИИ КОНТЕКСТНОГО МЕНЮ И РЕДАКТИРОВАНИЯ ===
+    
+    // Показать контекстное меню (Telegram-style)
+    function showContextMenu(messageId, messageText, canDelete, canEdit, event) {
+        contextMessageId = messageId;
+        contextMessageText = messageText;
+        contextCanDelete = canDelete;
+        contextCanEdit = canEdit;
+
+        const menu = document.getElementById('messageContextMenu');
+        const backdrop = document.getElementById('messageMenuBackdrop');
+
+        // Скрываем/показываем пункты меню в зависимости от прав
+        const editItem = menu.querySelector('[data-action="edit"]');
+        if (editItem) {
+            editItem.style.display = canEdit ? 'flex' : 'none';
+        }
+
+        // Показываем backdrop
+        if (backdrop) {
+            backdrop.style.display = 'block';
+        }
+
+        // Показываем меню по центру экрана
+        menu.style.display = 'block';
+        
+        // Центрируем меню
+        const menuWidth = Math.min(280, window.innerWidth * 0.9);
+        const menuHeight = 280;
+        
+        const posX = (window.innerWidth - menuWidth) / 2;
+        const posY = Math.max(50, (window.innerHeight - menuHeight) / 2);
+
+        menu.style.left = posX + 'px';
+        menu.style.top = posY + 'px';
+        menu.style.width = menuWidth + 'px';
+
+        // Добавляем обработчики на пункты меню
+        const menuItems = menu.querySelectorAll('.context-menu-item');
+        menuItems.forEach(item => {
+            const action = item.dataset.action;
+            
+            const newItem = item.cloneNode(true);
+            item.parentNode.replaceChild(newItem, item);
+            
+            newItem.addEventListener('click', (e) => {
+                e.stopPropagation();
+                hideContextMenu();
+                
+                setTimeout(() => {
+                    if (action === 'copy') copyMessageText();
+                    else if (action === 'edit') startEditMessage();
+                    else if (action === 'delete') deleteMessageFromContext();
+                    else if (action === 'reply') showToast('💬 Ответить - в разработке');
+                    else if (action === 'select') {
+                        selectedMessageIds = [messageId];
+                        updateChatHeaderMode();
+                        loadChatMessages();
+                        showToast(`✅ Выбрано ${selectedMessageIds.length} сообщение`);
+                    }
+                }, 50);
+            });
+        });
+
+        // Закрываем меню при нажатии на backdrop
+        if (backdrop) {
+            const closeOnBackdrop = (e) => {
+                if (e.target === backdrop) {
+                    hideContextMenu();
+                    backdrop.removeEventListener('click', closeOnBackdrop);
+                    backdrop.removeEventListener('touchstart', closeOnBackdrop);
+                }
+            };
+            backdrop.addEventListener('click', closeOnBackdrop);
+            backdrop.addEventListener('touchstart', closeOnBackdrop);
+        }
+    }
+
+    // Скрыть контекстное меню
+    function hideContextMenu() {
+        const menu = document.getElementById('messageContextMenu');
+        const backdrop = document.getElementById('messageMenuBackdrop');
+        
+        if (menu) {
+            menu.style.display = 'none';
+        }
+        if (backdrop) {
+            backdrop.style.display = 'none';
+        }
+        document.removeEventListener('click', hideContextMenu);
+        document.removeEventListener('touchstart', hideContextMenu);
+    }
+
+    // Копировать текст сообщения
+    async function copyMessageText() {
+        hideContextMenu();
+        
+        if (!contextMessageText) return;
+
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(contextMessageText);
+                showToast('✅ Текст скопирован');
+            } else {
+                // Резервный метод для старых браузеров
+                const textarea = document.createElement('textarea');
+                textarea.value = contextMessageText;
+                textarea.style.position = 'fixed';
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('✅ Текст скопирован');
+            }
+        } catch (err) {
+            console.error('Ошибка копирования:', err);
+            showToast('❌ Не удалось скопировать');
+        }
+    }
+
+    // Начать редактирование сообщения
+    function startEditMessage() {
+        hideContextMenu();
+        
+        const modal = document.getElementById('editMessageModal');
+        const input = document.getElementById('editMessageInput');
+        
+        if (modal && input) {
+            input.value = contextMessageText;
+            modal.style.display = 'flex';
+            
+            // Автоматически фокусируемся на поле ввода
+            setTimeout(() => {
+                input.focus();
+                // Позиционируем модалку выше на мобильных
+                input.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        }
+    }
+
+    // Закрыть окно редактирования
+    function closeEditMessageModal() {
+        const modal = document.getElementById('editMessageModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        contextMessageId = null;
+        contextMessageText = '';
+    }
+
+    // Сохранить отредактированное сообщение
+    async function saveEditedMessage() {
+        const input = document.getElementById('editMessageInput');
+        if (!input || !contextMessageId) return;
+
+        const newText = input.value.trim();
+        if (!newText) {
+            showToast('⚠️ Сообщение не может быть пустым');
+            return;
+        }
+
+        const button = input.closest('.card').querySelector('.btn');
+        if (button) {
+            button.disabled = true;
+            button.textContent = 'Сохранение...';
+        }
+
+        try {
+            const response = await fetch('/api/update_message.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    message_id: contextMessageId,
+                    message_text: newText
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                showToast('✅ Сообщение обновлено');
+                closeEditMessageModal();
+                await loadChatMessages();
+            } else {
+                showToast('❌ Ошибка: ' + (result.error || 'Не удалось сохранить'));
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('❌ Ошибка сети при сохранении');
+        } finally {
+            if (button) {
+                button.disabled = false;
+                button.textContent = 'Сохранить';
+            }
+        }
+    }
+
+    // Удалить сообщение из контекстного меню
+    function deleteMessageFromContext() {
+        hideContextMenu();
+        
+        if (contextMessageId) {
+            deleteChatMessage(contextMessageId);
+        }
+    }
+
+    // Инициализация контекстного меню для сообщений
+    function setupMessageContextMenu() {
+        document.querySelectorAll('.js-selectable-msg').forEach(row => {
+            // Удаляем старые обработчики
+            const newRow = row.cloneNode(true);
+            row.parentNode.replaceChild(newRow, row);
+
+            const messageId = parseInt(newRow.dataset.msgId);
+            const canDelete = newRow.dataset.canDelete === '1';
+            const isMyMsg = newRow.style.flexDirection === 'row-reverse';
+            const canEdit = isMyMsg;
+
+            let pressTimer = null;
+            let startX = 0;
+            let startY = 0;
+            let isScrolling = false;
+
+            newRow.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                isScrolling = false;
+                
+                // Запускаем таймер долгого нажатия
+                pressTimer = setTimeout(() => {
+                    if (!isScrolling) {
+                        // Получаем текст сообщения
+                        const bubble = newRow.querySelector('.chat-msg-bubble');
+                        const textEl = bubble?.querySelector('.chat-msg-text');
+                        const messageText = textEl?.textContent || '';
+                        
+                        // Создаём объект события с координатами
+                        const touchEvent = {
+                            clientX: startX,
+                            clientY: startY
+                        };
+                        
+                        showContextMenu(messageId, messageText, canDelete, canEdit, touchEvent);
+                        
+                        // Вибрация для обратной связи
+                        if (navigator.vibrate) {
+                            navigator.vibrate(50);
+                        }
+                    }
+                }, 600);
+            }, { passive: true });
+
+            newRow.addEventListener('touchmove', (e) => {
+                const moveX = e.touches[0].clientX;
+                const moveY = e.touches[0].clientY;
+                const distance = Math.sqrt(
+                    Math.pow(moveX - startX, 2) + 
+                    Math.pow(moveY - startY, 2)
+                );
+                
+                // Если палец сдвинулся больше чем на 10px - это скролл
+                if (distance > 10) {
+                    isScrolling = true;
+                    if (pressTimer) {
+                        clearTimeout(pressTimer);
+                        pressTimer = null;
+                    }
+                }
+            }, { passive: true });
+
+            newRow.addEventListener('touchend', () => {
+                // Отменяем долгое нажатие, если палец отпустили
+                if (pressTimer) {
+                    clearTimeout(pressTimer);
+                    pressTimer = null;
+                }
+            });
+
+            // Правый клик для десктопа
+            newRow.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                const bubble = newRow.querySelector('.chat-msg-bubble');
+                const textEl = bubble?.querySelector('.chat-msg-text');
+                const messageText = textEl?.textContent || '';
+                
+                showContextMenu(messageId, messageText, canDelete, canEdit, e);
+            });
+        });
     }
 
 
@@ -857,11 +1196,7 @@
     
         chatModal.style.display = 'flex';
         loadChatMessages();
-    
-        // Запускаем таймер автообновления, если он ещё не запущен
-        if (!chatInterval) {
-            chatInterval = setInterval(loadChatMessages, 3000);
-        }
+        // Автообновление убрано — не накапливает запросы
     }
     
     // Функция открытия личного чата при клике на имя участника
@@ -885,14 +1220,11 @@
           activeChatRecipientId = null;
           document.getElementById('chatGroupTitle').textContent = `🌸 Чат группы`;
 
-          // Сразу отображаем модальное окно чата и запускаем опрос сервера
+          // Сразу отображаем модальное окно чата и загружаем сообщения
           const chatModal = document.getElementById('groupChatModal');
           if (chatModal) {
               chatModal.style.display = 'flex';
               loadChatMessages();
-              if (!chatInterval) {
-                  chatInterval = setInterval(loadChatMessages, 3000);
-              }
           }
       }
 
@@ -910,7 +1242,6 @@
           if (chatModal) {
               chatModal.style.display = 'flex';
               loadChatMessages();
-              if (!chatInterval) { chatInterval = setInterval(loadChatMessages, 3000); }
           }
       }
 
@@ -952,7 +1283,7 @@
 
           document.getElementById('groupName').textContent = group.name;
 
-          // Проверяем наличие аватарки группы, иначе ставим заглушку
+          // Бэкенд возвращает null для несуществующих аватаров
           let groupAvatarHtml = '';
           if (group.group_avatar_url) {
               groupAvatarHtml = `<img id="groupAvatarPreview" src="${group.group_avatar_url}" alt="Аватар группы" style="width: 120px; height: 120px; border-radius: 16px; object-fit: cover; display: block; border: 2px solid var(--color-primary, #4A90E2);">`;
@@ -1017,7 +1348,7 @@
                   if (m.role === 'admin') roleBadge = '<span class="member-role-badge">Админ</span>';
                   if (m.role === 'observer') roleBadge = '<span class="member-role-badge" style="background: #f0f0f2; color: #888;">👁️ Наблюдатель</span>';
 
-                  // Формируем отображение аватара: картинка ИЛИ текстовый кружок-заглушка
+                  // Бэкенд возвращает null для несуществующих аватаров
                   let avatarHtml = '';
                   if (m.avatar_url) {
                       avatarHtml = `<img src="${m.avatar_url}" alt="Фото" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #eee;">`;
@@ -1241,6 +1572,15 @@
 		// НАМЕРТВО ПРИВЯЗЫВАЕМ ENTER К ПОЛЮ ВВОДА ЧАТА ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
 		const msgInput = document.getElementById('chatMessageInput');
 		if (msgInput) {
+			// Автоувеличение высоты textarea
+			msgInput.addEventListener('input', function() {
+				this.style.height = 'auto';
+				this.style.height = (this.scrollHeight) + 'px';
+				if (this.value.trim() === '') {
+					this.style.height = 'auto';
+				}
+			});
+
 			msgInput.addEventListener('keydown', (e) => {
 				// Если нажат Enter БЕЗ зажатого Shift
 				if (e.key === 'Enter' && !e.shiftKey) {

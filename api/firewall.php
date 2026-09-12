@@ -75,14 +75,17 @@ if (!$is_static) {
 }
 
 // 3. ЗАЩИТА ОТ ВЗЛОМА (ЧЕРНЫЙ СПИСОК ПАТТЕРНОВ)
+// Используем более точные правила, чтобы не блокировать легитимные запросы
 $bad_patterns = [
-    '/\.\.\//', 
-    '/\.%2e/i', 
-    '/%2e%2e/i', 
-    '/cgi-bin/i', 
-    '/\/bin\/(sh|bash|cmd)/i', 
-    '/(union|select|insert|delete|drop)/i', 
-    '/<script/i' 
+    '/\.\.\//',           // Path traversal
+    '/\.%2e/i',           // Encoded traversal
+    '/%2e%2e/i',          // Encoded traversal
+    '/cgi-bin/i',         // CGI access
+    '/\/bin\/(sh|bash|cmd)/i',  // Shell access
+    '/<script/i',         // XSS
+    '/union\s+select/i',  // SQL injection (specific)
+    '/drop\s+table/i',    // SQL injection (specific)
+    '/insert\s+into/i',   // SQL injection (specific)
 ];
 
 $is_attack = false;

@@ -1,3 +1,7 @@
+# ==========================================
+# КОНФИДЕНЦИАЛЬНЫЕ ФАЙЛЫ (НИКОГДА НЕ ЗАГРУЖАТЬ)
+# ==========================================
+
 *.iml
 .gradle
 /local.properties
@@ -13,3 +17,4 @@
 .externalNativeBuild
 .cxx
 local.properties
+google-services.json

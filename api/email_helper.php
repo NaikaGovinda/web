@@ -36,14 +36,20 @@ function sendVerificationEmail($to, $code) {
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; 
         $mail->Port = $config['email']['port']; 
         
-        // Отключаем строгую проверку SSL сокетов в XAMPP для легкого прохода писем на локальной машине
-        $mail->SMTPOptions = [
-            'ssl' => [
-                'verify_peer' => false,
-                'verify_peer_name' => false,
-                'allow_self_signed' => true
-            ]
-        ];
+        // Включаем проверку SSL только в production
+        $appEnv = getenv('APP_ENV') ?: 'production';
+        if ($appEnv === 'production') {
+            $mail->SMTPOptions = null; // Используем стандартную проверку SSL
+        } else {
+            // Отключаем строгую проверку SSL только в development (XAMPP)
+            $mail->SMTPOptions = [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true
+                ]
+            ];
+        }
 
         $mail->CharSet = 'UTF-8';
 

@@ -249,7 +249,7 @@
             listEl.addEventListener('click', (e) => {
                 const target = e.target;
                 
-                // Проверяем клик по заголовку группы
+                // Клик по заголовку группы — ТОЛЬКО раскрытие/скрытие
                 if (target.closest('.notif-group-header')) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -258,7 +258,7 @@
                     return;
                 }
                 
-                // Проверяем клик по сообщению в группе
+                // Клик по сообщению в группе — раскрытие + переход в чат
                 const singleItem = target.closest('.notif-item-single[data-id]');
                 if (singleItem) {
                     e.preventDefault();
@@ -268,7 +268,7 @@
                     const targetPage = singleItem.dataset.targetPage;
                     const targetParams = singleItem.dataset.targetParams;
                     
-                    // Раскрываем группу
+                    // Раскрываем группу если закрыта
                     const group = singleItem.closest('.notif-group');
                     const header = group?.querySelector('.js-notif-group-header');
                     if (header && !group.classList.contains('expanded')) {
@@ -286,7 +286,7 @@
                     return;
                 }
                 
-                // Проверяем клик по одиночному уведомлению
+                // Клик по одиночному уведомлению — переход
                 const notifItem = target.closest('.notif-item[data-id]');
                 if (notifItem) {
                     e.preventDefault();
@@ -470,7 +470,7 @@
                 updateNotifBadge(data.unread_notifications);
             }
 
-            // Генерируем аватарку
+            // Бэкенд возвращает null для несуществующих аватаров
             let avatarPreviewHtml = '';
             if (user_info.avatar_url) {
                 avatarPreviewHtml = `<img id="avatarPreview" src="${user_info.avatar_url}" alt="Аватар" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; display: block; border: 2px solid var(--color-primary, #4A90E2);">`;

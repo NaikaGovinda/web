@@ -4,6 +4,7 @@ header('Content-Type: application/json; charset=utf8mb4');
 
 // [АРХИТЕКТУРА] db.php подключен на самом верху, сессии централизованы
 $pdo = require __DIR__ . '/db.php';
+$config = require __DIR__ . '/config.php';
 
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
@@ -47,12 +48,25 @@ try {
     $stmtFriends->execute([$currentUserId, $currentUserId, $currentUserId]);
     $friends = $stmtFriends->fetchAll();
 
-    // Приведение типов для вывода (опционально, полезно для Android WebView)
+    // [ИСПРАВЛЕНО] Проверяем аватары групп и друзей
+    $rootDir = $config['paths']['root_dir'];
     foreach ($groups as &$g) {
         $g['id'] = (int)$g['id'];
+        if (!empty($g['group_avatar_url'])) {
+            $avatarPath = $rootDir . '/' . ltrim($g['group_avatar_url'], '/');
+            if (!file_exists($avatarPath)) {
+                $g['group_avatar_url'] = null;
+            }
+        }
     }
     foreach ($friends as &$f) {
         $f['id'] = (int)$f['id'];
+        if (!empty($f['avatar_url'])) {
+            $avatarPath = $rootDir . '/' . ltrim($f['avatar_url'], '/');
+            if (!file_exists($avatarPath)) {
+                $f['avatar_url'] = null;
+            }
+        }
     }
 
     echo json_encode([
