@@ -114,11 +114,11 @@
     </div>
 
     <!-- Затемнение фона -->
-    <div id="messageMenuBackdrop" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 10001;">
+    <div id="messageMenuBackdrop" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 10001; user-select: none; -webkit-user-select: none;">
     </div>
 
     <!-- Меню действий (как в Telegram) -->
-    <div id="messageContextMenu" style="display: none; position: fixed; background: #ffffff; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); z-index: 10002; min-width: 280px; max-width: 90%; overflow: hidden;">
+    <div id="messageContextMenu" style="display: none; position: fixed; background: #ffffff; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); z-index: 10002; min-width: 280px; max-width: 90%; overflow: hidden; user-select: none; -webkit-user-select: none;">
         <div class="context-menu-item" data-action="reply" style="padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 400; color: #1e1e20;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14L4 19l5-5"/><path d="M4 19h11a5 5 0 0 0 5-5v-1"/></svg>
             Ответить
@@ -132,6 +132,11 @@
             Копировать
         </div>
         <div style="height: 1px; background: #e5e5e7; margin: 0 8px;"></div>
+        <div class="context-menu-item" data-action="forward" style="padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 400; color: #1e1e20;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14l.8-1.3c2.1-3.3 1.4-6.1-1.8-6.8-3.2-.7-6.4 1.7-7.1 5-.7 3.3 1.7 6.5 5 7.1 2.5.5 4.7-.5 6-2.4"/><path d="M15 14l3.6-1.4"/><path d="M18.6 10.5l3.6-1.4"/></svg>
+            Переслать
+        </div>
+        <div style="height: 1px; background: #e5e5e7; margin: 0 8px;"></div>
         <div class="context-menu-item" data-action="delete" style="padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 400; color: #ff3b30;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             Удалить
@@ -140,6 +145,38 @@
         <div class="context-menu-item" data-action="select" style="padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 400; color: #4a90e2;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             Выбрать
+        </div>
+    </div>
+
+    <!-- Окно ответа на сообщение -->
+    <div id="replyMessageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10002; align-items: center; justify-content: center;">
+        <div class="card" style="width: 85%; max-width: 400px; text-align: center; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+            <h3 style="margin-top: 0; font-size: 18px;">Ответить на сообщение</h3>
+            <div id="replyPreview" style="background: #f4f4f7; padding: 12px; border-radius: 8px; margin: 15px 0; text-align: left; border-left: 3px solid #4a90e2;">
+                <div id="replyAuthor" style="font-size: 12px; font-weight: 700; color: #4a90e2; margin-bottom: 4px;"></div>
+                <div id="replyText" style="font-size: 14px; color: #1e1e20; word-break: break-word;"></div>
+            </div>
+            <textarea id="replyMessageInput" class="textarea-field" style="width: 100%; min-height: 100px; box-sizing: border-box; margin: 0 0 15px 0; padding: 12px; font-size: 15px; font-family: inherit;" placeholder="Ваш ответ..."></textarea>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-ghost" onclick="closeReplyModal()" style="flex: 1; margin: 0;">Отмена</button>
+                <button class="btn" onclick="sendReplyMessage()" style="flex: 1; margin: 0; background: #4a90e2; color: #fff; border: none; border-radius: 8px; font-weight: 600;">Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Окно пересылки сообщения -->
+    <div id="forwardMessageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10002; align-items: center; justify-content: center;">
+        <div class="card" style="width: 85%; max-width: 400px; text-align: center; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-height: 80vh; overflow-y: auto;">
+            <h3 style="margin-top: 0; font-size: 18px;">Переслать сообщение</h3>
+            <div id="forwardPreview" style="background: #f4f4f7; padding: 12px; border-radius: 8px; margin: 15px 0; text-align: left; border-left: 3px solid #4a90e2;">
+                <div id="forwardAuthor" style="font-size: 12px; font-weight: 700; color: #4a90e2; margin-bottom: 4px;"></div>
+                <div id="forwardText" style="font-size: 14px; color: #1e1e20; word-break: break-word;"></div>
+            </div>
+            <input type="text" id="forwardSearchInput" class="input-field" placeholder="Поиск чата..." style="margin: 10px 0;">
+            <div id="forwardChatList" style="text-align: left; max-height: 300px; overflow-y: auto;"></div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn btn-ghost" onclick="closeForwardModal()" style="flex: 1; margin: 0;">Отмена</button>
+            </div>
         </div>
     </div>
 
@@ -203,12 +240,42 @@
   let contextMessageText = ''; // Текст сообщения для копирования/редактирования
   let contextCanDelete = false; // Может ли пользователь удалять сообщение
   let contextCanEdit = false; // Может ли пользователь редактировать сообщение
+  let pendingMessageIdToDelete = null;
+  let pendingEventIdToDelete = null;
+  let replyMessageId = null;
+  let replyMessageText = '';
+  let replyAuthorName = '';
+  let forwardMessageId = null;
+  let forwardMessageText = '';
+  let forwardAuthorName = '';
+  let forwardMessageSenderId = null;
+  let forwardChats = [];
 
+  // Toast уведомления
+  function showToast(message) {
+    let toast = document.getElementById('toastNotification');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'toastNotification';
+      toast.className = 'toast-notification';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.add('toast-show');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => {
+      toast.classList.remove('toast-show');
+    }, 2500);
+  }
 
   function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (!text) return '';
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
   
   // Автообновление чата убрано — запросы накапливаются, обновление по факту нужно
@@ -219,12 +286,12 @@
         activeChatRecipientId = null; // Сбрасываем в null (общий чат)
         const groupTitle = document.getElementById('groupName')?.textContent || 'Чат группы';
         document.getElementById('chatGroupTitle').textContent = `🌸 ${groupTitle}`;
-        startChatSession(); // Запускаем чат
-		
-		// 🔥 Уведомляем Android, что мы вошли в чат текущей группы
-		if (typeof updateActiveChatContextInAndroid === 'function') {
-			updateActiveChatContextInAndroid(currentGroupId);
-		}
+        await startChatSession(); // Запускаем чат
+        
+        // 🔥 Уведомляем Android, что мы вошли в чат текущей группы
+        if (typeof updateActiveChatContextInAndroid === 'function') {
+            updateActiveChatContextInAndroid(currentGroupId);
+        }
     }
     
     // Изменяем функцию закрытия чата
@@ -236,7 +303,11 @@
 		if (chatModal) {
 			chatModal.style.display = 'none';
 		}
-		// Автообновление убрано, clearInterval не нужен
+		// Останавливаем polling при закрытии чата
+		if (chatPollingInterval) {
+			clearInterval(chatPollingInterval);
+			chatPollingInterval = null;
+		}
 		activeChatRecipientId = null; // Очищаем получателя ЛС
 		
 		// 🔥 Уведомляем Android, что чат закрыт, теперь уведомления можно показывать сверху
@@ -281,7 +352,7 @@
 				
 				// Локально перерисовываем стили без перезапроса с сервера ради мгновенного отклика
 				const bubble = row.querySelector('.chat-msg-bubble');
-				const isMyMsg = row.style.flexDirection === 'row-reverse';
+				const isMyMsg = row.dataset.isMine === '1';
 				if (bubble) {
 					if (selectedMessageIds.includes(msgId)) {
 						bubble.style.cssText = 'background: #ffeebf; padding: 10px 14px; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); margin: 0 5px; position: relative; border: 1px solid #ffd080;';
@@ -377,7 +448,7 @@
     
     // 3. Загрузка сообщений с сервера
     // Изменяем функцию ЗАГРУЗКИ сообщений (добавляем recipient_id в URL)
-	async function loadChatMessages() {
+	async function loadChatMessages(beforeMessageId = null, isScrollUp = false) {
 		if (!currentGroupId) return;
 
 		try {
@@ -385,8 +456,12 @@
 			if (activeChatRecipientId !== null) {
 				url += `&recipient_id=${activeChatRecipientId}`;
 			}
+			// Подгрузка старых сообщений при скролле вверх
+			if (beforeMessageId) {
+				url += `&before_id=${beforeMessageId}`;
+			}
 
-			const response = await fetch(url);
+			const response = await fetch(url, { credentials: 'include' });
 			const data = await response.json();
 
 			if (!data.success) {
@@ -398,70 +473,126 @@
 			const container = document.getElementById('chatHistoryContainer');
 			if (!container) return;
 
-			// Запоминаем, был ли скролл в самом низу перед обновлением
-			const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 60;
 			const currentUserId = parseInt(data.current_user_id || 0);
-			// Находим аватарку текущего авторизованного пользователя (тебя) среди участников
-			// или используем заглушку, если у тебя в профиле нет фото
-			const myUserObj = data.messages.find(m => parseInt(m.sender_id) === currentUserId);
-			const myAvatarUrl = (myUserObj && myUserObj.avatar_url) ? myUserObj.avatar_url : '';
+			
+			if (!isScrollUp) {
+				// Начальная загрузка — сбрасываем аватарку
+				const myUserObj = data.messages.find(m => parseInt(m.sender_id) === currentUserId);
+				myAvatarUrl = (myUserObj && myUserObj.avatar_url) ? myUserObj.avatar_url : '';
+			}
 
-			let html = '';
-			data.messages.forEach(msg => {
+			// Кэшируем стили чтобы не генерировать их повторно
+			const MY_MSG_ROW_STYLE = 'display: flex; gap: 8px; max-width: 85%; margin-bottom: 10px; align-self: flex-end; flex-direction: row-reverse; width: 100%; justify-content: flex-start; align-items: flex-end;';
+			const OTHER_MSG_ROW_STYLE = 'display: flex; gap: 8px; max-width: 85%; margin-bottom: 10px; align-self: flex-start; width: 100%; align-items: flex-end;';
+			const MY_MSG_BUBBLE_STYLE = 'background: #eef2ff; padding: 10px 14px; border-radius: 16px 4px 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin: 0 5px; position: relative;';
+			const OTHER_BUBBLE_STYLE = 'background: #ffffff; padding: 10px 14px; border-radius: 4px 16px 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin: 0 5px; position: relative;';
+			const SELECTED_BUBBLE_STYLE = 'background: #ffeebf; padding: 10px 14px; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); margin: 0 5px; position: relative; border: 1px solid #ffd080;';
+			
+			// Создаем Set для быстрого поиска выбранных сообщений
+			const selectedIdsSet = new Set(selectedMessageIds);
+
+			// Генерируем HTML для одного сообщения
+			function msgToHtml(msg) {
 				const timeStr = msg.created_at ? msg.created_at.substring(11, 16) : '';
-				const isMyMsg = parseInt(msg.sender_id) === currentUserId;
+				const msgId = parseInt(msg.id);
+				const senderId = parseInt(msg.sender_id);
+				const isMyMsg = senderId === currentUserId;
+				const dataIsMine = isMyMsg ? '1' : '0';
 				const canDeleteThisMsg = data.is_admin || data.is_leader || isMyMsg;
-				const isSelected = selectedMessageIds.includes(parseInt(msg.id));
-				// Защита от отсутствия поля is_edited
+				const isSelected = selectedIdsSet.has(msgId);
 				const isEdited = msg.is_edited === true;
 
-				const rowStyle = isMyMsg
-					? 'display: flex; gap: 8px; max-width: 85%; margin-bottom: 10px; align-self: flex-end; flex-direction: row-reverse; width: 100%; justify-content: flex-start; align-items: flex-end;'
-					: 'display: flex; gap: 8px; max-width: 85%; margin-bottom: 10px; align-self: flex-start; width: 100%; align-items: flex-end;';
+				const rowStyle = isMyMsg ? MY_MSG_ROW_STYLE : OTHER_MSG_ROW_STYLE;
 
-				let bubbleStyle = '';
-				if (isSelected) {
-					bubbleStyle = 'background: #ffeebf; padding: 10px 14px; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); margin: 0 5px; position: relative; border: 1px solid #ffd080;';
-				} else {
-					bubbleStyle = isMyMsg
-						? 'background: #eef2ff; padding: 10px 14px; border-radius: 16px 4px 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin: 0 5px; position: relative;'
-						: 'background: #ffffff; padding: 10px 14px; border-radius: 4px 16px 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin: 0 5px; position: relative;';
-				}
+				const bubbleStyle = isSelected ? SELECTED_BUBBLE_STYLE : (isMyMsg ? MY_MSG_BUBBLE_STYLE : OTHER_BUBBLE_STYLE);
 
-				// Бэкенд возвращает null для несуществующих аватаров
 				let avatarHtml = '';
-				const currentAvatarUrl = isMyMsg ? myAvatarUrl : msg.avatar_url;
-
+				const currentAvatarUrl = isMyMsg ? (myAvatarUrl || '') : msg.avatar_url;
 				if (currentAvatarUrl) {
 					avatarHtml = `<img class="chat-msg-avatar" src="${currentAvatarUrl}" alt="Фото" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #e0e0e0;">`;
 				} else {
 					avatarHtml = `<div class="chat-msg-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: #f0f0f2; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; user-select: none; border: 1px solid #e0e0e2;">👤</div>`;
 				}
 
-				html += `
-				<div class="chat-msg-row js-selectable-msg" style="${rowStyle} cursor: pointer;" data-msg-id="${msg.id}" data-can-delete="${canDeleteThisMsg ? '1' : '0'}" data-can-edit="${canDeleteThisMsg || isMyMsg ? '1' : '0'}">
-					${avatarHtml}
-					<div class="chat-msg-bubble" style="${bubbleStyle}">
-						${(!isMyMsg && activeChatRecipientId === null) ? `<div class="chat-msg-author" style="font-size: 11px; font-weight: 700; color: #4a90e2; margin-bottom: 3px;">${escapeHtml(msg.first_name)} ${escapeHtml(msg.last_name || '')}</div>` : ''}
-						<div class="chat-msg-text" style="font-size: 14px; color: #1e1e20; word-break: break-word; text-align: left;">${escapeHtml(msg.message_text)}</div>
-						<div class="chat-msg-time" style="font-size: 10px; color: #888; text-align: right; margin-top: 4px;">${timeStr}${isEdited ? ' ✏️' : ''}</div>
-					</div>
-				</div>
-				`;
-			});
+				const replyToInfo = msg.reply_to_info;
+				let replyQuoteHtml = '';
+				if (replyToInfo) {
+					const replyAuthor = replyToInfo.sender_id === currentUserId ? 'Вы' : 'Пользователь';
+					replyQuoteHtml = `<div class="chat-msg-reply-quote" style="background: #f0f4ff; padding: 8px 10px; border-radius: 8px; border-left: 3px solid #4a90e2; margin-bottom: 8px;"><div style="font-size: 11px; font-weight: 700; color: #4a90e2; margin-bottom: 2px;">${replyAuthor}</div><div style="font-size: 13px; color: #1e1e20; word-break: break-word;">${escapeHtml(replyToInfo.message_text)}</div></div>`;
+				}
 
-			container.innerHTML = html;
+				const isForwarded = msg.is_forwarded === true;
+				const forwardedStyle = isForwarded ? 'border-left: 3px solid #ff9500;' : '';
+				
+				let forwardedHeaderHtml = '';
+				if (isForwarded && msg.forward_sender_name) {
+					const forwardName = escapeHtml(msg.forward_sender_name) + (msg.forward_sender_last_name ? ' ' + escapeHtml(msg.forward_sender_last_name) : '');
+					const originalMsgId = msg.original_message_id || msg.id;
+					forwardedHeaderHtml = `<div class="forwarded-header" data-original-message-id="${originalMsgId}" style="font-size: 11px; color: #ff9500; font-weight: 600; margin-bottom: 6px; cursor: pointer; padding: 4px 8px; border-radius: 6px; background: rgba(255,149,0,0.1); display: inline-block;" onclick="event.stopPropagation(); navigateToOriginalMessage(${originalMsgId}, this)">📌 Переслано от <strong>${forwardName}</strong></div>`;
+				} else if (isForwarded) {
+					forwardedHeaderHtml = '<div style="font-size: 10px; color: #ff9500; font-weight: 600; margin-bottom: 4px;">📌 Пересланное</div>';
+				}
 
-			// Навешиваем контекстное меню для сообщений (по клику открывается меню)
-			setupMessageContextMenu();
+				return `<div class="chat-msg-row js-selectable-msg" style="${rowStyle} cursor: pointer;" data-msg-id="${msgId}" data-sender-id="${senderId}" data-can-delete="${canDeleteThisMsg ? '1' : '0'}" data-can-edit="${canDeleteThisMsg || isMyMsg ? '1' : '0'}" data-is-forwarded="${isForwarded ? '1' : '0'}" data-is-mine="${dataIsMine}">${avatarHtml}<div class="chat-msg-bubble" style="${bubbleStyle} ${forwardedStyle}">${forwardedHeaderHtml}${(!isMyMsg && activeChatRecipientId === null) ? `<div class="chat-msg-author" style="font-size: 11px; font-weight: 700; color: #4a90e2; margin-bottom: 3px;">${escapeHtml(msg.first_name)} ${escapeHtml(msg.last_name || '')}</div>` : ''}${replyQuoteHtml}<div class="chat-msg-text" style="font-size: 14px; color: #1e1e20; word-break: break-word; text-align: left;">${escapeHtml(msg.message_text)}</div><div class="chat-msg-time" style="font-size: 10px; color: #888; text-align: right; margin-top: 4px;">${timeStr}${isEdited ? ' ✏️' : ''}</div></div></div>`;
+			}
 
-			if (isScrolledToBottom) {
+			if (isScrollUp) {
+				// Подгрузка старых — добавляем в начало
+				// Сообщения приходят в порядке DESC (новые старше), нужно добавить в обратном порядке (старые первыми)
+				const reversedMessages = [...data.messages].reverse();
+				let html = '';
+				for (const msg of reversedMessages) {
+					html += msgToHtml(msg);
+				}
+				
+				// Сохраняем позицию скролла ДО добавления
+				const scrollTopBefore = container.scrollTop;
+				const scrollHeightBefore = container.scrollHeight;
+				
+				// Добавляем в начало
+				container.insertAdjacentHTML('afterbegin', html);
+				
+				// Вычисляем новую позицию скролла
+				const scrollHeightAfter = container.scrollHeight;
+				container.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
+				
+				// Обновляем ID для polling
+				if (data.messages.length > 0) {
+					lastCheckedMessageId = data.messages[data.messages.length - 1].id;
+				}
+				
+				// Возвращаем true, если есть ещё сообщения (загружено 50 — значит могут быть ещё)
+				return data.messages.length >= 50;
+			} else {
+				// Начальная загрузка — последние 20 сообщений
+				// Сообщения приходят в порядке DESC (новые первыми), переворачиваем
+				const reversedMessages = [...data.messages].reverse();
+				
+				let html = '';
+				for (const msg of reversedMessages) {
+					html += msgToHtml(msg);
+				}
+				
+				container.innerHTML = html;
+				
+				// Навешиваем контекстное меню
+				setupMessageContextMenu();
+				
+				// Обновляем ID для polling
+				if (data.messages.length > 0) {
+					lastCheckedMessageId = data.messages[data.messages.length - 1].id;
+				}
+				
+				// Автоскролл вниз
 				container.scrollTop = container.scrollHeight;
 			}
 
 		} catch (err) {
 			// silently fail - errors handled via showToast
 		}
+		
+		// При начальной загрузке возвращаем true (могут быть ещё сообщения)
+		if (!isScrollUp) return true;
 	}
 
 
@@ -492,6 +623,7 @@
             
             const result = await response.json();
             if (result.success) {
+                // Не сбрасываем lastCheckedMessageId — polling сам подхватит новые
                 await loadChatMessages();
             } else {
                 showToast('❌ Ошибка: ' + (result.error || 'Не удалось отправить'));
@@ -503,8 +635,6 @@
     }
     
     // Функция удаления сообщения модератором или автором
-    let pendingMessageIdToDelete = null; // Переменная для хранения ID удаляемого сообщения
-	let pendingEventIdToDelete = null; // Хранит ID удаляемого события
 
     // Функция вызова кастомного окна подтверждения
     function deleteChatMessage(messageId) {
@@ -544,7 +674,7 @@
             const result = await response.json();
             if (result.success) {
                 showToast('✅ Сообщение удалено');
-                await loadChatMessages(); // Обновляем переписку
+                await loadChatMessages();
             } else {
                 showToast('❌ Ошибка: ' + (result.error || 'Не удалось удалить'));
             }
@@ -565,6 +695,155 @@
         }
         pendingMessageIdToDelete = null;
     }
+
+    // ============================================================
+    // УНИВЕРСАЛЬНЫЙ СВАЙП (тач + мышь) И КОНТЕКСТНОЕ МЕНЮ
+    // ============================================================
+    const SWIPE_THRESHOLD = 48;
+    const SWIPE_MAX = 60;
+    let swipeState = { active: false, row: null, startX: 0, startY: 0, dx: 0, isSwiping: false, isScrolling: false };
+    let longPressTimer = null;
+
+    function getRowFromEvent(e) {
+        const target = e.touches ? e.touches[0].target : e.target;
+        return target?.closest?.('.js-selectable-msg') || null;
+    }
+
+    function getPoint(e) {
+        return e.touches ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY };
+    }
+
+    function resetSwipe() {
+        if (swipeState.row) {
+            swipeState.row.style.transform = '';
+            swipeState.row.classList.remove('swiping');
+        }
+        swipeState = { active: false, row: null, startX: 0, startY: 0, dx: 0, isSwiping: false, isScrolling: false };
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+    }
+
+    function onPointerDown(e) {
+        if (e.type === 'mousedown' && e.button !== 0) return;
+        if (e.type === 'touchstart' && e.touches.length > 1) return;
+        const row = getRowFromEvent(e);
+        if (!row) return;
+        const p = getPoint(e);
+        swipeState.active = true;
+        swipeState.row = row;
+        swipeState.startX = p.x;
+        swipeState.startY = p.y;
+        swipeState.dx = 0;
+        swipeState.isSwiping = false;
+        swipeState.isScrolling = false;
+        row.style.transform = '';
+        row.classList.remove('swiping');
+        if (e.type === 'touchstart') {
+            longPressTimer = setTimeout(() => {
+                if (!swipeState.isScrolling && !swipeState.isSwiping) {
+                    const msgId = parseInt(row.dataset.msgId);
+                    const canDelete = row.dataset.canDelete === '1';
+                    const isForwarded = row.dataset.isForwarded === '1';
+                    const canEdit = isForwarded ? false : (row.dataset.isMine === '1');
+                    openContextMenuForRow(row, msgId, canDelete, canEdit);
+                    if (navigator.vibrate) navigator.vibrate(50);
+                }
+            }, 600);
+        }
+        // Не вызываем preventDefault — чтобы не ломать скролл
+    }
+
+    function onPointerMove(e) {
+        if (!swipeState.active || !swipeState.row) return;
+        const p = getPoint(e);
+        const dx = p.x - swipeState.startX;
+        const dy = p.y - swipeState.startY;
+        const absDx = Math.abs(dx), absDy = Math.abs(dy);
+        
+        // Любое движение > 10px — отменяем долгое нажатие
+        if (absDx > 10 || absDy > 10) {
+            if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+        }
+        
+        if (!swipeState.isScrolling && (absDx > 10 || absDy > 10)) {
+            if (absDy > absDx) {
+                swipeState.isScrolling = true;
+            }
+        }
+        if (swipeState.isScrolling) return;
+        if (absDx > 10 && absDx > absDy && dx < 0) {
+            if (!swipeState.isSwiping) {
+                swipeState.isSwiping = true;
+                swipeState.row.classList.add('swiping');
+            }
+            swipeState.dx = Math.min(-dx, SWIPE_MAX);
+            swipeState.row.style.transform = `translateX(${swipeState.dx}px)`;
+            if (e.type === 'touchmove' && e.cancelable) e.preventDefault();
+        }
+    }
+
+    function onPointerUp(e) {
+        if (!swipeState.active) return;
+        const row = swipeState.row;
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+        if (row && swipeState.isSwiping) {
+            row.classList.remove('swiping');
+            if (swipeState.dx >= SWIPE_THRESHOLD) {
+                const bubble = row.querySelector('.chat-msg-bubble');
+                const messageText = bubble?.querySelector('.chat-msg-text')?.textContent || '';
+                const isMyMsg = row.dataset.isMine === '1';
+                const authorName = bubble?.querySelector('.chat-msg-author')?.textContent || (isMyMsg ? 'Вы' : 'Пользователь');
+                replyMessageId = parseInt(row.dataset.msgId);
+                replyMessageText = messageText;
+                replyAuthorName = authorName;
+                row.style.transform = '';
+                resetSwipe();
+                startReplyMessage();
+                return;
+            }
+            row.style.transform = '';
+        }
+        resetSwipe();
+    }
+
+    document.addEventListener('touchstart', onPointerDown, { passive: false });
+    document.addEventListener('touchmove', onPointerMove, { passive: false });
+    document.addEventListener('touchend', onPointerUp);
+    document.addEventListener('touchcancel', resetSwipe);
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('mousemove', onPointerMove);
+    document.addEventListener('mouseup', onPointerUp);
+
+    function openContextMenuForRow(row, messageId, canDelete, canEdit) {
+        const bubble = row.querySelector('.chat-msg-bubble');
+        const messageText = bubble?.querySelector('.chat-msg-text')?.textContent || '';
+        const isMyMsg = row.dataset.isMine === '1';
+        const isForwarded = row.dataset.isForwarded === '1';
+        const authorName = bubble?.querySelector('.chat-msg-author')?.textContent || (isMyMsg ? 'Вы' : 'Пользователь');
+        replyMessageId = messageId;
+        replyMessageText = messageText;
+        replyAuthorName = authorName;
+        forwardMessageId = messageId;
+        forwardMessageText = messageText;
+        forwardAuthorName = authorName;
+        // Сохраняем sender_id оригинального сообщения
+        forwardMessageSenderId = row.dataset.senderId || null;
+        // Пересланные сообщения нельзя редактировать
+        const finalCanEdit = isForwarded ? false : canEdit;
+        showContextMenu(messageId, messageText, canDelete, finalCanEdit);
+    }
+
+    document.addEventListener('contextmenu', (e) => {
+        const row = e.target.closest('.js-selectable-msg');
+        if (!row) return;
+        e.preventDefault();
+        const msgId = parseInt(row.dataset.msgId);
+        const isForwarded = row.dataset.isForwarded === '1';
+        const finalCanEdit = isForwarded ? false : (row.dataset.isMine === '1');
+        openContextMenuForRow(row, msgId, row.dataset.canDelete === '1', finalCanEdit);
+    });
+
+    function setupMessageContextMenu() { /* больше не нужна — всё на делегировании */ }
+    function initSwipeHandlers() { /* больше не нужна */ }
 
     // === ФУНКЦИИ КОНТЕКСТНОГО МЕНЮ И РЕДАКТИРОВАНИЯ ===
     
@@ -608,18 +887,24 @@
         menuItems.forEach(item => {
             const action = item.dataset.action;
             
+            // Удаляем все старые обработчики через клонирование
             const newItem = item.cloneNode(true);
             item.parentNode.replaceChild(newItem, item);
             
-            newItem.addEventListener('click', (e) => {
-                e.stopPropagation();
+            // Функция обработки нажатия
+            const handleAction = (e) => {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
                 hideContextMenu();
                 
                 setTimeout(() => {
                     if (action === 'copy') copyMessageText();
                     else if (action === 'edit') startEditMessage();
                     else if (action === 'delete') deleteMessageFromContext();
-                    else if (action === 'reply') showToast('💬 Ответить - в разработке');
+                    else if (action === 'reply') startReplyMessage();
+                    else if (action === 'forward') startForwardMessage();
                     else if (action === 'select') {
                         selectedMessageIds = [messageId];
                         updateChatHeaderMode();
@@ -627,8 +912,43 @@
                         showToast(`✅ Выбрано ${selectedMessageIds.length} сообщение`);
                     }
                 }, 50);
+            };
+            
+            // Обработчики для мобильных (touch)
+            let touchStartTime = 0;
+            newItem.addEventListener('touchstart', (e) => {
+                touchStartTime = Date.now();
+                // Предотвращаем скролл и выделение
+                e.preventDefault();
+            }, { passive: false });
+            
+            newItem.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                const touchDuration = Date.now() - touchStartTime;
+                // Срабатываем только на тап (не долгое нажатие)
+                if (touchDuration < 300) {
+                    handleAction(e);
+                }
+            }, { passive: false });
+            
+            // Обработчик для десктопа (click)
+            newItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleAction(e);
+            });
+            
+            // Предотвращаем контекстное меню
+            newItem.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
             });
         });
+
+        // Глобально запрещаем выделение текста
+        document.body.style.webkitUserSelect = 'none';
+        document.body.style.mozUserSelect = 'none';
+        document.body.style.msUserSelect = 'none';
+        document.body.style.userSelect = 'none';
 
         // Закрываем меню при нажатии на backdrop
         if (backdrop) {
@@ -655,8 +975,238 @@
         if (backdrop) {
             backdrop.style.display = 'none';
         }
+        
+        // Включаем выделение текста обратно
+        document.body.style.webkitUserSelect = '';
+        document.body.style.mozUserSelect = '';
+        document.body.style.msUserSelect = '';
+        document.body.style.userSelect = '';
+        
         document.removeEventListener('click', hideContextMenu);
         document.removeEventListener('touchstart', hideContextMenu);
+    }
+
+    // === ФУНКЦИИ ОТВЕТА И ПЕРЕСЫЛКИ ===
+
+    // Ответить на сообщение
+    function startReplyMessage() {
+        hideContextMenu();
+        
+        const modal = document.getElementById('replyMessageModal');
+        const authorEl = document.getElementById('replyAuthor');
+        const textEl = document.getElementById('replyText');
+        const input = document.getElementById('replyMessageInput');
+        
+        if (modal && authorEl && textEl && input) {
+            authorEl.textContent = replyAuthorName || 'Вы';
+            textEl.textContent = replyMessageText;
+            input.value = '';
+            modal.style.display = 'flex';
+            
+            setTimeout(() => {
+                input.focus();
+            }, 100);
+        }
+    }
+
+    // Закрыть окно ответа
+    function closeReplyModal() {
+        const modal = document.getElementById('replyMessageModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        replyMessageId = null;
+        replyMessageText = '';
+        replyAuthorName = '';
+    }
+
+    // Отправить ответ
+    async function sendReplyMessage() {
+        const input = document.getElementById('replyMessageInput');
+        if (!input || !currentGroupId) return;
+        
+        const replyText = input.value.trim();
+        if (!replyText) {
+            showToast('⚠️ Напишите ваш ответ');
+            return;
+        }
+        
+        // Отправляем только текст ответа, reply_to_id свяжет с оригиналом
+        const payload = {
+            group_id: currentGroupId,
+            message_text: replyText,
+            reply_to_id: replyMessageId,
+            recipient_id: activeChatRecipientId
+        };
+        
+        console.log('Отправка ответа:', payload);
+        
+        try {
+            const response = await fetch('/api/send_message.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('Ответ сервера:', result);
+            
+            if (result.success) {
+                showToast('✅ Ответ отправлен');
+                closeReplyModal();
+                await loadChatMessages();
+            } else {
+                showToast('❌ Ошибка: ' + (result.error || 'Не удалось отправить'));
+            }
+        } catch (err) {
+            console.error('Ошибка отправки ответа:', err);
+            showToast('❌ Ошибка: ' + err.message);
+        }
+    }
+
+    // Переслать сообщение
+    function startForwardMessage() {
+        hideContextMenu();
+        
+        const modal = document.getElementById('forwardMessageModal');
+        const authorEl = document.getElementById('forwardAuthor');
+        const textEl = document.getElementById('forwardText');
+        const searchInput = document.getElementById('forwardSearchInput');
+        const listEl = document.getElementById('forwardChatList');
+        
+        if (modal && authorEl && textEl && searchInput && listEl) {
+            authorEl.textContent = forwardAuthorName || 'Вы';
+            textEl.textContent = forwardMessageText;
+            searchInput.value = '';
+            
+            // Загружаем список чатов
+            loadForwardChats();
+            
+            modal.style.display = 'flex';
+            
+            // Обработчик поиска
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                filterForwardChats(query);
+            });
+        }
+    }
+
+    // Загрузить список чатов для пересылки
+    async function loadForwardChats() {
+        const listEl = document.getElementById('forwardChatList');
+        if (!listEl) return;
+        
+        try {
+            const response = await fetch('/api/get_chats_list.php', {
+                credentials: 'include'
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                forwardChats = [...(data.groups || []), ...(data.friends || [])];
+                renderForwardChatList();
+            } else {
+                showToast('❌ Не удалось загрузить список чатов');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('❌ Ошибка сети');
+        }
+    }
+
+    // Отобразить список чатов
+    function renderForwardChatList(filter = '') {
+        const listEl = document.getElementById('forwardChatList');
+        if (!listEl) return;
+        
+        if (forwardChats.length === 0) {
+            listEl.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">Нет доступных чатов</p>';
+            return;
+        }
+        
+        let html = '';
+        forwardChats.forEach(chat => {
+            const name = chat.name || chat.first_name || 'Без имени';
+            const avatar = chat.avatar_url || '';
+            
+            if (filter && !name.toLowerCase().includes(filter)) {
+                return;
+            }
+            
+            html += `
+                <div class="forward-chat-item" data-chat-id="${chat.id}" data-chat-name="${name}" data-recipient-id="${chat.recipient_id || ''}" 
+                     style="display: flex; align-items: center; gap: 12px; padding: 12px; cursor: pointer; border-bottom: 1px solid #f0f0f2;" 
+                     onmouseover="this.style.background='#f4f4f7'" 
+                     onmouseout="this.style.background='transparent'"
+                     onclick="forwardToChat(this.dataset.chatId, this.dataset.chatName, this.dataset.recipientId)">
+                    ${avatar ? `<img src="${avatar}" alt="" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">` : 
+                      `<div style="width: 40px; height: 40px; border-radius: 50%; background: #f0f0f2; display: flex; align-items: center; justify-content: center; font-size: 18px;">👤</div>`}
+                    <div style="flex: 1;">
+                        <div style="font-size: 14px; font-weight: 600; color: #1e1e20;">${name}</div>
+                        <div style="font-size: 12px; color: #888;">${chat.type === 'group' ? 'Группа' : 'Личный чат'}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        listEl.innerHTML = html || '<p style="text-align: center; color: #888; padding: 20px;">Ничего не найдено</p>';
+    }
+
+    // Фильтровать чаты по поиску
+    function filterForwardChats(query) {
+        renderForwardChatList(query);
+    }
+
+    // Переслать в выбранный чат
+    async function forwardToChat(chatId, chatName, recipientId) {
+        const quotedText = `📌 Переслано от ${forwardAuthorName}:\n«${forwardMessageText}»`;
+        
+        try {
+            const response = await fetch('/api/send_message.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    group_id: currentGroupId,
+                    message_text: quotedText,
+                    recipient_id: recipientId ? parseInt(recipientId) : null,
+                    is_forwarded: true,
+                    forward_sender_id: forwardMessageSenderId ? parseInt(forwardMessageSenderId) : null,
+                    original_message_id: forwardMessageId ? parseInt(forwardMessageId) : null
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                showToast('✅ Переслано в ' + chatName);
+                closeForwardModal();
+                await loadChatMessages();
+            } else {
+                showToast('❌ Ошибка: ' + (result.error || 'Не удалось переслать'));
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('❌ Ошибка сети при пересылке');
+        }
+    }
+
+    // Закрыть окно пересылки
+    function closeForwardModal() {
+        const modal = document.getElementById('forwardMessageModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        forwardMessageId = null;
+        forwardMessageText = '';
+        forwardAuthorName = '';
+        forwardMessageSenderId = null;
+        forwardChats = [];
     }
 
     // Копировать текст сообщения
@@ -728,24 +1278,34 @@
             return;
         }
 
-        const button = input.closest('.card').querySelector('.btn');
+        const button = input.closest('.card').querySelector('.btn:not(.btn-ghost)');
         if (button) {
             button.disabled = true;
             button.textContent = 'Сохранение...';
         }
 
         try {
+            const payload = {
+                message_id: contextMessageId,
+                message_text: newText
+            };
+            
+            console.log('Отправка редактирования:', payload);
+            
             const response = await fetch('/api/update_message.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({
-                    message_id: contextMessageId,
-                    message_text: newText
-                })
+                body: JSON.stringify(payload)
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const result = await response.json();
+            console.log('Ответ сервера:', result);
+            
             if (result.success) {
                 showToast('✅ Сообщение обновлено');
                 closeEditMessageModal();
@@ -754,8 +1314,8 @@
                 showToast('❌ Ошибка: ' + (result.error || 'Не удалось сохранить'));
             }
         } catch (err) {
-            console.error(err);
-            showToast('❌ Ошибка сети при сохранении');
+            console.error('Ошибка редактирования:', err);
+            showToast('❌ Ошибка: ' + err.message);
         } finally {
             if (button) {
                 button.disabled = false;
@@ -773,89 +1333,7 @@
         }
     }
 
-    // Инициализация контекстного меню для сообщений
-    function setupMessageContextMenu() {
-        document.querySelectorAll('.js-selectable-msg').forEach(row => {
-            // Удаляем старые обработчики
-            const newRow = row.cloneNode(true);
-            row.parentNode.replaceChild(newRow, row);
-
-            const messageId = parseInt(newRow.dataset.msgId);
-            const canDelete = newRow.dataset.canDelete === '1';
-            const isMyMsg = newRow.style.flexDirection === 'row-reverse';
-            const canEdit = isMyMsg;
-
-            let pressTimer = null;
-            let startX = 0;
-            let startY = 0;
-            let isScrolling = false;
-
-            newRow.addEventListener('touchstart', (e) => {
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-                isScrolling = false;
-                
-                // Запускаем таймер долгого нажатия
-                pressTimer = setTimeout(() => {
-                    if (!isScrolling) {
-                        // Получаем текст сообщения
-                        const bubble = newRow.querySelector('.chat-msg-bubble');
-                        const textEl = bubble?.querySelector('.chat-msg-text');
-                        const messageText = textEl?.textContent || '';
-                        
-                        // Создаём объект события с координатами
-                        const touchEvent = {
-                            clientX: startX,
-                            clientY: startY
-                        };
-                        
-                        showContextMenu(messageId, messageText, canDelete, canEdit, touchEvent);
-                        
-                        // Вибрация для обратной связи
-                        if (navigator.vibrate) {
-                            navigator.vibrate(50);
-                        }
-                    }
-                }, 600);
-            }, { passive: true });
-
-            newRow.addEventListener('touchmove', (e) => {
-                const moveX = e.touches[0].clientX;
-                const moveY = e.touches[0].clientY;
-                const distance = Math.sqrt(
-                    Math.pow(moveX - startX, 2) + 
-                    Math.pow(moveY - startY, 2)
-                );
-                
-                // Если палец сдвинулся больше чем на 10px - это скролл
-                if (distance > 10) {
-                    isScrolling = true;
-                    if (pressTimer) {
-                        clearTimeout(pressTimer);
-                        pressTimer = null;
-                    }
-                }
-            }, { passive: true });
-
-            newRow.addEventListener('touchend', () => {
-                // Отменяем долгое нажатие, если палец отпустили
-                if (pressTimer) {
-                    clearTimeout(pressTimer);
-                    pressTimer = null;
-                }
-            });
-
-            // Правый клик для десктопа
-            newRow.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                const bubble = newRow.querySelector('.chat-msg-bubble');
-                const textEl = bubble?.querySelector('.chat-msg-text');
-                const messageText = textEl?.textContent || '';
-                
-                showContextMenu(messageId, messageText, canDelete, canEdit, e);
-            });
-        });
-    }
+    // setupMessageContextMenu больше не нужна — всё на делегировании
 
 
   function getGroupIdFromUrl() {
@@ -1190,13 +1668,15 @@
 }
     
     // Вспомогательная функция для запуска логики мессенджера
-    function startChatSession() {
+    async function startChatSession() {
         const chatModal = document.getElementById('groupChatModal');
         if (!chatModal) return;
     
         chatModal.style.display = 'flex';
-        loadChatMessages();
-        // Автообновление убрано — не накапливает запросы
+        lastCheckedMessageId = 0; // Сбрасываем при открытии чата
+        noMoreMessages = false; // Сбрасываем флаг конца списка
+        await loadChatMessages();
+        startChatPolling(); // Запускаем polling новых сообщений
     }
     
     // Функция открытия личного чата при клике на имя участника
@@ -1224,7 +1704,9 @@
           const chatModal = document.getElementById('groupChatModal');
           if (chatModal) {
               chatModal.style.display = 'flex';
-              loadChatMessages();
+              noMoreMessages = false;
+              await loadChatMessages();
+              startChatPolling();
           }
       }
 
@@ -1241,7 +1723,9 @@
           const chatModal = document.getElementById('groupChatModal');
           if (chatModal) {
               chatModal.style.display = 'flex';
-              loadChatMessages();
+              noMoreMessages = false;
+              await loadChatMessages();
+              startChatPolling();
           }
       }
 
@@ -1599,6 +2083,42 @@
 		
 		loadGroup(); // Запускаем стандартную загрузку данных группы
 	});
+
+	// Свайп и контекстное меню инициализируются через делегирование (above)
+
+	// === СКРОЛЛ ВВЕРХ — ПОДГРУЗКА СТАРЫХ СООБЩЕНИЙ ===
+	let isScrollUpLoading = false;
+	let noMoreMessages = false; // Флаг: больше старых сообщений нет
+	
+	document.addEventListener('DOMContentLoaded', () => {
+		const chatContainer = document.getElementById('chatHistoryContainer');
+		if (chatContainer) {
+			chatContainer.addEventListener('scroll', () => {
+				if (isScrollUpLoading) return;
+				if (noMoreMessages) return; // Больше сообщений нет
+				if (!currentGroupId) return;
+				
+				// Проверяем, близки ли к верху (порог 150px)
+				if (chatContainer.scrollTop > 150) return;
+				
+				// Получаем ID самого старого сообщения в чате
+				const firstRow = chatContainer.querySelector('.chat-msg-row');
+				if (!firstRow) return;
+				
+				const firstMsgId = parseInt(firstRow.dataset.msgId);
+				if (!firstMsgId) return;
+				
+				isScrollUpLoading = true;
+				
+				loadChatMessages(firstMsgId, true).then((hasMore) => {
+					isScrollUpLoading = false;
+					if (hasMore === false) {
+						noMoreMessages = true; // Больше сообщений нет
+					}
+				});
+			});
+		}
+	});
   
       // [НОВОЕ] Функция динамического добавления строки будильника в форму
     function addNotificationTimeRow(value = '') {
@@ -1635,7 +2155,135 @@
         }
     }
 
-  
+    // === POLLING НОВЫХ СООБЩЕНИЙ ===
+    let chatPollingInterval = null;
+    let lastCheckedMessageId = 0;
+    let myAvatarUrl = '';
+    let cachedCurrentUserId = 0;
+    let cachedIsAdmin = false;
+    let cachedIsLeader = false;
+
+    function startChatPolling() {
+        if (chatPollingInterval) return;
+        
+        chatPollingInterval = setInterval(async () => {
+            if (!currentGroupId) return;
+            
+            try {
+                let url = `/api/get_messages.php?group_id=${currentGroupId}`;
+                if (activeChatRecipientId !== null) {
+                    url += `&recipient_id=${activeChatRecipientId}`;
+                }
+                // При polling запрашиваем только новые сообщения после последнего
+                if (lastCheckedMessageId > 0) {
+                    url += `&since_id=${lastCheckedMessageId}`;
+                }
+                
+                const response = await fetch(url, { credentials: 'include' });
+                const data = await response.json();
+                
+                if (!data.success || !data.messages || data.messages.length === 0) return;
+                
+                // Кэшируем данные пользователя
+                cachedCurrentUserId = parseInt(data.current_user_id || 0);
+                cachedIsAdmin = data.is_admin || false;
+                cachedIsLeader = data.is_leader || false;
+                
+                const container = document.getElementById('chatHistoryContainer');
+                if (!container) return;
+                
+                // Быстрая проверка: скролл ли к низу (без лишних чтений свойств)
+                const atBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+                
+                // Собираем ID существующих сообщений для быстрой проверки дубликатов
+                const existingIds = new Set();
+                const rows = container.querySelectorAll('.chat-msg-row');
+                for (let i = 0; i < rows.length; i++) {
+                    const rid = rows[i].dataset.msgId;
+                    if (rid) existingIds.add(parseInt(rid));
+                }
+                
+                // Собираем HTML для новых сообщений одним блоком
+                let newHtml = '';
+                let newMessagesCount = 0;
+                
+                for (const msg of data.messages) {
+                    // Пропускаем уже показанные
+                    if (msg.id <= lastCheckedMessageId) continue;
+                    // Пропускаем во время scroll-up
+                    if (isScrollUpLoading) continue;
+                    // Пропускаем дубликаты из DOM
+                    if (existingIds.has(msg.id)) continue;
+                    
+                    const timeStr = msg.created_at ? msg.created_at.substring(11, 16) : '';
+                    const isMyMsg = parseInt(msg.sender_id) === cachedCurrentUserId;
+                    const canDeleteThisMsg = cachedIsAdmin || cachedIsLeader || isMyMsg;
+                    const isEdited = msg.is_edited === true;
+                    const rowStyle = isMyMsg
+                        ? 'display: flex; gap: 8px; max-width: 85%; margin-bottom: 10px; align-self: flex-end; width: 100%; justify-content: flex-start; align-items: flex-end;'
+                        : 'display: flex; gap: 8px; max-width: 85%; margin-bottom: 10px; align-self: flex-start; width: 100%; align-items: flex-end;';
+                    const bubbleStyle = isMyMsg
+                        ? 'background: #eef2ff; padding: 10px 14px; border-radius: 16px 4px 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin: 0 5px; position: relative;'
+                        : 'background: #ffffff; padding: 10px 14px; border-radius: 4px 16px 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin: 0 5px; position: relative;';
+                    
+                    let avatarHtml = '';
+                    const currentAvatarUrl = isMyMsg ? (myAvatarUrl || '') : msg.avatar_url;
+                    if (currentAvatarUrl) {
+                        avatarHtml = `<img class="chat-msg-avatar" src="${currentAvatarUrl}" alt="Фото" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #e0e0e0;">`;
+                    } else {
+                        avatarHtml = `<div class="chat-msg-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: #f0f0f2; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; user-select: none; border: 1px solid #e0e0e2;">👤</div>`;
+                    }
+                    
+                    const replyToInfo = msg.reply_to_info;
+                    let replyQuoteHtml = '';
+                    if (replyToInfo) {
+                        const replyAuthor = replyToInfo.sender_id === cachedCurrentUserId ? 'Вы' : 'Пользователь';
+                        replyQuoteHtml = `<div class="chat-msg-reply-quote" style="background: #f0f4ff; padding: 8px 10px; border-radius: 8px; border-left: 3px solid #4a90e2; margin-bottom: 8px;"><div style="font-size: 11px; font-weight: 700; color: #4a90e2; margin-bottom: 2px;">${replyAuthor}</div><div style="font-size: 13px; color: #1e1e20; word-break: break-word;">${escapeHtml(replyToInfo.message_text)}</div></div>`;
+                    }
+                    
+                    const isForwarded = msg.is_forwarded === true;
+                    const forwardedStyle = isForwarded ? 'border-left: 3px solid #ff9500;' : '';
+                    let forwardedHeaderHtml = '';
+                    if (isForwarded && msg.forward_sender_name) {
+                        const forwardAuthorName = escapeHtml(msg.forward_sender_name) + (msg.forward_sender_last_name ? ' ' + escapeHtml(msg.forward_sender_last_name) : '');
+                        const originalMsgId = msg.original_message_id || msg.id;
+                        forwardedHeaderHtml = `<div class="forwarded-header" data-original-message-id="${originalMsgId}" style="font-size: 11px; color: #ff9500; font-weight: 600; margin-bottom: 6px; cursor: pointer; padding: 4px 8px; border-radius: 6px; background: rgba(255,149,0,0.1); display: inline-block;" onclick="event.stopPropagation(); navigateToOriginalMessage(${originalMsgId}, this)">📌 Переслано от <strong>${forwardAuthorName}</strong></div>`;
+                    } else if (isForwarded) {
+                        forwardedHeaderHtml = '<div style="font-size: 10px; color: #ff9500; font-weight: 600; margin-bottom: 4px;">📌 Пересланное</div>';
+                    }
+                    
+                    newHtml += `<div class="chat-msg-row js-selectable-msg" style="${rowStyle} cursor: pointer;" data-msg-id="${msg.id}" data-sender-id="${msg.sender_id}" data-can-delete="${canDeleteThisMsg ? '1' : '0'}" data-can-edit="${canDeleteThisMsg || isMyMsg ? '1' : '0'}" data-is-forwarded="${isForwarded ? '1' : '0'}" data-is-mine="${isMyMsg ? '1' : '0'}">${avatarHtml}<div class="chat-msg-bubble" style="${bubbleStyle} ${forwardedStyle}">${forwardedHeaderHtml}${(!isMyMsg && activeChatRecipientId === null) ? `<div class="chat-msg-author" style="font-size: 11px; font-weight: 700; color: #4a90e2; margin-bottom: 3px;">${escapeHtml(msg.first_name)} ${escapeHtml(msg.last_name || '')}</div>` : ''}${replyQuoteHtml}<div class="chat-msg-text" style="font-size: 14px; color: #1e1e20; word-break: break-word; text-align: left;">${escapeHtml(msg.message_text)}</div><div class="chat-msg-time" style="font-size: 10px; color: #888; text-align: right; margin-top: 4px;">${timeStr}${isEdited ? ' ✏️' : ''}</div></div></div>`;
+                    
+                    // Обновляем ID даже если пропустили из-за isScrollUpLoading
+                    // чтобы следующее polling не показало это сообщение снова
+                    if (msg.id > lastCheckedMessageId) {
+                        lastCheckedMessageId = msg.id;
+                    }
+                    appendedCount++;
+                }
+                
+                // Вставляем все новые сообщения одним вызовом
+                if (appendedCount > 0) {
+                    container.insertAdjacentHTML('beforeend', newHtml);
+                    if (isScrolledToBottom) {
+                        container.scrollTop = container.scrollHeight;
+                    }
+                }
+                
+            } catch (err) {
+                // Тихо игнорируем ошибки polling
+            }
+        }, 3000);
+    }
+
+    function stopChatPolling() {
+        if (chatPollingInterval) {
+            clearInterval(chatPollingInterval);
+            chatPollingInterval = null;
+        }
+    }
+
+
 </script>
 
 <script>
@@ -1662,9 +2310,65 @@
      themeScript.src = 'theme.js?v=' + version;
      document.body.appendChild(themeScript);
  })();
+
+// Инициализация Web Push
+if (typeof WEB_PUSH !== 'undefined') {
+    WEB_PUSH.init();
+}
+// Устанавливаем контекст видимости для группы
+if (typeof window.WEB_PUSH_VISIBILITY !== 'undefined') {
+    const urlParams = new URLSearchParams(window.location.search);
+    const groupId = urlParams.get('id');
+    if (groupId) {
+        window.WEB_PUSH_VISIBILITY.setGroup(groupId);
+    }
+}
+
+/**
+ * Navigate to the original message when clicking on forwarded header
+ * @param {number} originalMessageId - ID of the original message to navigate to
+ * @param {HTMLElement} clickedElement - The clicked forwarded header element
+ */
+function navigateToOriginalMessage(originalMessageId, clickedElement) {
+    console.log('[Forward] Navigating to original message ID:', originalMessageId);
+    
+    // Find the original message row
+    const targetRow = document.querySelector(`.chat-msg-row[data-msg-id="${originalMessageId}"]`);
+    if (targetRow) {
+        console.log('[Forward] Found target row:', targetRow);
+        // Scroll to the message smoothly
+        targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Add highlight animation
+        targetRow.classList.add('highlight-message');
+        
+        // Remove highlight class after animation completes
+        setTimeout(() => {
+            targetRow.classList.remove('highlight-message');
+        }, 2000);
+    } else {
+        console.log('[Forward] Target row NOT found for ID:', originalMessageId);
+        // Message might be outside current view (older than 100 messages)
+        showToast('⚠️ Оригинальное сообщение не найдено в текущей выборке (ID: ' + originalMessageId + ')');
+    }
+}
 </script>
 
 
+
+<!-- CSS для анимации подсветки пересланных сообщений -->
+<style>
+@keyframes highlightPulse {
+    0% { background: rgba(255, 149, 0, 0.3); }
+    50% { background: rgba(255, 149, 0, 0.15); }
+    100% { background: transparent; }
+}
+
+.highlight-message {
+    animation: highlightPulse 2s ease-out;
+    border-radius: 16px;
+}
+</style>
 
 <!-- Уникальный автономный редактор аватара группы (Без библиотек) -->
 <div id="cropperModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000000; z-index: 10000; flex-direction: column; user-select: none;">
@@ -1699,6 +2403,10 @@
     </div>
 </div>
 
+
+<!-- Web Push Notifications -->
+<script src="/web-push-suppression.js"></script>
+<script src="/web-push.js"></script>
 
 </body>
 </html>

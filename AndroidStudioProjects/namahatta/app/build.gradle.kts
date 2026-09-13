@@ -1,13 +1,16 @@
 plugins {
     alias(libs.plugins.android.application)
-    id("org.jetbrains.kotlin.android")
-    id("com.android.application")
+	//id("com.android.application")
     id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.example.namahatta"
-    compileSdk = 34
+    compileSdk {
+        version = release(36) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         applicationId = "com.example.namahatta"

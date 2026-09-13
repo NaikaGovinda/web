@@ -46,6 +46,23 @@ try {
     } catch (Exception $e) {
         error_log("Ошибка сохранения уведомления: " . $e->getMessage());
     }
+    
+    // =========================================================================
+    // УВЕДОМЛЕНИЕ ЧЕРЕЗ WEB PUSH
+    // =========================================================================
+    try {
+        require_once __DIR__ . '/send_web_push.php';
+        
+        sendWebPushToUser($pdo, $user_id, 'Вы покинули группу 🚪', 
+            'Вы успешно вышли из группы «' . $app['group_name'] . '».', [
+            'action' => 'group_removed',
+            'group_id' => (string)$app['group_id'],
+            'target_page' => 'profile.html',
+            'target_params' => json_encode(['group_id' => $app['group_id']], JSON_UNESCAPED_UNICODE)
+        ]);
+    } catch (Exception $webPushEx) {
+        error_log("Web push error in leave_group: " . $webPushEx->getMessage());
+    }
 
     // [ИСПРАВЛЕНО] Добавлен флаг сохранения читаемости кириллицы для вывода названия группы
     echo json_encode([

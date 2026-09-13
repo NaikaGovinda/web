@@ -5,19 +5,24 @@ import android.content.Context
 import android.content.Intent // 🔥 Добавлено для создания системного интента Галереи
 import android.net.Uri // 🔥 Добавлено для работы со ссылкой на изображение
 import android.os.Bundle
+import android.webkit.GeolocationPermissions
 import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts // 🔥 Добавлено для безопасного вызова окна Галереи
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.FirebaseApp
 import android.util.Log
 import android.webkit.CookieManager
-import android.webkit.WebResourceRequest
 import com.google.firebase.messaging.FirebaseMessaging
 import okhttp3.*
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -25,6 +30,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import org.json.JSONObject
 import java.io.IOException
 import android.app.NotificationManager
+import android.Manifest
 
 class MainActivity : AppCompatActivity() {
 
@@ -98,7 +104,51 @@ class MainActivity : AppCompatActivity() {
             javaScriptEnabled = true
             allowFileAccess = true
             allowContentAccess = true
-            setGeolocationEnabled(false) // отключаем лишнее
+            setGeolocationEnabled(true) // ВКЛЮЧАЕМ геолокацию для карты
+            cacheMode = WebSettings.LOAD_DEFAULT
+        }
+
+        // [ИСПРАВЛЕНИЕ КАРТЫ]: Настраиваем WebChromeClient для обработки геолокации
+        webView.webChromeClient = object : WebChromeClient() {
+            // Запрашиваем разрешение на геолокацию
+            override fun onGeolocationPermissionsShowPrompt(
+                origin: String?,
+                callback: GeolocationPermissions.Callback
+            ) {
+                Log.d("GEO_LOCATION", "Запрос геолокации от: $origin")
+                // Проверяем, есть ли разрешение
+                if (ContextCompat.checkSelfPermission(
+                        this@MainActivity,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                ) {
+                    callback.invoke(origin, true, false)
+                    Log.d("GEO_LOCATION", "Разрешение на геолокацию предоставлено")
+                } else {
+                    // Запрашиваем разрешение
+                    ActivityCompat.requestPermissions(
+                        this@MainActivity,
+                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                        1001
+                    )
+                    // Пока отклоняем, разрешение запросим в onRequestPermissionsResult
+                    callback.invoke(origin, false, false)
+                }
+            }
+
+            // Результат запроса разрешения
+            override fun onPermissionRequest(request: android.webkit.PermissionRequest) {
+                Log.d("GEO_LOCATION", "Запрос разрешения: ${request.resources.joinToString()}")
+                if (ContextCompat.checkSelfPermission(
+                        this@MainActivity,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                ) {
+                    request.grant(request.resources)
+                } else {
+                    request.deny()
+                }
+            }
         }
         //webView.webViewClient = WebViewClient()
         // [ИСПРАВЛЕНО]: Внутренний клиент, который плавно открывает страницы чатов из балуна карты
@@ -306,6 +356,22 @@ class MainActivity : AppCompatActivity() {
         // Теперь пуши в шторку прилетят ГАРАНТИРОВАННО!
         prefs.edit().putString("active_group_chat_id", "").apply()
         android.util.Log.d("FCM_CHAT", "Приложение свернуто. Контекст чата сброшен.")
+    }
+
+    // [ИСПРАВЛЕНИЕ КАРТЫ]: Результат запроса разрешения на геолокацию
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 1001) {
+            if (grantResults.isNotEmpty() && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                Log.d("GEO_LOCATION", "Разрешение на геолокацию получено")
+            } else {
+                Log.w("GEO_LOCATION", "Разрешение на геолокацию ОТКЛОНЕНО")
+            }
+        }
     }
 
 }

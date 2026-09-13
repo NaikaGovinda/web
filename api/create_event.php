@@ -128,6 +128,29 @@ try {
     } catch (Exception $e) {
         file_put_contents(__DIR__ . '/fcm_debug.log', "[" . date('Y-m-d H:i:s') . "] Event notify error: " . $e->getMessage() . "\n", FILE_APPEND);
     }
+    
+    // =========================================================================
+    // УВЕДОМЛЕНИЕ ЧЕРЕЗ WEB PUSH
+    // =========================================================================
+    try {
+        require_once __DIR__ . '/send_web_push.php';
+        
+        $webTitleNotif = '📅 Новое событие!';
+        $webBodyNotif = "В группе «{$group['name']}» запланировано: {$title}";
+        
+        foreach ($recipientIds as $recipientId) {
+            sendWebPushToUser($pdo, $recipientId, $webTitleNotif, $webBodyNotif, [
+                'type' => 'new_event',
+                'event_id' => (string)$event_id,
+                'group_id' => (string)$group_id,
+                'action' => 'view_event',
+                'target_page' => 'group.html',
+                'target_params' => json_encode(['id' => $group_id, 'tab' => 'events'], JSON_UNESCAPED_UNICODE)
+            ]);
+        }
+    } catch (Exception $webPushEx) {
+        error_log("Web push error in create_event: " . $webPushEx->getMessage());
+    }
 
     echo json_encode(['success' => true]);
 

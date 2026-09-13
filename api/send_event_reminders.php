@@ -91,6 +91,9 @@ try {
         // Запуск FCM Push уведомления
         sendEventReminderFcm($pdo, $eventData);
         
+        // Запуск Web Push уведомления
+        sendEventReminderWebPush($pdo, $eventData);
+        
         // Запуск Email уведомления
         sendEmailNotificationProvenCLI($pdo, $eventData, $eventLocal, $log_file);
         
@@ -213,4 +216,43 @@ function sendEventReminderFcm($pdo, $event) {
     ];
 
     sendFcmMessages($tokens, $titleNotif, $bodyNotif, $data);
+}
+
+// ==========================================================
+// [НОВОЕ] WEB PUSH НАПОМИНАНИЕ О СОБЫТИИ
+// ==========================================================
+function sendEventReminderWebPush($pdo, $event) {
+    require_once __DIR__ . '/send_web_push.php';
+    
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT u.id
+        FROM `users` u
+        WHERE u.is_active = 1
+        AND (
+            u.id IN (SELECT user_id FROM applications WHERE group_id = ? AND status = 'approved')
+            OR u.id IN (SELECT user_id FROM group_leaders WHERE group_id = ?)
+        )
+    ");
+    $stmt->execute([$event['group_id'], $event['group_id']]);
+    $userIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    if (empty($userIds)) return;
+    
+    $titleNotif = "Напоминание о встрече! 📅";
+    $bodyNotif = "Скоро начнется: " . $event['title'] . " (группа «" . $event['group_name'] . "»)";
+    
+    foreach ($userIds as $userId) {
+        try {
+            sendWebPushToUser($pdo, $userId, $titleNotif, $bodyNotif, [
+                'type' => 'event_reminder',
+                'event_id' => (string)$event['id'],
+                'group_id' => (string)$event['group_id'],
+                'action' => 'view_event',
+                'target_page' => 'group.html',
+                'target_params' => json_encode(['id' => $event['group_id'], 'tab' => 'events'], JSON_UNESCAPED_UNICODE)
+            ]);
+        } catch (Exception $e) {
+            error_log("Web push event reminder error for user $userId: " . $e->getMessage());
+        }
+    }
 }

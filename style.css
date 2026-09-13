@@ -851,6 +851,26 @@ p, li {
     opacity: 0.7;
 }
 
+/* Предотвращаем выделение текста на пунктах меню */
+.context-menu-item {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    pointer-events: auto !important;
+}
+
+/* Глобально запрещаем выделение на меню и backdrop */
+#messageContextMenu,
+#messageMenuBackdrop {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    -webkit-touch-callout: none !important;
+}
+
 /* Затемнение фона */
 #messageMenuBackdrop {
     display: none;
@@ -874,6 +894,15 @@ p, li {
 .chat-msg-row {
     -webkit-tap-highlight-color: transparent;
 }
+
+/* Свайп для ответа */
+.chat-msg-row {
+    transition: transform 0.25s ease-out;
+}
+.chat-msg-row.swiping {
+    transition: none;
+    touch-action: none;
+}
 .chat-msg-author {
     font-size: 11px;
     font-weight: 700;
@@ -896,6 +925,29 @@ p, li {
     font-size: 10px;
     opacity: 0.7;
 }
+
+/* Блок цитаты ответа (как в Telegram) */
+.chat-msg-reply-quote {
+    background: #f0f4ff;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border-left: 3px solid #4a90e2;
+    margin-bottom: 8px;
+}
+
+.chat-msg-reply-quote .reply-author {
+    font-size: 11px;
+    font-weight: 700;
+    color: #4a90e2;
+    margin-bottom: 2px;
+}
+
+.chat-msg-reply-quote .reply-text {
+    font-size: 13px;
+    color: #1e1e20;
+    word-break: break-word;
+}
+
 .chat-input-bar {
     display: flex;
     align-items: flex-end;

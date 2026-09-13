@@ -140,7 +140,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+// Инициализация Web Push
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof WEB_PUSH !== 'undefined') {
+        WEB_PUSH.init();
+    }
+    // Устанавливаем контекст видимости
+    if (typeof window.WEB_PUSH_VISIBILITY !== 'undefined') {
+        window.WEB_PUSH_VISIBILITY.setHome();
+    }
+});
 </script>
+
+<!-- Web Push Notifications -->
+<script src="/web-push-suppression.js"></script>
+<script src="/web-push.js"></script>
 
 </body>
 </html>

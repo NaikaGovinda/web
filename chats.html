@@ -25,6 +25,10 @@
 </div>
 
 <script src="/android.js"></script>
+
+<!-- Web Push Notifications -->
+<script src="/web-push-suppression.js"></script>
+<script src="/web-push.js"></script>
 <script>
  const IS_DEBUG = true; 
  const APP_VERSION = '1.0.0'; 
@@ -137,7 +141,23 @@ async function loadChatsList() {
 }
 
 
-document.addEventListener('DOMContentLoaded', loadChatsList);
+document.addEventListener('DOMContentLoaded', function() {
+    loadChatsList();
+    
+    // Инициализация Web Push
+    if (typeof WEB_PUSH !== 'undefined') {
+        WEB_PUSH.init();
+    }
+    // Устанавливаем контекст видимости
+    if (typeof window.WEB_PUSH_VISIBILITY !== 'undefined') {
+        window.WEB_PUSH_VISIBILITY.setChats();
+    }
+});
 </script>
+
+<!-- Web Push Notifications -->
+<script src="/web-push-suppression.js"></script>
+<script src="/web-push.js"></script>
+
 </body>
 </html>

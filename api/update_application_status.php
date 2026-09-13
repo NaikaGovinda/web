@@ -161,6 +161,27 @@ try {
     } catch (Exception $e) {
         file_put_contents(__DIR__ . '/fcm_debug.log', "[" . date('Y-m-d H:i:s') . "] Push error: " . $e->getMessage() . "\n", FILE_APPEND);
     }
+    
+    // =========================================================================
+    // УВЕДОМЛЕНИЕ УЧАСТНИКУ ЧЕРЕЗ WEB PUSH
+    // =========================================================================
+    try {
+        require_once __DIR__ . '/send_web_push.php';
+        
+        $webTitle = $status === 'approved' ? 'Заявка одобрена! ✅' : 'Статус заявки ❌';
+        $webBody = $status === 'approved' 
+            ? "Поздравляем! Вас приняли в духовную группу «{$app['group_name']}»" 
+            : "Ваша заявка в группу «{$app['group_name']}» была отклонена лидером";
+        
+        sendWebPushToUser($pdo, $app['user_id'], $webTitle, $webBody, [
+            'action' => $status === 'approved' ? 'view_group_members' : 'view_application_rejected',
+            'group_id' => (string)$app['group_id'],
+            'target_page' => 'profile.html',
+            'target_params' => json_encode(['group_id' => $app['group_id']], JSON_UNESCAPED_UNICODE)
+        ]);
+    } catch (Exception $webPushEx) {
+        error_log("Web push error in update_application_status: " . $webPushEx->getMessage());
+    }
 
     echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
 

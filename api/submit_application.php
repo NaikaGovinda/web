@@ -191,6 +191,25 @@ if ($user_data && $user_data['role'] === 'observer' && (int)$user_data['is_admin
 		file_put_contents(__DIR__ . '/fcm_debug.log', "[" . date('Y-m-d H:i:s') . "] Ошибка в блоке распределения пушей: " . $e->getMessage() . "\n", FILE_APPEND);
 	}
 
+    // =========================================================================
+    // УВЕДОМЛЕНИЕ КАНДИДАТУ ЧЕРЕЗ WEB PUSH
+    // =========================================================================
+    try {
+        require_once __DIR__ . '/send_web_push.php';
+        
+        $webUserTitle = '⏳ Заявка отправлена';
+        $webUserBody = 'Ваш запрос на вступление в группу «' . $group['name'] . '» успешно передан лидеру.';
+        
+        sendWebPushToUser($pdo, $user_id, $webUserTitle, $webUserBody, [
+            'action' => 'view_group_members',
+            'group_id' => (string)$group_id,
+            'target_page' => 'group.html',
+            'target_params' => json_encode(['id' => $group_id], JSON_UNESCAPED_UNICODE)
+        ]);
+    } catch (Exception $webPushEx) {
+        error_log("Web push error in submit_application: " . $webPushEx->getMessage());
+    }
+
     echo json_encode(['success' => true, 'message' => 'Заявка успешно отправлена'], JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {

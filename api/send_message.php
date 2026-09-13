@@ -30,6 +30,19 @@ $messageText = trim($data['message_text'] ?? '');
 // Считываем ID получателя, если он передан фронтендом (для ЛС)
 $recipientId = isset($data['recipient_id']) && $data['recipient_id'] !== null && $data['recipient_id'] !== 'null' ? (int)$data['recipient_id'] : null;
 
+// Считываем ID сообщения, на которое отвечают (для "Ответить")
+$replyToId = isset($data['reply_to_id']) && $data['reply_to_id'] !== null && $data['reply_to_id'] !== 'null' ? (int)$data['reply_to_id'] : null;
+
+// Считываем флаг пересылки и sender_id оригинала
+$isForwarded = isset($data['is_forwarded']) && $data['is_forwarded'] === true;
+$forwardSenderId = isset($data['forward_sender_id']) && $data['forward_sender_id'] !== null && $data['forward_sender_id'] !== 'null' ? (int)$data['forward_sender_id'] : null;
+$originalMessageId = isset($data['original_message_id']) && $data['original_message_id'] !== null && $data['original_message_id'] !== 'null' && (int)$data['original_message_id'] > 0 ? (int)$data['original_message_id'] : null;
+
+// Если пересылаем СВОЁ сообщение — не помечаем как forwarded (можно редактировать)
+if ($isForwarded && $forwardSenderId === $userId) {
+    $isForwarded = false;
+}
+
 if ($groupId <= 0 || empty($messageText)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Сообщение не может быть пустым'], JSON_UNESCAPED_UNICODE);
@@ -105,16 +118,71 @@ try {
     }
     
     // 6. Вставляем сообщение в базу данных
-    $sql = "INSERT INTO group_messages (group_id, sender_id, recipient_id, message_text) 
-            VALUES (:group_id, :sender_id, :recipient_id, :message_text)";
+    // Проверяем, существуют ли нужные колонки
+    $hasReplyTo = false;
+    try {
+        $colCheck = $pdo->query("SHOW COLUMNS FROM group_messages LIKE 'reply_to_id'");
+        $hasReplyTo = ($colCheck && $colCheck->rowCount() > 0);
+    } catch (\Exception $e) {
+        $hasReplyTo = false;
+    }
     
+    $hasIsForwarded = false;
+    try {
+        $colCheck = $pdo->query("SHOW COLUMNS FROM group_messages LIKE 'is_forwarded'");
+        $hasIsForwarded = ($colCheck && $colCheck->rowCount() > 0);
+    } catch (\Exception $e) {
+        $hasIsForwarded = false;
+    }
+    
+    $hasForwardSenderId = false;
+    try {
+        $colCheck = $pdo->query("SHOW COLUMNS FROM group_messages LIKE 'forward_sender_id'");
+        $hasForwardSenderId = ($colCheck && $colCheck->rowCount() > 0);
+    } catch (\Exception $e) {
+        $hasForwardSenderId = false;
+    }
+    
+    $hasOriginalMessageId = false;
+    try {
+        $colCheck = $pdo->query("SHOW COLUMNS FROM group_messages LIKE 'original_message_id'");
+        $hasOriginalMessageId = ($colCheck && $colCheck->rowCount() > 0);
+    } catch (\Exception $e) {
+        $hasOriginalMessageId = false;
+    }
+    
+    // Build INSERT dynamically based on available columns
+    $fields = ['group_id', 'sender_id', 'recipient_id', 'message_text'];
+    $placeholders = ['?', '?', '?', '?'];
+    $values = [$groupId, $userId, $recipientId, $messageText];
+    
+    if ($hasReplyTo) {
+        $fields[] = 'reply_to_id';
+        $placeholders[] = '?';
+        $values[] = $replyToId;
+    }
+    
+    if ($hasIsForwarded) {
+        $fields[] = 'is_forwarded';
+        $placeholders[] = '?';
+        $values[] = $isForwarded ? 1 : 0;
+    }
+    
+    if ($hasForwardSenderId) {
+        $fields[] = 'forward_sender_id';
+        $placeholders[] = '?';
+        $values[] = $forwardSenderId;
+    }
+    
+    if ($hasOriginalMessageId) {
+        $fields[] = 'original_message_id';
+        $placeholders[] = '?';
+        $values[] = $originalMessageId;
+    }
+    
+    $sql = "INSERT INTO group_messages (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([
-        'group_id'     => $groupId,
-        'sender_id'    => $userId,
-        'recipient_id' => $recipientId,
-        'message_text' => $messageText
-    ]);
+    $stmt->execute($values);
     
     // ==========================================================
     // 7. ОТПРАВКА PUSH-УВЕДОМЛЕНИЙ О НОВЫХ СООБЩЕНИЯХ
@@ -206,6 +274,51 @@ try {
         }
     } catch (Exception $fcmEx) {
         file_put_contents(__DIR__ . '/fcm_debug.log', "[" . date('Y-m-d H:i:s') . "] Message push error: " . $fcmEx->getMessage() . "\n", FILE_APPEND);
+    }
+    
+    // ==========================================================
+    // 9. ОТПРАВКА WEB PUSH УВЕДОМЛЕНИЙ
+    // ==========================================================
+    try {
+        require_once __DIR__ . '/send_web_push.php';
+        
+        if ($recipientId !== null) {
+            // Личное сообщение
+            foreach ([$recipientId] as $webPushRecipientId) {
+                sendWebPushToUser($pdo, $webPushRecipientId, $pushTitle, $pushBody, [
+                    'action' => 'new_private_chat_message',
+                    'group_id' => (string)$groupId,
+                    'sender_id' => (string)$userId,
+                    'sender_name' => $senderName,
+                    'target_page' => 'group.html',
+                    'target_params' => json_encode(['id' => $groupId, 'open_private_chat' => $recipientId, 'open_private_name' => $senderName], JSON_UNESCAPED_UNICODE)
+                ]);
+            }
+        } else {
+            // Сообщение в общий чат
+            $stmtWebMembers = $pdo->prepare("SELECT user_id FROM applications WHERE group_id = ? AND status = 'approved' AND user_id != ?");
+            $stmtWebMembers->execute([$groupId, $userId]);
+            $webMemberIds = $stmtWebMembers->fetchAll(PDO::FETCH_COLUMN);
+            
+            $stmtWebLeaders = $pdo->prepare("SELECT user_id FROM group_leaders WHERE group_id = ? AND user_id != ?");
+            $stmtWebLeaders->execute([$groupId, $userId]);
+            $webLeaderIds = $stmtWebLeaders->fetchAll(PDO::FETCH_COLUMN);
+            
+            $webRecipientIds = array_unique(array_merge($webMemberIds, $webLeaderIds));
+            
+            foreach ($webRecipientIds as $webPushRecipientId) {
+                sendWebPushToUser($pdo, $webPushRecipientId, $pushTitle, $pushBody, [
+                    'action' => 'new_group_chat_message',
+                    'group_id' => (string)$groupId,
+                    'sender_id' => (string)$userId,
+                    'sender_name' => $senderName,
+                    'target_page' => 'group.html',
+                    'target_params' => json_encode(['id' => $groupId, 'open_chat' => 1], JSON_UNESCAPED_UNICODE)
+                ]);
+            }
+        }
+    } catch (Exception $webPushEx) {
+        error_log("Web push error in send_message: " . $webPushEx->getMessage());
     }
     
     // ==========================================================

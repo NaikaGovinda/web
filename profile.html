@@ -58,6 +58,17 @@
         return div.innerHTML;
     }
 
+    // ===== Fallback для showToast (если theme.js ещё не загрузился) =====
+    if (typeof showToast !== 'function') {
+        window.showToast = function(message) {
+            console.log('[Toast]', message);
+            // Простая реализация через alert если showToast недоступен
+            if (typeof alert === 'function') {
+                alert(message);
+            }
+        };
+    }
+
     // ===== УВЕДОМЛЕНИЯ =====
     let currentUserId = null;
 
@@ -351,15 +362,34 @@
     // Очистить все уведомления
     async function clearAllNotifications() {
         try {
-            await fetch('/api/clear_notifications.php', {
+            // Очищаем localStorage локально (мгновенный отклик)
+            if (currentUserId) {
+                localStorage.removeItem('notifications_' + currentUserId);
+            }
+            
+            // Очищаем на сервере
+            const response = await fetch('/api/clear_notifications.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ user_id: currentUserId })
             });
-            updateNotifBadge(0);
-            loadNotifications();
+            
+            const result = await response.json();
+            if (result.success) {
+                // Мгновенно обновляем UI
+                updateNotifBadge(0);
+                const listEl = document.getElementById('notificationsList');
+                if (listEl) {
+                    listEl.innerHTML = '<div class="notif-empty"><div class="notif-empty-icon">🔔</div><p>Нет уведомлений</p></div>';
+                }
+                showToast('✅ Уведомления очищены');
+            } else {
+                throw new Error(result.error || 'Ошибка сервера');
+            }
         } catch (e) {
-            console.error('Ошибка очистки:', e);
+            console.error('Ошибка очистки уведомлений:', e);
+            showToast('❌ Ошибка: ' + (e.message || 'Не удалось очистить уведомления'));
         }
     }
 
@@ -1041,6 +1071,10 @@
 </div>
 
 <script src="/android.js"></script>
+
+<!-- Web Push Notifications -->
+<script src="/web-push-suppression.js"></script>
+<script src="/web-push.js"></script>
 <script>
     const IS_DEBUG = true;
     const APP_VERSION = '1.0.0';
@@ -1062,6 +1096,17 @@
         themeScript.src = 'theme.js?v=' + version;
         document.body.appendChild(themeScript);
     })();
+    
+    // Инициализация Web Push
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof WEB_PUSH !== 'undefined') {
+            WEB_PUSH.init();
+        }
+        // Устанавливаем контекст видимости
+        if (typeof window.WEB_PUSH_VISIBILITY !== 'undefined') {
+            window.WEB_PUSH_VISIBILITY.setProfile();
+        }
+    });
 </script>
 
 </body>
