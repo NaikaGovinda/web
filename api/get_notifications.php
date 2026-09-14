@@ -22,19 +22,38 @@ try {
     $stmt->execute([$user_id]);
     $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Группировка уведомлений по group_id для типа chat_message
+    // Группировка уведомлений
     $grouped = [];
     $ungrouped = [];
 
     foreach ($notifications as $notif) {
-        // Группируем только chat_message с group_id
-        if ($notif['type'] === 'chat_message' && !empty($notif['group_id'])) {
-            $groupKey = 'group_' . $notif['group_id'];
+        // Определяем тип уведомления и ключ группировки
+        $isPrivate = false;
+        $groupKey = null;
+        
+        if ($notif['target_params']) {
+            try {
+                $params = json_decode($notif['target_params'], true);
+                if (isset($params['open_private_chat']) && $params['open_private_chat']) {
+                    $isPrivate = true;
+                    // Для ЛС группируем по отправителю (open_private_chat)
+                    $groupKey = 'private_' . (int)$params['open_private_chat'];
+                } elseif (isset($params['group_id']) && $params['group_id']) {
+                    // Для групповых чатов группируем по group_id
+                    $groupKey = 'group_' . (int)$params['group_id'];
+                }
+            } catch (Exception $e) {
+                // Ignoring parse errors
+            }
+        }
+        
+        // Если есть ключ группировки и это chat_message — добавляем в группу
+        if ($notif['type'] === 'chat_message' && $groupKey) {
             if (!isset($grouped[$groupKey])) {
                 $grouped[$groupKey] = [
                     'is_grouped' => true,
                     'group_key' => $groupKey,
-                    'group_id' => $notif['group_id'],
+                    'group_id' => $isPrivate ? null : (int)preg_replace('/^group_/', '', $groupKey),
                     'count' => 0,
                     'items' => []
                 ];
@@ -42,6 +61,7 @@ try {
             $grouped[$groupKey]['count']++;
             $grouped[$groupKey]['items'][] = $notif;
         } else {
+            // Не группируем
             $ungrouped[] = [
                 'is_grouped' => false,
                 'id' => $notif['id'],
@@ -65,18 +85,45 @@ try {
             return strtotime($b['created_at']) - strtotime($a['created_at']);
         });
         
-        $result[] = [
-            'is_grouped' => true,
-            'group_key' => $group['group_key'],
-            'group_id' => $group['group_id'],
-            'count' => $group['count'],
-            'items' => $group['items'],
-            'is_read' => $group['items'][0]['is_read'] // Нечитанное если хотя бы одно не прочитано
-        ];
+        // Если в группе только 1 сообщение — не группируем, показываем отдельно
+        if ($group['count'] === 1) {
+            $result[] = [
+                'is_grouped' => false,
+                'id' => $group['items'][0]['id'],
+                'type' => $group['items'][0]['type'],
+                'title' => $group['items'][0]['title'],
+                'message' => $group['items'][0]['message'],
+                'group_id' => $group['items'][0]['group_id'],
+                'target_page' => $group['items'][0]['target_page'],
+                'target_params' => $group['items'][0]['target_params'],
+                'is_read' => $group['items'][0]['is_read'],
+                'created_at' => $group['items'][0]['created_at']
+            ];
+        } else {
+            // Несколько сообщений — группируем
+            $result[] = [
+                'is_grouped' => true,
+                'group_key' => $group['group_key'],
+                'group_id' => $group['group_id'],
+                'count' => $group['count'],
+                'items' => $group['items'],
+                'is_read' => $group['items'][0]['is_read'] // Нечитанное если хотя бы одно не прочитано
+            ];
+        }
     }
 
     // Добавляем несгруппированные
     $result = array_merge($result, $ungrouped);
+    
+    // Отладка: логируем результаты группировки
+    error_log('[get_notifications] User ' . $user_id . ': Grouped groups: ' . count($grouped) . ', Ungrouped count: ' . count($ungrouped));
+    foreach ($grouped as $gKey => $group) {
+        error_log('[get_notifications] Group ' . $gKey . ' has ' . $group['count'] . ' items');
+    }
+    
+    // Отладка: логируем финальный ответ
+    $debugResult = $result;
+    error_log('[get_notifications] User ' . $user_id . ': Final notifications count: ' . count($result));
 
     echo json_encode([
         'success' => true,

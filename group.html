@@ -20,7 +20,7 @@
           <polyline points="15 18 9 12 15 6"/>
         </svg>
       </button>
-      <h1 class="org-name" id="groupName">Загрузка...</h1>
+      <h1 class="org-name" id="groupName" style="font-size:17px;">Загрузка...</h1>
       <button class="btn-icon" id="btnFavorite" aria-label="В избранное"></button>
     </header>
 
@@ -30,15 +30,26 @@
 
     <nav class="bottom-bar">
       <a href="/index.html" class="bar-btn">
-        <span class="ico ico-home"></span>
-        <span>Домой</span>
+        <svg class="bar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span>Главная</span>
       </a>
-      <a href="/namahatta.html" class="bar-btn">
-        <span class="ico ico-namahatta"></span>
-        <span>Нама-Хатта</span>
+      <a href="/namahatta.html" class="bar-btn bar-btn-active">
+        <svg class="bar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Группы</span>
       </a>
       <a href="/profile.html" class="bar-btn">
-        <span class="ico ico-profile"></span>
+        <svg class="bar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
         <span>Профиль</span>
       </a>
     </nav>
@@ -308,6 +319,7 @@
 			clearInterval(chatPollingInterval);
 			chatPollingInterval = null;
 		}
+		const wasPrivateChat = activeChatRecipientId !== null; // Сохраняем перед сбросом
 		activeChatRecipientId = null; // Очищаем получателя ЛС
 		
 		// 🔥 Уведомляем Android, что чат закрыт, теперь уведомления можно показывать сверху
@@ -318,9 +330,12 @@
 		// ==========================================================
 		// [ИСПРАВЛЕНО] УМНОЕ ВОЗВРАЩЕНИЕ НАЗАД В СПИСОК ЧАТОВ
 		// ==========================================================
-		// Проверяем через referrer, пришел ли пользователь со страницыchats.html
+		// Проверяем через referrer, пришел ли пользователь со страницы chats.html
 		if (document.referrer && document.referrer.includes('chats.html')) {
 			window.location.href = '/chats.html'; // Уходим обратно в мессенджер
+		} else if (wasPrivateChat) {
+			// Если это был ЛС и пришли не из chats.html — уходим на профиль
+			window.location.href = '/profile.html';
 		} else {
 			loadGroup(); // Если он зашел из обычной карточки группы, просто закрываем чат
 		}
@@ -430,7 +445,10 @@
 				body: JSON.stringify({ message_ids: selectedMessageIds })
 			});
 
-			const result = await response.json();
+			const rawText = await response.text();
+			const jsonIdx = rawText.indexOf('{');
+			if (jsonIdx === -1) throw new Error('Не JSON');
+			const result = JSON.parse(rawText.substring(jsonIdx));
 			if (result.success) {
 				showToast('🗑️ Выбранные сообщения успешно удалены');
 				selectedMessageIds = []; // Полностью очищаем массив выделения
@@ -449,12 +467,16 @@
     // 3. Загрузка сообщений с сервера
     // Изменяем функцию ЗАГРУЗКИ сообщений (добавляем recipient_id в URL)
 	async function loadChatMessages(beforeMessageId = null, isScrollUp = false) {
-		if (!currentGroupId) return;
+		// Для ЛС currentGroupId может быть пустым, но activeChatRecipientId должен быть установлен
+		if (!currentGroupId && activeChatRecipientId === null) return;
 
 		try {
-			let url = `/api/get_messages.php?group_id=${currentGroupId}`;
+			let url = '';
 			if (activeChatRecipientId !== null) {
-				url += `&recipient_id=${activeChatRecipientId}`;
+				// Для ЛС: group_id не обязателен, но можно передать любой для совместимости
+				url = `/api/get_messages.php?group_id=0&recipient_id=${activeChatRecipientId}`;
+			} else {
+				url = `/api/get_messages.php?group_id=${currentGroupId}`;
 			}
 			// Подгрузка старых сообщений при скролле вверх
 			if (beforeMessageId) {
@@ -462,7 +484,10 @@
 			}
 
 			const response = await fetch(url, { credentials: 'include' });
-			const data = await response.json();
+			const rawText = await response.text();
+			const jsonIdx = rawText.indexOf('{');
+			if (jsonIdx === -1) throw new Error('Не JSON');
+			const data = JSON.parse(rawText.substring(jsonIdx));
 
 			if (!data.success) {
 				showToast('❌ ' + data.error);
@@ -556,9 +581,9 @@
 				const scrollHeightAfter = container.scrollHeight;
 				container.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
 				
-				// Обновляем ID для polling
+				// Обновляем ID для polling - САМОЕ НОВОЕ сообщение (первое в DESC массиве)
 				if (data.messages.length > 0) {
-					lastCheckedMessageId = data.messages[data.messages.length - 1].id;
+					lastCheckedMessageId = data.messages[0].id;
 				}
 				
 				// Возвращаем true, если есть ещё сообщения (загружено 50 — значит могут быть ещё)
@@ -578,9 +603,9 @@
 				// Навешиваем контекстное меню
 				setupMessageContextMenu();
 				
-				// Обновляем ID для polling
+				// Обновляем ID для polling - САМОЕ НОВОЕ сообщение (первое в DESC массиве)
 				if (data.messages.length > 0) {
-					lastCheckedMessageId = data.messages[data.messages.length - 1].id;
+					lastCheckedMessageId = data.messages[0].id;
 				}
 				
 				// Автоскролл вниз
@@ -1023,7 +1048,9 @@
     // Отправить ответ
     async function sendReplyMessage() {
         const input = document.getElementById('replyMessageInput');
-        if (!input || !currentGroupId) return;
+        if (!input) return;
+        // Для ЛС currentGroupId может быть null, но activeChatRecipientId должен быть установлен
+        if (!currentGroupId && activeChatRecipientId === null) return;
         
         const replyText = input.value.trim();
         if (!replyText) {
@@ -1048,12 +1075,11 @@
                 credentials: 'include',
                 body: JSON.stringify(payload)
             });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const result = await response.json();
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const rawText = await response.text();
+            const jsonIdx = rawText.indexOf('{');
+            if (jsonIdx === -1) throw new Error('Не JSON');
+            const result = JSON.parse(rawText.substring(jsonIdx));
             console.log('Ответ сервера:', result);
             
             if (result.success) {
@@ -1106,8 +1132,10 @@
             const response = await fetch('/api/get_chats_list.php', {
                 credentials: 'include'
             });
-            
-            const data = await response.json();
+            const rawText = await response.text();
+            const jsonIdx = rawText.indexOf('{');
+            if (jsonIdx === -1) throw new Error('Не JSON');
+            const data = JSON.parse(rawText.substring(jsonIdx));
             if (data.success) {
                 forwardChats = [...(data.groups || []), ...(data.friends || [])];
                 renderForwardChatList();
@@ -1181,8 +1209,10 @@
                     original_message_id: forwardMessageId ? parseInt(forwardMessageId) : null
                 })
             });
-            
-            const result = await response.json();
+            const rawText = await response.text();
+            const jsonIdx = rawText.indexOf('{');
+            if (jsonIdx === -1) throw new Error('Не JSON');
+            const result = JSON.parse(rawText.substring(jsonIdx));
             if (result.success) {
                 showToast('✅ Переслано в ' + chatName);
                 closeForwardModal();
@@ -1289,21 +1319,18 @@
                 message_id: contextMessageId,
                 message_text: newText
             };
-            
             console.log('Отправка редактирования:', payload);
-            
             const response = await fetch('/api/update_message.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify(payload)
             });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const rawText = await response.text();
+            const jsonIdx = rawText.indexOf('{');
+            if (jsonIdx === -1) throw new Error('Не JSON');
+            const result = JSON.parse(rawText.substring(jsonIdx));
             console.log('Ответ сервера:', result);
             
             if (result.success) {
@@ -1388,8 +1415,10 @@
 				credentials: 'include',
 				body: JSON.stringify({ group_id: idToSend, message: messageText })
 			});
-			
-			const result = await response.json();
+			const rawText = await response.text();
+			const jsonIdx = rawText.indexOf('{');
+			if (jsonIdx === -1) throw new Error('Не JSON');
+			const result = JSON.parse(rawText.substring(jsonIdx));
 
 			if (result.success) {
 				if (modal) modal.style.display = 'none'; // Закрываем окно только при успехе
@@ -1461,22 +1490,22 @@
 			if (res.status === 403) {
 				throw new Error('Требуется войти в аккаунт');
 			}
-			return res.json();
+			return res.text().then(text => { const jsonIdx = text.indexOf('{'); if (jsonIdx === -1) throw new Error('Не JSON'); return JSON.parse(text.substring(jsonIdx)); });
 		})
 		.then(result => {
 			if (result.success) {
-				showToast(eventId ? '✅ Событие успешно обновлено!' : '🎉 Событие успешно создано!');
+				showToast(eventId ? '✅ Событие обновлено!' : '🎉 Событие создано!');
 				closeEventModal();
 				loadGroup();
 			} else {
-				showToast('❌ Ошибка: ' + (result.error || 'неизвестная сбой сервера'));
+				showToast('❌ ' + (result.error || 'Ошибка'));
 			}
 		})
 		.catch(err => {
 			if (err.message.includes('403') || err.message.includes('войти')) {
-				showToast('⚠️ Требуется авторизация в аккаунте');
+				showToast('⚠️ Требуется авторизация');
 			} else {
-				showToast('❌ Не удалось сохранить событие');
+				showToast('❌ Не удалось сохранить');
 			}
 			console.error(err);
 		});
@@ -1501,7 +1530,10 @@
 			const res = await fetch(`/api/get_event_for_edit.php?id=${eventId}`, {
 				credentials: 'include'
 			});
-			const data = await res.json();
+			const rawText = await res.text();
+			const jsonIdx = rawText.indexOf('{');
+			if (jsonIdx === -1) throw new Error('Не JSON');
+			const data = JSON.parse(rawText.substring(jsonIdx));
 			if (!data.success) {
 				showToast('❌ Ошибка: ' + (data.error || 'нет доступа к редактированию'));
 				return;
@@ -1566,8 +1598,10 @@
 				credentials: 'include',
 				body: JSON.stringify({ event_id: idToSend })
 			});
-
-			const result = await response.json();
+			const rawText = await response.text();
+			const jsonIdx = rawText.indexOf('{');
+			if (jsonIdx === -1) throw new Error('Не JSON');
+			const result = JSON.parse(rawText.substring(jsonIdx));
 			if (result.success) {
 				showToast('🗑️ Событие успешно удалено');
 				loadGroup(); // Перезагружаем список
@@ -1628,8 +1662,10 @@
                     description: newDesc
                 })
             });
-            
-            const result = await response.json();
+            const rawText = await response.text();
+            const jsonIdx = rawText.indexOf('{');
+            if (jsonIdx === -1) throw new Error('Не JSON');
+            const result = JSON.parse(rawText.substring(jsonIdx));
             if (result.success) {
                 showToast('✅ Данные группы обновлены!');
                 loadGroup(); // Перезагружаем карточку, чтобы отобразить обновленный текст
@@ -1688,8 +1724,50 @@
     }
 
   async function loadGroup() {
-      currentGroupId = getGroupIdFromUrl();
       const urlParams = new URLSearchParams(window.location.search);
+      
+      // === 🔥 ПРОВЕРКА: Если это ЛС (по chat_type), не загружаем группу ===
+      const chatType = urlParams.get('chat_type');
+      const privateUserId = urlParams.get('open_private_chat');
+      const privateUserName = urlParams.get('open_private_name');
+      
+      // Если это ЛС — сразу открываем диалог и выходим
+      if (chatType === 'private' && privateUserId && privateUserName) {
+          activeChatRecipientId = parseInt(privateUserId);
+          document.getElementById('chatGroupTitle').textContent = `💬 Диалог: ${decodeURIComponent(privateUserName)}`;
+          
+          // Очищаем URL от всех параметров
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          const chatModal = document.getElementById('groupChatModal');
+          if (chatModal) {
+              chatModal.style.display = 'flex';
+              noMoreMessages = false;
+              await loadChatMessages();
+              startChatPolling();
+          }
+          return; // Не загружаем группу для ЛС
+      }
+
+      // Если это не ЛС, но есть open_private_chat — тоже обрабатываем как ЛС
+      if (privateUserId && privateUserName && !chatType) {
+          activeChatRecipientId = parseInt(privateUserId);
+          document.getElementById('chatGroupTitle').textContent = `💬 Диалог: ${decodeURIComponent(privateUserName)}`;
+          
+          // Очищаем URL от всех параметров
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          const chatModal = document.getElementById('groupChatModal');
+          if (chatModal) {
+              chatModal.style.display = 'flex';
+              noMoreMessages = false;
+              await loadChatMessages();
+              startChatPolling();
+          }
+          return; // Не загружаем группу для ЛС
+      }
+
+      currentGroupId = getGroupIdFromUrl();
 
       // === 🔥 ТОЧЕЧНОЕ ИСПРАВЛЕНИЕ: МГНОВЕННЫЙ ВХОД В ЧАТ ГРУППЫ ИЗ ПУША ===
       if (urlParams.get('open_chat') === '1' && currentGroupId) {
@@ -1710,26 +1788,6 @@
           }
       }
 
-      // === 🔥 ТОЧЕЧНОЕ ИСПРАВЛЕНИЕ ПУШЕЙ ЛС ===
-      const privateUserId = urlParams.get('open_private_chat');
-      const privateUserName = urlParams.get('open_private_name');
-
-      if (privateUserId && privateUserName) {
-          // Очищаем параметры, чтобы чат не открывался повторно при обновлении
-          window.history.replaceState({}, document.title, window.location.pathname + '?id=' + (urlParams.get('id') || ''));
-          activeChatRecipientId = parseInt(privateUserId);
-          document.getElementById('chatGroupTitle').textContent = `💬 Диалог: ${decodeURIComponent(privateUserName)}`;
-
-          const chatModal = document.getElementById('groupChatModal');
-          if (chatModal) {
-              chatModal.style.display = 'flex';
-              noMoreMessages = false;
-              await loadChatMessages();
-              startChatPolling();
-          }
-      }
-
-      currentGroupId = getGroupIdFromUrl();
       if (!currentGroupId) {
           document.getElementById('groupDetail').innerHTML = '<p class="error-state">Не указан ID группы</p>';
           return;
@@ -1740,12 +1798,17 @@
       const isMembersOpenBefore = listWrapperBefore ? (listWrapperBefore.style.display === 'block') : false;
 
       try {
-          // 🔥 ИСПРАВЛЕНО: Добавили credentials: 'include', чтобы при переходе из шторки
-          // через мобильную сеть 4G WebView принудительно передавал сессию авторизации обычного пользователя!
           const response = await fetch(`/api/get_group.php?id=${currentGroupId}`, {
               credentials: 'include'
           });
-          const data = await response.json();
+          
+          const rawText = await response.text();
+          if (!response.ok) throw new Error(`HTTP ${response.status}: ${rawText.substring(0, 100)}`);
+          
+          const jsonIdx = rawText.indexOf('{');
+          if (jsonIdx === -1) throw new Error('Сервер вернул не JSON');
+          
+          const data = JSON.parse(rawText.substring(jsonIdx));
           if (!data.success) throw new Error(data.error || 'Ошибка загрузки');
 
           const group = data.group;
@@ -2167,12 +2230,15 @@
         if (chatPollingInterval) return;
         
         chatPollingInterval = setInterval(async () => {
-            if (!currentGroupId) return;
+            // Для ЛС currentGroupId может быть пустым
+            if (!currentGroupId && activeChatRecipientId === null) return;
             
             try {
-                let url = `/api/get_messages.php?group_id=${currentGroupId}`;
+                let url;
                 if (activeChatRecipientId !== null) {
-                    url += `&recipient_id=${activeChatRecipientId}`;
+                    url = `/api/get_messages.php?group_id=0&recipient_id=${activeChatRecipientId}`;
+                } else {
+                    url = `/api/get_messages.php?group_id=${currentGroupId}`;
                 }
                 // При polling запрашиваем только новые сообщения после последнего
                 if (lastCheckedMessageId > 0) {
@@ -2184,6 +2250,8 @@
                 
                 if (!data.success || !data.messages || data.messages.length === 0) return;
                 
+                console.log('[POLLING] Получено сообщений:', data.messages.length, 'lastCheckedMessageId:', lastCheckedMessageId);
+                
                 // Кэшируем данные пользователя
                 cachedCurrentUserId = parseInt(data.current_user_id || 0);
                 cachedIsAdmin = data.is_admin || false;
@@ -2193,7 +2261,7 @@
                 if (!container) return;
                 
                 // Быстрая проверка: скролл ли к низу (без лишних чтений свойств)
-                const atBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+                const isScrolledToBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
                 
                 // Собираем ID существующих сообщений для быстрой проверки дубликатов
                 const existingIds = new Set();
@@ -2205,15 +2273,20 @@
                 
                 // Собираем HTML для новых сообщений одним блоком
                 let newHtml = '';
-                let newMessagesCount = 0;
+                let appendedCount = 0;
                 
                 for (const msg of data.messages) {
-                    // Пропускаем уже показанные
-                    if (msg.id <= lastCheckedMessageId) continue;
+                    // Обновляем lastCheckedMessageId для ВСЕХ сообщений из ответа
+                    if (msg.id > lastCheckedMessageId) {
+                        lastCheckedMessageId = msg.id;
+                    }
+                    
                     // Пропускаем во время scroll-up
                     if (isScrollUpLoading) continue;
                     // Пропускаем дубликаты из DOM
                     if (existingIds.has(msg.id)) continue;
+                    
+                    appendedCount++;
                     
                     const timeStr = msg.created_at ? msg.created_at.substring(11, 16) : '';
                     const isMyMsg = parseInt(msg.sender_id) === cachedCurrentUserId;
@@ -2253,16 +2326,10 @@
                     }
                     
                     newHtml += `<div class="chat-msg-row js-selectable-msg" style="${rowStyle} cursor: pointer;" data-msg-id="${msg.id}" data-sender-id="${msg.sender_id}" data-can-delete="${canDeleteThisMsg ? '1' : '0'}" data-can-edit="${canDeleteThisMsg || isMyMsg ? '1' : '0'}" data-is-forwarded="${isForwarded ? '1' : '0'}" data-is-mine="${isMyMsg ? '1' : '0'}">${avatarHtml}<div class="chat-msg-bubble" style="${bubbleStyle} ${forwardedStyle}">${forwardedHeaderHtml}${(!isMyMsg && activeChatRecipientId === null) ? `<div class="chat-msg-author" style="font-size: 11px; font-weight: 700; color: #4a90e2; margin-bottom: 3px;">${escapeHtml(msg.first_name)} ${escapeHtml(msg.last_name || '')}</div>` : ''}${replyQuoteHtml}<div class="chat-msg-text" style="font-size: 14px; color: #1e1e20; word-break: break-word; text-align: left;">${escapeHtml(msg.message_text)}</div><div class="chat-msg-time" style="font-size: 10px; color: #888; text-align: right; margin-top: 4px;">${timeStr}${isEdited ? ' ✏️' : ''}</div></div></div>`;
-                    
-                    // Обновляем ID даже если пропустили из-за isScrollUpLoading
-                    // чтобы следующее polling не показало это сообщение снова
-                    if (msg.id > lastCheckedMessageId) {
-                        lastCheckedMessageId = msg.id;
-                    }
-                    appendedCount++;
                 }
                 
                 // Вставляем все новые сообщения одним вызовом
+                console.log('[POLLING] Добавлено сообщений:', appendedCount);
                 if (appendedCount > 0) {
                     container.insertAdjacentHTML('beforeend', newHtml);
                     if (isScrolledToBottom) {

@@ -17,7 +17,7 @@
                 <polyline points="15 18 9 12 15 6"/>
             </svg>
         </button>
-        <h1 class="org-name">МОЙ ПРОФИЛЬ</h1>
+        <h1 class="org-name">Профиль</h1>
         <button class="back-btn" id="btnNotifications" aria-label="Уведомления" style="position:relative;">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -35,15 +35,26 @@
     <!-- Нижняя панель -->
     <nav class="bottom-bar">
         <a href="/index.html" class="bar-btn">
-            <span class="ico ico-home"></span>
-            <span>Домой</span>
+            <svg class="bar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span>Главная</span>
         </a>
         <a href="/namahatta.html" class="bar-btn">
-            <span class="ico ico-namahatta"></span>
-            <span>Нама-Хатта</span>
+            <svg class="bar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <span>Группы</span>
         </a>
         <a href="/profile.html" class="bar-btn bar-btn-active">
-            <span class="ico ico-profile"></span>
+            <svg class="bar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+            </svg>
             <span>Профиль</span>
         </a>
     </nav>
@@ -72,18 +83,34 @@
     // ===== УВЕДОМЛЕНИЯ =====
     let currentUserId = null;
 
-    // Открыть панель уведомлений
-    function openNotificationPanel() {
-        const panel = document.getElementById('notificationPanel');
-        if (panel) panel.style.display = 'flex';
-        loadNotifications();
-    }
+
 
     // Закрыть панель уведомлений
     function closeNotificationPanel() {
         const panel = document.getElementById('notificationPanel');
         if (panel) panel.style.display = 'none';
     }
+
+    // Открыть панель уведомлений с закрытием по клику на фон
+    function openNotificationPanel() {
+        const panel = document.getElementById('notificationPanel');
+        if (panel) {
+            panel.style.display = 'flex';
+            loadNotifications();
+        }
+    }
+
+    // Инициализация закрытия по клику на фон
+    document.addEventListener('DOMContentLoaded', function() {
+        const panel = document.getElementById('notificationPanel');
+        if (panel) {
+            panel.addEventListener('click', function(e) {
+                if (e.target === panel) {
+                    closeNotificationPanel();
+                }
+            });
+        }
+    });
 
     // Определение целевой страницы для legacy-уведомлений (без target_page)
     function getLegacyTargetPage(type, groupId) {
@@ -113,13 +140,23 @@
             }
         }
         
-        // Для group.html используем id из group_id
-        if (targetPage.includes('group.html') && params.group_id && !params.id) {
+        // Для личных сообщений используем chat_type=private
+        if (targetPage.includes('group.html') && params.open_private_chat) {
+            // Для ЛС: НЕ подменяем id, добавляем явный флаг типа чата
+            params.chat_type = 'private';
+            // Убираем group_id и id чтобы не путать с групповым чатом
+            delete params.group_id;
+            delete params.id;
+            delete params.open_chat;
+        }
+        // Для групповых чатов используем id из group_id
+        else if (targetPage.includes('group.html') && params.group_id && !params.id) {
             params.id = params.group_id;
         }
         
         const queryString = new URLSearchParams(params).toString();
-        return queryString ? `${targetPage}?${queryString}` : targetPage;
+        const url = queryString ? `${targetPage}?${queryString}` : targetPage;
+        return url;
     }
 
     // Загрузить уведомления
@@ -307,13 +344,31 @@
                     const targetPage = notifItem.dataset.targetPage;
                     const targetParams = notifItem.dataset.targetParams;
                     
+                    console.log('[notif] click single:', { notifId, targetPage, targetParams });
+                    
                     markNotificationRead(notifId);
                     notifItem.classList.remove('unread');
                     
                     const url = buildNavigationUrl(targetPage, targetParams);
+                    console.log('[notif] navigate to:', url);
+                    
                     if (url) {
                         window.location.href = url;
                     }
+                    return;
+                }
+            });
+            
+            // Обработка клика по одиночному уведомлению (не в группе) — для уведомлений без target_page
+            listEl.addEventListener('click', (e) => {
+                const target = e.target;
+                
+                // Ищем уведомление, которое не является частью группы
+                const standaloneNotif = target.closest('.notif-item:not([data-id])');
+                if (standaloneNotif) return; // Уже обработано выше
+                
+                // Проверяем, что это не заголовок группы и не элемент внутри группы
+                if (target.closest('.notif-group-header') || target.closest('.notif-group-items')) {
                     return;
                 }
             });
@@ -352,7 +407,7 @@
             await fetch('/api/mark_notification_read.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ notification_id: notifId })
+                body: JSON.stringify({ notification_id: notifId, user_id: currentUserId })
             });
         } catch (e) {
             console.error('Ошибка отметки прочитанным:', e);
@@ -509,100 +564,98 @@
             }
 
             let html = `
-<div class="card" style="text-align: center;">
-    <div class="avatar-container" style="position: relative; display: inline-block; margin-bottom: 15px; width: 100px; height: 100px;">
+<div class="profile-header card">
+    <div class="avatar-container">
         ${avatarPreviewHtml}
-        <label for="avatarFile" style="position: absolute; bottom: 0; right: 0; background: #fff; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer; z-index: 10;">
-        📷
+        <label for="avatarFile" class="avatar-edit-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0071e3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+            </svg>
         </label>
         <input type="file" id="avatarFile" accept="image/*" style="display: none;">
     </div>
-
-    <h2 style="margin: 10px 0;">${escapeHtml(user_info.first_name)} ${escapeHtml(user_info.last_name || '')}</h2>
-
-    <div style="display: flex; justify-content: center; gap: 10px; margin: 15px 0;">
-        <button class="btn btn-small" id="btnEditProfile" style="background: #4a90e2; color: #fff; font-weight: 600; padding: 8px 16px;">
-            ✏️ Редактировать
-        </button>
-        <button type="button" class="btn btn-small btn-danger" id="btnLogout" style="padding: 8px 16px; background: #ff3b30; color: #fff; font-weight: 600;">
-            🚪 Выйти
-        </button>
-    </div>
-
-    <div style="background: #f8f9fa; border-radius: 12px; padding: 15px; text-align: left; margin-top: 15px;">
-        <p style="margin: 5px 0;"><strong>📧 Email:</strong> ${escapeHtml(user_info.email)}</p>
-        <p style="margin: 5px 0;"><strong>📱 Телефон:</strong> ${escapeHtml(user_info.phone || 'Не указан')}</p>
-        <p style="margin: 5px 0;"><strong>📍 Город:</strong> ${escapeHtml(user_info.city || 'Не указан')}</p>
-        <p style="margin: 5px 0;"><strong>👤 Роль:</strong> ${user_info.role === 'leader' ? 'Лидер' : user_info.role === 'admin' ? 'Админ' : 'Участник'}</p>
+    <h2 class="profile-name">${escapeHtml(user_info.first_name)} ${escapeHtml(user_info.last_name || '')}</h2>
+    <div class="profile-actions">
+        <button class="btn btn-small" id="btnEditProfile">Редактировать</button>
+        <button type="button" class="btn btn-small btn-danger" id="btnLogout">Выйти</button>
     </div>
 </div>
 
-<div id="androidDownloadBlock" class="card" style="display: none; text-align: center; margin-top: 20px; border: 1px solid var(--color-primary, #4a90e2); background: #f4f8ff; border-radius: 16px; padding: 20px;">
-    <h3 style="margin-top: 0; color: #1e1e20; font-size: 16px;">📱 Мобильное приложение</h3>
-    <p style="font-size: 13px; color: #666; margin-bottom: 15px; line-height: 1.4;">
-        Скачайте наше официальное приложение для Android, чтобы мгновенно получать пуш-уведомления о новых сообщениях в чатах!
+<div class="profile-info card">
+    <div class="profile-info-item">
+        <span class="profile-info-value">${escapeHtml(user_info.email)}</span>
+        <span class="profile-info-label">Email</span>
+    </div>
+    <div class="profile-info-item">
+        <span class="profile-info-value">${escapeHtml(user_info.phone || 'Не указан')}</span>
+        <span class="profile-info-label">Телефон</span>
+    </div>
+    <div class="profile-info-item">
+        <span class="profile-info-value">${escapeHtml(user_info.city || 'Не указан')}</span>
+        <span class="profile-info-label">Город</span>
+    </div>
+    <div class="profile-info-item">
+        <span class="profile-info-value">${user_info.role === 'leader' ? 'Лидер' : user_info.role === 'admin' ? 'Админ' : 'Участник'}</span>
+        <span class="profile-info-label">Роль</span>
+    </div>
+</div>
+
+<div id="androidDownloadBlock" class="android-download-card" style="display: none;">
+    <h3 class="android-download-card__title">Мобильное приложение</h3>
+    <p class="android-download-card__desc">
+        Скачайте приложение для Android для мгновенных пуш-уведомлений
     </p>
-    <a href="/namahatta.apk" download="namahatta.apk" class="btn btn-block" style="background: #4a90e2; color: #fff; font-weight: 600; text-decoration: none; display: inline-block; padding: 10px; border-radius: 8px;">
-        📥 Скачать APK (Прямая ссылка)
+    <a href="/namahatta.apk" download="namahatta.apk" class="android-download-card__btn">
+        Скачать APK
     </a>
 </div>
 `;
 
             // Мои личные заявки
             if (applications && applications.length > 0) {
-                const applicationsAccordionId = 'applications-accordion';
                 html += `
 <div class="card">
-    <div class="accordion-header" onclick="toggleAccordion(this)" id="${applicationsAccordionId}-header">
-        <h3 style="margin:0;">📬 Мои заявки</h3>
-        <span class="accordion-arrow">▶</span>
+    <div class="js-accordion-header" style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; cursor:pointer; user-select:none;" onclick="toggleAccordion(this)">
+        <h3 style="margin:0; font-size:17px; font-weight:600;">Мои заявки</h3>
+        <span class="js-accordion-arrow" style="transition:transform 0.2s ease; font-size:12px; color:var(--color-muted);">▶</span>
     </div>
-    <div class="accordion-content" id="${applicationsAccordionId}">
-        <ul class="applications-list">`; 
+    <div class="js-accordion-content" style="max-height:0; overflow:hidden; transition:max-height 0.3s ease;">
+        <div class="applications-list" style="padding-top:12px;">`; 
 
-                applications.forEach((app, index) => {
+                applications.forEach((app) => {
                     let statusText = 'Ожидает';
                     let statusClass = 'status-pending';
                     if (app.status === 'approved') {
-                        statusText = '✅ Одобрена';
+                        statusText = 'Одобрена';
                         statusClass = 'status-approved';
                     } else if (app.status === 'rejected') {
-                        statusText = '❌ Отклонена';
+                        statusText = 'Отклонена';
                         statusClass = 'status-rejected';
                     }
 
-                    html += `
-                    <li class="application-item">
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0f0f2;">
-                            <div>
-                                <strong>${escapeHtml(app.group_name)}</strong><br>
-                                <small style="color:var(--color-muted);">${escapeHtml(app.message)}</small>
-                            </div>
-                            <div style="display:flex; gap:8px; align-items:center;">
-                                <span class="status-badge ${statusClass}">${statusText}</span>
-                    `;
+                    html += `<div class="application-item" style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:0.5px solid var(--color-border);">
+                        <div class="application-item-content">
+                            <strong style="font-size:15px; font-weight:600;">${escapeHtml(app.group_name)}</strong>
+                            <small style="display:block; color:var(--color-muted); font-size:13px; margin-top:2px;">${escapeHtml(app.message)}</small>
+                        </div>
+                        <div class="application-item-actions" style="display:flex; gap:8px; align-items:center;">
+                            <span class="status-badge ${statusClass}">${statusText}</span>`;
 
                     if (app.status === 'pending') {
                         html += `<button class="btn btn-small btn-danger js-btn-cancel" data-app-id="${app.id}">Отменить</button>`;
                     }
                     if (app.status === 'approved') {
-                        html += `<button class="btn btn-small btn-ghost js-btn-leave" data-app-id="${app.id}" data-group-name="${escapeHtml(app.group_name)}">🚪 Выйти</button>`;
+                        html += `<button class="btn btn-small btn-ghost js-btn-leave" data-app-id="${app.id}" data-group-name="${escapeHtml(app.group_name)}">Выйти</button>`;
                     }
                     if (app.status === 'rejected') {
                         html += `<button class="btn btn-small btn-ghost js-btn-cancel" data-app-id="${app.id}" style="color: var(--color-muted, #888); border-color: #ddd;">Удалить</button>`;
                     }
 
-                    html += `
-                            </div>
-                        </div>
-                    </li>
-                    `;
+                    html += `</div></div>`;
                 });
 
-                html += `
-        </ul>
-    </div>
-</div>`;
+                html += `</div></div></div>`;
             } else {
                 html += '<div class="card"><p style="color:var(--color-muted);">Вы пока не подавали заявок.</p></div>';
             }
@@ -952,11 +1005,12 @@
     // Функция для раскрывающегося списка
     function toggleAccordion(header) {
         const content = header.nextElementSibling;
-        const arrow = header.querySelector('.accordion-arrow');
+        const arrow = header.querySelector('.js-accordion-arrow');
         
         if (content && arrow) {
-            content.classList.toggle('expanded');
-            arrow.classList.toggle('expanded');
+            const isExpanded = content.style.maxHeight === '500px';
+            content.style.maxHeight = isExpanded ? '0' : '500px';
+            arrow.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(90deg)';
         }
     }
 
@@ -1055,8 +1109,8 @@
 </div>
 
 <!-- Панель уведомлений -->
-<div id="notificationPanel" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; align-items:flex-end; justify-content:center;">
-    <div class="card" style="width:100%; max-width:100%; height:85vh; border-radius:20px 20px 0 0; overflow:hidden; display:flex; flex-direction:column; padding:0;">
+<div id="notificationPanel" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; align-items:flex-end; justify-content:center; pointer-events:auto;">
+    <div style="width:100%; max-width:100%; height:85vh; border-radius:20px 20px 0 0; overflow:hidden; display:flex; flex-direction:column; padding:0; pointer-events:auto; background:#fff;">
         <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #e0e0e2; background:#fff;">
             <h3 style="margin:0; font-size:18px; font-weight:700;">Уведомления</h3>
             <div style="display:flex; gap:12px; align-items:center;">
@@ -1067,6 +1121,7 @@
         <div id="notificationsList" style="flex:1; overflow-y:auto; padding:0 20px 20px;">
             <div class="loading" style="padding:40px 0; text-align:center;">Загрузка...</div>
         </div>
+    </div>
     </div>
 </div>
 

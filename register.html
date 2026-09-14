@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Регистрация — Нама-Хатта</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -19,46 +18,57 @@
     </header>
 
     <main class="content">
-      <div class="card">
+      <div class="auth-card">
         <h2>Создать аккаунт</h2>
+        <p class="auth-subtitle">Заполните данные для регистрации</p>
         <form id="registerForm">
-          <input type="text" id="first_name" name="first_name" class="input-field" placeholder="Имя" required><br><br>
-          <input type="text" id="last_name" name="last_name" class="input-field" placeholder="Фамилия (необязательно)"><br><br>
-          <input type="email" id="email" name="email" class="input-field" placeholder="Email" required><br><br>
-          <input type="tel" id="phone" name="phone" class="input-field" placeholder="Телефон (необязательно)"><br><br>
-          <input type="password" id="password" name="password" class="input-field" placeholder="Пароль (мин. 6 символов)" required minlength="6"><br><br>
+          <div class="form-group">
+            <label for="first_name">Имя *</label>
+            <input type="text" id="first_name" name="first_name" class="input-field" placeholder="Иван" required>
+          </div>
+          <div class="form-group">
+            <label for="last_name">Фамилия</label>
+            <input type="text" id="last_name" name="last_name" class="input-field" placeholder="Необязательно">
+          </div>
+          <div class="form-group">
+            <label for="email">Email *</label>
+            <input type="email" id="email" name="email" class="input-field" placeholder="your@email.com" required>
+          </div>
+          <div class="form-group">
+            <label for="phone">Телефон</label>
+            <input type="tel" id="phone" name="phone" class="input-field" placeholder="+7 (___) ___-__-__">
+          </div>
+          <div class="form-group">
+            <label for="password">Пароль *</label>
+            <input type="password" id="password" name="password" class="input-field" placeholder="Минимум 6 символов" required minlength="6">
+          </div>
           <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
         </form>
-        <p style="text-align:center; margin-top:16px;">
-          Уже есть аккаунт? <a href="/login.html">Войти</a>
-        </p>
+        <div class="auth-footer">
+          <span>Уже есть аккаунт? </span>
+          <a href="/login.html">Войти</a>
+        </div>
       </div>
     </main>
   </div>
-  <!-- Модальное окно подтверждения -->
-<div id="verifyModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; align-items:center; justify-content:center;">
-    <div style="background:#fff; padding:30px; width:90%; max-width:400px; border-radius:15px; text-align:center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-        <h3 style="margin-top:0; color:#333;">Подтверждение</h3>
-        <p style="color:#666; font-size:14px;">Введите 6-значный код, отправленный на вашу почту</p>
-        
+
+<div id="verifyModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <h3 style="text-align:center; margin-bottom:8px;">Подтверждение</h3>
+        <p style="text-align:center; color:var(--color-muted); font-size:14px; margin-bottom:20px;">Введите 6-значный код, отправленный на вашу почту</p>
         <input type="text" id="modalCode" maxlength="6" placeholder="000000" 
-               style="width:100%; padding:12px; font-size:24px; text-align:center; border:2px solid #ddd; border-radius:8px; margin-bottom:20px; letter-spacing: 5px;">
-        
-        <button id="confirmCodeBtn" style="width:100%; padding:12px; background:#28a745; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">
-            Подтвердить код
-        </button>
-        
-        <div id="modalError" style="color:red; margin-top:10px; font-size:14px; display:none;"></div>
+               class="input-field" style="text-align:center; letter-spacing:8px; font-size:24px; margin-bottom:20px;">
+        <button id="confirmCodeBtn" class="btn btn-primary">Подтвердить</button>
+        <div id="modalError" style="color:var(--color-danger); margin-top:12px; font-size:14px; text-align:center; display:none;"></div>
     </div>
 </div>
 
 <script>
-document.getElementById('registerForm').addEventListener('submit', async (e) => {
+document.getElementById('registerForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitBtn = e.target.querySelector('button[type="submit"]');
     if (submitBtn) submitBtn.disabled = true;
 
-    // Собираем данные вручную по ID — самый надежный способ для всех устройств
     const formData = new FormData();
     formData.append('first_name', document.getElementById('first_name').value.trim());
     formData.append('last_name', document.getElementById('last_name').value.trim());
@@ -67,21 +77,13 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     formData.append('password', document.getElementById('password').value);
 
     try {
-        const res = await fetch('/api/register.php?v=' + Date.now(), {
-            method: 'POST',
-            body: formData
-        });
-
+        const res = await fetch('/api/register.php?v=' + Date.now(), { method: 'POST', body: formData });
         const text = await res.text();
-        let data;
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            throw new Error('Ошибка сервера (не JSON): ' + text.substring(0, 50));
-        }
+        const jsonIdx = text.indexOf('{');
+        const data = jsonIdx !== -1 ? JSON.parse(text.substring(jsonIdx)) : { success: false, error: 'Ошибка сервера' };
 
         if (data.success) {
-            showToast('📩 Код подтверждения отправлен на почту!');
+            showToast('📩 Код отправлен на почту!');
             document.getElementById('verifyModal').style.display = 'flex';
         } else {
             showToast('❌ ' + (data.error || 'Ошибка регистрации'));
@@ -89,11 +91,11 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
         }
     } catch (err) {
         if (submitBtn) submitBtn.disabled = false;
-        showToast('❌ Ошибка: ' + err.message);
+        showToast('❌ ' + err.message);
     }
 });
 
-document.getElementById('confirmCodeBtn').addEventListener('click', async () => {
+document.getElementById('confirmCodeBtn')?.addEventListener('click', async () => {
     const code = document.getElementById('modalCode').value.trim();
     const btn = document.getElementById('confirmCodeBtn');
     const errorDiv = document.getElementById('modalError');
@@ -106,23 +108,19 @@ document.getElementById('confirmCodeBtn').addEventListener('click', async () => 
 
     btn.disabled = true;
     btn.innerText = "Проверка...";
-    if (errorDiv) errorDiv.style.display = 'none'; // Скрываем прошлую ошибку
+    if (errorDiv) errorDiv.style.display = 'none';
 
     try {
         const res = await fetch('/api/verify_email.php?v=' + Date.now(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: code })
+            body: JSON.stringify({ code })
         });
-
         const data = await res.json();
 
         if (data.success) {
-            showToast('🎉 Почта успешно подтверждена!');
-            // Переходим на главную через секунду, чтобы пользователь успел увидеть тост
-            setTimeout(() => {
-                window.location.href = '/index.html?v=' + Date.now();
-            }, 1200);
+            showToast('🎉 Почта подтверждена!');
+            setTimeout(() => { window.location.href = '/index.html?v=' + Date.now(); }, 1200);
         } else {
             errorDiv.innerText = data.error || "Неверный код";
             errorDiv.style.display = 'block';
@@ -133,30 +131,22 @@ document.getElementById('confirmCodeBtn').addEventListener('click', async () => 
         btn.disabled = false;
         btn.innerText = "Подтвердить код";
         showToast('❌ Ошибка связи с сервером');
-        console.error(err);
     }
 });
 </script>
 
-<!-- КРИТИЧНО: Подключаем общие скрипты темы с функцией showToast и мост Android -->
 <script src="/android.js"></script>
 <script>
  const IS_DEBUG = true; 
  const APP_VERSION = '1.0.0'; 
-
  (function() {
      const version = IS_DEBUG ? Date.now() : APP_VERSION;
-
      const mainStyle = document.querySelector('link[href^="style.css"]');
-     if (mainStyle) {
-         mainStyle.href = 'style.css?v=' + version;
-     }
-
+     if (mainStyle) { mainStyle.href = 'style.css?v=' + version; }
      const themeScript = document.createElement('script');
      themeScript.src = 'theme.js?v=' + version;
      document.body.appendChild(themeScript);
  })();
 </script>
-
 </body>
 </html>

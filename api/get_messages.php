@@ -33,9 +33,9 @@ $initialLimit = 50;
 $pollLimit = 15;
 $loadMoreLimit = 50; // Подгрузка при скролле вверх
 
-if ($groupId <= 0) {
+if ($groupId <= 0 && $recipientId === null) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Не указан ID группы'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => false, 'error' => 'Не указан ID группы или собеседник'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -69,7 +69,7 @@ try {
     $hasForwardSenderId = isset($_SESSION[$cacheKey]['forward_sender_id']);
     $hasOriginalMessageId = isset($_SESSION[$cacheKey]['original_message_id']);
 	
-    // 3. ПРОВЕРКА ДОСТУПА (писать и читать чаты этой группы могут только её участники, лидеры или админы)
+    // 3. ПРОВЕРКА ДОСТУПА
     // [ИСПРАВЛЕНО] Проверка админа переведена на числовой флаг is_admin по стандарту проекта
     $userStmt = $pdo->prepare("SELECT is_admin FROM users WHERE id = ?");
     $userStmt->execute([$userId]);
@@ -78,23 +78,29 @@ try {
     $isAdmin = ($userRow && (int)$userRow['is_admin'] === 1);
     $hasAccess = false;
     
-    if ($isAdmin) {
+    // Для ЛС проверка доступа не нужна - любой может читать свои ЛС
+    if ($recipientId !== null) {
         $hasAccess = true;
     } else {
-        // Проверяем одобренную заявку в группу
-        $memberCheck = $pdo->prepare("SELECT COUNT(*) FROM applications WHERE group_id = ? AND user_id = ? AND status = 'approved'");
-        $memberCheck->execute([$groupId, $userId]);
-        if ((int)$memberCheck->fetchColumn() > 0) {
+        // Для групповых чатов проверяем доступ
+        if ($isAdmin) {
             $hasAccess = true;
-        }
-        
-        // [АРХИТЕКТУРА] Проверка лидера группы через связующую таблицу group_leaders
-        if (!$hasAccess) {
-            $leaderCheck = $pdo->prepare("SELECT COUNT(*) FROM group_leaders WHERE group_id = ? AND user_id = ?");
-            $leaderCheck->execute([$groupId, $userId]);
-            if ((int)$leaderCheck->fetchColumn() > 0) { 
+        } else {
+            // Проверяем одобренную заявку в группу
+            $memberCheck = $pdo->prepare("SELECT COUNT(*) FROM applications WHERE group_id = ? AND user_id = ? AND status = 'approved'");
+            $memberCheck->execute([$groupId, $userId]);
+            if ((int)$memberCheck->fetchColumn() > 0) {
                 $hasAccess = true;
-                $isAdmin = true; // Лидер имеет права админа
+            }
+            
+            // [АРХИТЕКТУРА] Проверка лидера группы через связующую таблицу group_leaders
+            if (!$hasAccess) {
+                $leaderCheck = $pdo->prepare("SELECT COUNT(*) FROM group_leaders WHERE group_id = ? AND user_id = ?");
+                $leaderCheck->execute([$groupId, $userId]);
+                if ((int)$leaderCheck->fetchColumn() > 0) { 
+                    $hasAccess = true;
+                    $isAdmin = true; // Лидер имеет права админа
+                }
             }
         }
     }
@@ -112,7 +118,8 @@ try {
         // --- ОБЩИЙ ЧАТ ГРУППЫ ---
         $selectFields = "m.id, m.sender_id, m.message_text, m.created_at";
         if ($hasUpdatedAt) $selectFields .= ", m.updated_at";
-        if ($hasReplyTo) $selectFields .= ", m.reply_to_id";
+        // reply_to_id всегда нужен для отображения ответов
+        $selectFields .= ", m.reply_to_id";
         $selectFields .= ", m.is_forwarded";
         if ($hasForwardSenderId) {
             $selectFields .= ", m.forward_sender_id";
@@ -175,7 +182,8 @@ try {
         
         $selectFields = "m.id, m.sender_id, m.message_text, m.created_at";
         if ($hasUpdatedAt) $selectFields .= ", m.updated_at";
-        if ($hasReplyTo) $selectFields .= ", m.reply_to_id";
+        // reply_to_id всегда нужен для отображения ответов
+        $selectFields .= ", m.reply_to_id";
         $selectFields .= ", m.is_forwarded";
         if ($hasForwardSenderId) {
             $selectFields .= ", m.forward_sender_id";
@@ -259,6 +267,11 @@ try {
     $stmt->execute($params);
     $messages = $stmt->fetchAll();
     
+    // Debug logging for private chat
+    if ($recipientId !== null) {
+        error_log('[get_messages] Private chat: userId=' . $userId . ' recipientId=' . $recipientId . ' messages_count=' . count($messages) . ' sql=' . $sql);
+    }
+    
     // [ОПТИМИЗАЦИЯ] Строгое приведение ID к типам данных int для WebView
     // [ОПТИМИЗАЦИЯ 2025] Убраны file_exists() и дополнительный запрос reply_to_id
     
@@ -293,8 +306,23 @@ try {
         // Браузер сам обработает 404 на изображении
         // Если avatar_url есть в БД — возвращаем как есть
         
-        // [ОПТИМИЗАЦИЯ] reply_to_info теперь всегда null (убрали медленный запрос)
+        // Загружаем reply_to_info с кэшированием
         $msg['reply_to_info'] = null;
+        if (!empty($msg['reply_to_id'])) {
+            $cacheKey = 'reply_to_' . $msg['reply_to_id'];
+            if (!isset($_SESSION[$cacheKey])) {
+                try {
+                    $replyStmt = $pdo->prepare("SELECT gm.id, gm.sender_id, gm.message_text, u.first_name, u.last_name FROM users u JOIN group_messages gm ON gm.sender_id = u.id WHERE gm.id = ?");
+                    $replyStmt->execute([$msg['reply_to_id']]);
+                    $_SESSION[$cacheKey] = $replyStmt->fetch() ?: null;
+                    error_log('[get_messages] reply_to_info for msg ' . $msg['id'] . ': reply_to_id=' . $msg['reply_to_id'] . ' found=' . ($_SESSION[$cacheKey] ? 'yes' : 'no'));
+                } catch (\Exception $e) {
+                    $_SESSION[$cacheKey] = null;
+                    error_log('[get_messages] reply_to_info ERROR: ' . $e->getMessage());
+                }
+            }
+            $msg['reply_to_info'] = $_SESSION[$cacheKey];
+        }
     }
     unset($msg);
     

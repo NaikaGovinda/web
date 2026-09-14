@@ -28,12 +28,16 @@ function applyTheme(theme) {
 async function loadUserTheme() {
     try {
         const response = await fetch('/api/get_user_theme.php');
-        const data = await response.json();
+        const rawText = await response.text();
+        if (!rawText.trim()) return;
+        const jsonIdx = rawText.indexOf('{');
+        if (jsonIdx === -1) return;
+        const data = JSON.parse(rawText.substring(jsonIdx));
         if (data.success && data.theme) {
             applyTheme(data.theme);
         }
     } catch (err) {
-        console.warn('Не удалось загрузить тему:', err);
+        console.warn('Не удалось загрузить тему:', err.message);
     }
 }
 

@@ -1,6 +1,14 @@
 <?php
 // info_handler.php
 header('Content-Type: application/json; charset=utf8mb4');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Auth-Token');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
 
 // [АРХИТЕКТУРА] db.php подключен на самом верху, ручной вызов session_start() полностью удален
 $pdo = require __DIR__ . '/db.php';
@@ -52,11 +60,15 @@ try {
             throw new Exception('Недостаточно прав доступа');
         }
 
-        $input = json_decode(file_get_contents('php://input'), true);
+        $rawInput = file_get_contents('php://input');
+        $input = json_decode($rawInput, true);
+        if (!is_array($input)) {
+            throw new Exception('Неверный формат данных');
+        }
         $action = $input['action'] ?? '';
 
         // Создание или обновление записи
-        if ($action === 'create') {
+        if ($action === 'create' || $action === 'update') {
             $id = (int)($input['id'] ?? 0); // Получаем ID, если это редактирование
             $title = trim($input['title'] ?? '');
             $desc = trim($input['description'] ?? '');
@@ -101,7 +113,6 @@ try {
     throw new Exception('Неверный метод запроса');
 
 } catch (Exception $e) {
-    // В блоке перехвата исключений http_response_code выставляется только если он не был задан ранее (например, 403)
     if (http_response_code() === 200) {
         http_response_code(400);
     }

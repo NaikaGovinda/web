@@ -4,8 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Подтверждение email — Нама-Хатта</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-	<link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="app">
@@ -15,51 +14,59 @@
           <polyline points="15 18 9 12 15 6"/>
         </svg>
       </button>
-      <h1 class="org-name">Подтверждение email</h1>
+      <h1 class="org-name">Подтверждение</h1>
     </header>
 
     <main class="content">
-        <div class="card">
-            <!-- ЭТАП 1: Основная форма ввода кода -->
-            <div id="verifyCodeBlock">
-                <h2>Введите код подтверждения</h2>
-                <p style="color: var(--color-text-muted, #666); font-size: 14px; margin-bottom: 15px;">Код был отправлен на ваш email.</p>
-                
-                <input type="text" id="verificationCode" class="input-field" placeholder="6-значный код" maxlength="6" required><br><br>
-                <button id="verifyBtn" class="btn btn-primary">Подтвердить</button>
-                
-                <p style="text-align:center; margin-top:16px;">
-                    Не пришел код? <a href="#" id="resendLink" style="color: var(--color-primary, #4a90e2); text-decoration: none;">Отправить повторно</a>
-                </p>
-            </div>
+      <div class="auth-card">
+        <h2>Введите код</h2>
+        <p class="auth-subtitle">Код отправлен на ваш email</p>
 
-            <!-- ЭТАП 2: Форма ручного ввода Email для переотправки (вместо prompt, изначально скрыта) -->
-            <div id="resendEmailBlock" style="display: none;">
-                <h2>Повторная отправка</h2>
-                <p style="color: var(--color-text-muted, #666); font-size: 14px; margin-bottom: 15px;">Укажите ваш Email, чтобы система сгенерировала и выслала новый код подтверждения.</p>
-                
-                <input type="email" id="resendEmailInput" class="input-field" placeholder="Ваш Email"><br><br>
-                <button id="btnExecuteResend" class="btn btn-primary">Выслать код</button>
-                
-                <p style="text-align:center; margin-top:16px;">
-                    <a href="#" id="btnBackToVerify" style="color: var(--color-text-muted, #666); text-decoration: none; font-size: 14px;">← Вернуться назад</a>
-                </p>
-            </div>
+        <!-- ЭТАП 1: Ввод кода -->
+        <div id="verifyCodeBlock">
+          <div class="form-group">
+            <label for="verificationCode">Код подтверждения</label>
+            <input type="text" id="verificationCode" class="input-field" placeholder="000000" maxlength="6" required>
+          </div>
+          <button id="verifyBtn" class="btn btn-primary">Подтвердить</button>
+          <div class="auth-footer">
+            <a href="#" id="resendLink">Не пришёл код? Отправить повторно</a>
+          </div>
         </div>
+
+        <!-- ЭТАП 2: Повторная отправка -->
+        <div id="resendEmailBlock" style="display: none;">
+          <div class="form-group">
+            <label for="resendEmailInput">Email</label>
+            <input type="email" id="resendEmailInput" class="input-field" placeholder="your@email.com">
+          </div>
+          <button id="btnExecuteResend" class="btn btn-primary">Выслать код</button>
+          <div class="auth-footer">
+            <a href="#" id="btnBackToVerify">← Вернуться к вводу кода</a>
+          </div>
+        </div>
+      </div>
     </main>
-</div>
+  </div>
 
-
+<script src="/android.js"></script>
+<script>
+ const IS_DEBUG = true; 
+ const APP_VERSION = '1.0.0'; 
+ (function() {
+     const version = IS_DEBUG ? Date.now() : APP_VERSION;
+     const mainStyle = document.querySelector('link[href^="style.css"]');
+     if (mainStyle) { mainStyle.href = 'style.css?v=' + version; }
+     const themeScript = document.createElement('script');
+     themeScript.src = 'theme.js?v=' + version;
+     document.body.appendChild(themeScript);
+ })();
+</script>
 
 <script>
-// ЛОГИКА 1: Проверка введённого 6-значного кода регистрации
-document.getElementById('verifyBtn').addEventListener('click', async () => {
+document.getElementById('verifyBtn')?.addEventListener('click', async () => {
     const code = document.getElementById('verificationCode').value.trim();
-    
-    if (code.length !== 6) {
-        showToast('⚠️ Код должен быть строго 6-значным');
-        return;
-    }
+    if (code.length !== 6) { showToast('⚠️ Код должен быть 6-значным'); return; }
     
     const button = document.getElementById('verifyBtn');
     button.disabled = true;
@@ -72,46 +79,35 @@ document.getElementById('verifyBtn').addEventListener('click', async () => {
             body: JSON.stringify({ code })
         });
         const data = await res.json();
-        
         if (data.success) {
-            showToast('🎉 Email успешно подтвержден! Перенаправление...');
-            setTimeout(() => {
-                window.location.href = '/login.html';
-            }, 1200);
+            showToast('🎉 Email подтверждён!');
+            setTimeout(() => { window.location.href = '/login.html'; }, 1200);
         } else {
-            showToast('❌ ' + (data.error || 'Неверный или просроченный код'));
+            showToast('❌ ' + (data.error || 'Неверный код'));
         }
     } catch (err) {
-        showToast('❌ Не удалось подключиться к серверу');
-        console.error(err);
+        showToast('❌ Ошибка соединения');
     } finally {
         button.disabled = false;
         button.textContent = 'Подтвердить';
     }
 });
 
-// ЛОГИКА 2: Переключение интерфейса на форму ввода Email (Вместо prompt)
-document.getElementById('resendLink').addEventListener('click', (e) => {
+document.getElementById('resendLink')?.addEventListener('click', (e) => {
     e.preventDefault();
     document.getElementById('verifyCodeBlock').style.display = 'none';
     document.getElementById('resendEmailBlock').style.display = 'block';
 });
 
-// Возврат к вводу кода
-document.getElementById('btnBackToVerify').addEventListener('click', (e) => {
+document.getElementById('btnBackToVerify')?.addEventListener('click', (e) => {
     e.preventDefault();
     document.getElementById('resendEmailBlock').style.display = 'none';
     document.getElementById('verifyCodeBlock').style.display = 'block';
 });
 
-// ЛОГИКА 3: Сетевой запрос повторной генерации кода на бэкенд
-document.getElementById('btnExecuteResend').addEventListener('click', async () => {
+document.getElementById('btnExecuteResend')?.addEventListener('click', async () => {
     const email = document.getElementById('resendEmailInput').value.trim();
-    
-    if (!email || !email.includes('@')) {
-        showToast('⚠️ Пожалуйста, введите корректный Email адрес');
-        return;
-    }
+    if (!email || !email.includes('@')) { showToast('⚠️ Введите корректный email'); return; }
     
     const button = document.getElementById('btnExecuteResend');
     button.disabled = true;
@@ -124,45 +120,21 @@ document.getElementById('btnExecuteResend').addEventListener('click', async () =
             body: JSON.stringify({ email })
         });
         const data = await res.json();
-        
         if (data.success) {
-            showToast('📩 Новый код успешно отправлен на вашу почту!');
-            // Возвращаем пользователя обратно к форме ввода кода
+            showToast('📩 Новый код отправлен!');
             document.getElementById('resendEmailBlock').style.display = 'none';
             document.getElementById('verifyCodeBlock').style.display = 'block';
-            document.getElementById('verificationCode').value = ''; // Очищаем старый инпут
+            document.getElementById('verificationCode').value = '';
         } else {
-            showToast('❌ ' + (data.error || 'Не удалось отправить код повторно'));
+            showToast('❌ ' + (data.error || 'Не удалось отправить'));
         }
     } catch (err) {
-        showToast('❌ Ошибка сети. Не удалось отправить код.');
-        console.error(err);
+        showToast('❌ Ошибка сети');
     } finally {
         button.disabled = false;
         button.textContent = 'Выслать код';
     }
 });
 </script>
-<!-- КРИТИЧНО: Подключаем тему с showToast и мост Android -->
-
-<script src="/android.js"></script>
-<script>
- const IS_DEBUG = true; 
- const APP_VERSION = '1.0.0'; 
-
- (function() {
-     const version = IS_DEBUG ? Date.now() : APP_VERSION;
-
-     const mainStyle = document.querySelector('link[href^="style.css"]');
-     if (mainStyle) {
-         mainStyle.href = 'style.css?v=' + version;
-     }
-
-     const themeScript = document.createElement('script');
-     themeScript.src = 'theme.js?v=' + version;
-     document.body.appendChild(themeScript);
- })();
-</script>
-
 </body>
 </html>

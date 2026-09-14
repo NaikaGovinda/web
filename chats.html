@@ -8,39 +8,30 @@
 </head>
 <body>
 <div id="app">
-    <!-- Шапка мессенджера -->
     <header class="app-header">
         <button class="back-btn" onclick="window.location.href='/index.html'" aria-label="Назад">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="15 18 9 12 15 6"/>
             </svg>
         </button>
-        <h1 class="org-name">ЧАТЫ</h1>
+        <h1 class="org-name">Чаты</h1>
     </header>
 
-    <!-- Основной скроллящийся контент -->
-    <main class="content" id="chatsContent" style="padding-bottom: 20px;">
-        <div class="loading">Загрузка диалогов...</div>
+    <main class="content" id="chatsContent">
+        <div class="loading">Загрузка...</div>
     </main>
 </div>
 
 <script src="/android.js"></script>
-
-<!-- Web Push Notifications -->
 <script src="/web-push-suppression.js"></script>
 <script src="/web-push.js"></script>
 <script>
  const IS_DEBUG = true; 
  const APP_VERSION = '1.0.0'; 
-
  (function() {
      const version = IS_DEBUG ? Date.now() : APP_VERSION;
-
      const mainStyle = document.querySelector('link[href^="style.css"]');
-     if (mainStyle) {
-         mainStyle.href = 'style.css?v=' + version;
-     }
-
+     if (mainStyle) { mainStyle.href = 'style.css?v=' + version; }
      const themeScript = document.createElement('script');
      themeScript.src = 'theme.js?v=' + version;
      document.body.appendChild(themeScript);
@@ -48,7 +39,6 @@
 </script>
 
 <script>
-// Вспомогательная функция защиты от XSS
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -56,108 +46,81 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Загрузка списков чатов
 async function loadChatsList() {
     const container = document.getElementById('chatsContent');
     try {
         const authRes = await fetch('/api/check_auth.php', { credentials: 'include' });
         const authData = await authRes.json();
-        if (!authData.is_authenticated) {
-            window.location.href = '/login.html';
-            return;
-        }
+        if (!authData.is_authenticated) { window.location.href = '/login.html'; return; }
 
         const response = await fetch('/api/get_chats_list.php', { credentials: 'include' });
         const data = await response.json();
-
         if (!data.success) throw new Error(data.error || 'Ошибка загрузки');
 
         let html = '';
 
-        // 1. БЛОК ГРУППОВЫХ ЧАТОВ
-        html += '<div class="card" style="margin-bottom: 15px;"><h3>👥 Мои группы</h3><div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">';
+        // Групповые чаты
+        html += '<div class="chat-section-title">Группы</div><div class="chat-list">';
         if (!data.groups || data.groups.length === 0) {
-            html += '<p style="color:var(--color-text-muted); font-size:14px;">Вы пока не состоите ни в одной группе.</p>';
+            html += '<p class="chat-empty">Вы пока не состоите ни в одной группе</p>';
         } else {
             data.groups.forEach(g => {
-                // Бэкенд возвращает null для несуществующих аватаров
                 let avatarHtml = '';
                 if (g.group_avatar_url) {
-                    avatarHtml = `<img src="${g.group_avatar_url}" style="width:44px; height:44px; border-radius:12px; object-fit:cover; background:#eee; flex-shrink:0;">`;
+                    avatarHtml = `<img src="${g.group_avatar_url}" class="chat-avatar" alt="">`;
                 } else {
-                    avatarHtml = `<div style="width:44px; height:44px; border-radius:12px; background:#eef2ff; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; border:1px solid #dbe2ff;">🌸</div>`;
+                    avatarHtml = `<div class="chat-avatar chat-avatar-placeholder">🌸</div>`;
                 }
-
                 html += `
-                    <div style="display:flex; align-items:center; gap:12px; cursor:pointer; padding:4px 0;" onclick="window.location.href='/group.html?id=${g.id}&open_chat=1'">
+                    <div class="chat-item" onclick="window.location.href='/group.html?id=${g.id}&open_chat=1'">
                         ${avatarHtml}
-                        <div style="flex:1; min-width:0;">
-                            <strong style="font-size:15px; color:#1e1e20; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(g.name)}</strong>
-                            <div style="font-size:12px; color:var(--color-text-muted);">${escapeHtml(g.city)}</div>
+                        <div class="chat-item-info">
+                            <div class="chat-item-name">${escapeHtml(g.name)}</div>
+                            <div class="chat-item-meta">${escapeHtml(g.city)}</div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
         }
-        html += '</div></div>';
+        html += '</div>';
 
-        // 2. БЛОК ЛИЧНЫХ ДИАЛОГОВ (ДРУЗЬЯ)
-        html += '<div class="card"><h3>👤 Преданные (из моих групп)</h3><div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">';
-		
-		const defaultGroupId = (data.groups && data.groups.length > 0) ? data.groups[0].id : '';
+        // Личные диалоги
+        html += '<div class="chat-section-title">Личные сообщения</div><div class="chat-list">';
+        const defaultGroupId = (data.groups && data.groups.length > 0) ? data.groups[0].id : '';
         if (!data.friends || data.friends.length === 0) {
-            html += '<p style="color:var(--color-text-muted); font-size:14px;">В ваших группах пока нет других участников.</p>';
+            html += '<p class="chat-empty">В ваших группах пока нет других участников</p>';
         } else {
             data.friends.forEach(f => {
-                // Бэкенд возвращает null для несуществующих аватаров
                 let avatarHtml = '';
                 if (f.avatar_url) {
-                    avatarHtml = `<img src="${f.avatar_url}" style="width:44px; height:44px; border-radius:50%; object-fit:cover; background:#eee; flex-shrink:0;">`;
+                    avatarHtml = `<img src="${f.avatar_url}" class="chat-avatar" alt="">`;
                 } else {
-                    avatarHtml = `<div style="width:44px; height:44px; border-radius:50%; background:#f0f0f2; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;">👤</div>`;
+                    avatarHtml = `<div class="chat-avatar chat-avatar-placeholder">👤</div>`;
                 }
-
-                // По умолчанию ведем личный чат через первую доступную группу, где пересекаемся
                 html += `
-                    <div style="display:flex; align-items:center; gap:12px; cursor:pointer; padding:4px 0;" onclick="window.location.href = '/group.html?id=${f.group_id || defaultGroupId || 0}&open_private_chat=${f.id}&open_private_name=${encodeURIComponent(f.first_name)}'">
+                    <div class="chat-item" onclick="window.location.href='/group.html?id=${f.group_id || defaultGroupId || 0}&open_private_chat=${f.id}&open_private_name=${encodeURIComponent(f.first_name)}'">
                         ${avatarHtml}
-                        <div style="flex:1; min-width:0;">
-                            <strong style="font-size:15px; color:#1e1e20; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(f.first_name)} ${escapeHtml(f.last_name || '')}</strong>
-                            <div style="font-size:12px; color:#4a90e2; font-weight:600;">Написать личное сообщение 💬</div>
+                        <div class="chat-item-info">
+                            <div class="chat-item-name">${escapeHtml(f.first_name)} ${escapeHtml(f.last_name || '')}</div>
+                            <div class="chat-item-meta">Написать личное сообщение</div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
         }
-        html += '</div></div>';
+        html += '</div>';
 
         container.innerHTML = html;
 
     } catch (err) {
         console.error(err);
-        showToast('❌ Не удалось загрузить списки общения');
-        container.innerHTML = '<p class="error-state" style="text-align:center; color:var(--color-error);">Ошибка соединения</p>';
+        container.innerHTML = '<p class="error-state" style="text-align:center;">Ошибка соединения</p>';
     }
 }
 
-
 document.addEventListener('DOMContentLoaded', function() {
     loadChatsList();
-    
-    // Инициализация Web Push
-    if (typeof WEB_PUSH !== 'undefined') {
-        WEB_PUSH.init();
-    }
-    // Устанавливаем контекст видимости
-    if (typeof window.WEB_PUSH_VISIBILITY !== 'undefined') {
-        window.WEB_PUSH_VISIBILITY.setChats();
-    }
+    if (typeof WEB_PUSH !== 'undefined') { WEB_PUSH.init(); }
+    if (typeof window.WEB_PUSH_VISIBILITY !== 'undefined') { window.WEB_PUSH_VISIBILITY.setChats(); }
 });
 </script>
-
-<!-- Web Push Notifications -->
-<script src="/web-push-suppression.js"></script>
-<script src="/web-push.js"></script>
-
 </body>
 </html>

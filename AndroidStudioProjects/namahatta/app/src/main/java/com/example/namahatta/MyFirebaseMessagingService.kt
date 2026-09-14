@@ -55,9 +55,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         val intent = when (action) {
             // 1. ПОДДЕРЖКА ЛИЧНЫХ СООБЩЕНИЙ (ЛС) — Ведет прямо в диалог с другом!
+            // Для ЛС используем sender_id как ID собеседника (чата)
             "new_private_chat_message" -> {
                 Intent(this, MainActivity::class.java).apply {
-                    putExtra("load_url", domain + "/group.html?id=" + cleanGroupId + "&open_private_chat=" + senderId + "&open_private_name=" + java.net.URLEncoder.encode(senderName, "UTF-8"))
+                    // Для ЛС: id = sender_id (ID собеседника), open_private_chat тоже sender_id
+                    val chatId = if (cleanGroupId.isNotEmpty() && cleanGroupId != "0") cleanGroupId else senderId
+                    putExtra("load_url", domain + "/group.html?id=" + chatId + "&open_private_chat=" + senderId + "&open_private_name=" + java.net.URLEncoder.encode(senderName, "UTF-8"))
                 }
             }
 

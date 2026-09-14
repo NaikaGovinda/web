@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Вход — Нама-Хатта</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -19,22 +18,28 @@
     </header>
 
     <main class="content">
-      <div class="card">
-        <h2>Войти в аккаунт</h2>
+      <div class="auth-card">
+        <h2>Добро пожаловать</h2>
+        <p class="auth-subtitle">Войдите в свой аккаунт</p>
         <form id="loginForm">
-          <input type="email" id="email" class="input-field" placeholder="Email" required><br><br>
-          <input type="password" id="password" class="input-field" placeholder="Пароль" required><br><br>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" class="input-field" placeholder="your@email.com" required>
+          </div>
+          <div class="form-group">
+            <label for="password">Пароль</label>
+            <input type="password" id="password" class="input-field" placeholder="••••••••" required>
+          </div>
           <button type="submit" class="btn btn-primary">Войти</button>
         </form>
-        <p style="text-align:center; margin-top:16px;">
-            <a href="#" id="btnForgotPassword" style="color: var(--color-primary, #4a90e2); font-size: 14px; text-decoration: none; display: block; margin-bottom: 10px;">Забыли пароль?</a>
-            Нет аккаунта? <a href="/register.html">Зарегистрироваться</a>
-        </p>
-    </div>
-</main>
-</div>
-
-<!-- КРИТИЧНО ДЛЯ АНДРОИД: Подключаем общие скрипты темы и мост уведомлений -->
+        <div class="auth-footer">
+          <a href="#" id="btnForgotPassword">Забыли пароль?</a>
+          <span>Нет аккаунта? </span>
+          <a href="/register.html">Зарегистрироваться</a>
+        </div>
+      </div>
+    </main>
+  </div>
 
 <script src="/android.js"></script>
 <script>
@@ -43,12 +48,8 @@
 
  (function() {
      const version = IS_DEBUG ? Date.now() : APP_VERSION;
-
      const mainStyle = document.querySelector('link[href^="style.css"]');
-     if (mainStyle) {
-         mainStyle.href = 'style.css?v=' + version;
-     }
-
+     if (mainStyle) { mainStyle.href = 'style.css?v=' + version; }
      const themeScript = document.createElement('script');
      themeScript.src = 'theme.js?v=' + version;
      document.body.appendChild(themeScript);
@@ -56,101 +57,53 @@
 </script>
 
 <script>
-// ==========================================
-// БЕЗОПАСНАЯ АУТЕНТИФИКАЦИЯ ПО ТОКЕНАМ
-// ==========================================
-
-/**
- * Генерирует криптографически стойкий случайный токен
- * @returns {Promise<string>}
- */
 async function generateSecureToken() {
-    const array = new Uint8Array(32); // 32 байта = 256 бит
+    const array = new Uint8Array(32);
     window.crypto.getRandomValues(array);
-    // Конвертируем в hex строку (64 символа)
-    return Array.from(array)
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
+    return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
     const submitBtn = e.target.querySelector('button[type="submit"]');
     if (submitBtn) submitBtn.disabled = true;
 
-    const emailInput = document.getElementById('email') || document.getElementById('loginEmail');
-    const passwordInput = document.getElementById('password') || document.getElementById('loginPassword');
-
-    if (!emailInput || !passwordInput) {
-        showToast("❌ Поля ввода не найдены на странице");
-        if (submitBtn) submitBtn.disabled = false;
-        return;
-    }
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
 
     try {
-        // 1. Генерируем случайный токен (пароль НЕ передаётся!)
         const clientToken = await generateSecureToken();
-        
-        // 2. Отправляем токен + email на сервер
         const response = await fetch('/api/login_by_token.php', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                email: emailInput.value.trim(),
-                client_token: clientToken  // ← ТОКЕН, а не пароль!
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: emailInput.value.trim(), client_token: clientToken })
         });
 
-        // Читаем сырой текст для очистки от возможных предупреждений session_start
         const cleanRawText = await response.text();
-        let data;
-        
-        try {
-            const jsonIdx = cleanRawText.indexOf('{');
-            if (jsonIdx === -1) throw new Error("JSON не найден");
-            data = JSON.parse(cleanRawText.substring(jsonIdx));
-        } catch (jsonErr) {
-            console.error("Сырой ответ сервера:", cleanRawText);
-            showToast('❌ Ошибка чтения ответа сервера');
-            if (submitBtn) submitBtn.disabled = false;
-            return;
-        }
+        const jsonIdx = cleanRawText.indexOf('{');
+        if (jsonIdx === -1) throw new Error("JSON не найден");
+        const data = JSON.parse(cleanRawText.substring(jsonIdx));
 
         if (data.success) {
-            showToast('✓ Вход успешно выполнен! 🌸');
-            
-            // Сохраняем токен для будущих запросов
+            showToast('Вход выполнен!');
             localStorage.setItem('auth_token', clientToken);
             localStorage.setItem('user_id', data.user_id);
-            
-            // 🔥 ИСПРАВЛЕНО: Принудительно запускаем наш новый бронебойный мост,
-            // который сам дождётся инициализации интерфейса Android и отправит токен в базу!
-            if (typeof sendUserIdToAndroid === 'function') {
-                sendUserIdToAndroid();
-            }
-            
-            // Плавный переход в профиль
-            setTimeout(() => {
-                window.location.href = '/profile.html';
-            }, 1000);
+            if (typeof sendUserIdToAndroid === 'function') sendUserIdToAndroid();
+            setTimeout(() => { window.location.href = '/profile.html'; }, 1000);
         } else {
             showToast('❌ ' + (data.error || 'Неверный логин или пароль'));
             if (submitBtn) submitBtn.disabled = false;
         }
     } catch (err) {
         console.error(err);
-        showToast('❌ Не удалось связаться с сервером');
+        showToast('❌ Ошибка соединения');
         if (submitBtn) submitBtn.disabled = false;
     }
 });
 
-// Заглушка клика для перехода к следующему этапу (Сброс пароля)
-document.getElementById('btnForgotPassword').addEventListener('click', (e) => {
+document.getElementById('btnForgotPassword')?.addEventListener('click', (e) => {
     e.preventDefault();
-    window.location.href = '/forgot_password.html'; // На эту страницу мы сейчас переведём пользователя
+    window.location.href = '/forgot_password.html';
 });
 </script>
 </body>

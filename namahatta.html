@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Нама-Хатта — Группы</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,18 +14,42 @@
           <polyline points="15 18 9 12 15 6"/>
         </svg>
       </button>
-      <h1 class="org-name">ГРУППЫ</h1>
-      <div class="header-actions">
-        <button class="btn-icon" id="btnSearch" aria-label="Поиск"><span class="ico ico-search"></span></button>
-        <button class="btn-icon" id="btnAdd" aria-label="Добавить группу"><span class="ico ico-plus"></span></button>
-      </div>
+      <h1 class="org-name">Нама-Хатта</h1>
     </header>
 
     <div class="filters">
-      <button class="filter-btn active" data-filter="nearby">РЯДОМ</button>
-      <button class="filter-btn" data-filter="online">ОНЛАЙН</button>
-      <button class="filter-btn" data-filter="all">ВСЕ</button>
-      <button class="filter-btn" id="btnMapFilter" data-filter="map">НА КАРТЕ</button>
+      <button class="filter-btn active" data-filter="nearby">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+        Рядом
+      </button>
+      <button class="filter-btn" data-filter="online">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+          <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+          <line x1="12" y1="20" x2="12.01" y2="20"/>
+        </svg>
+        Онлайн
+      </button>
+      <button class="filter-btn" data-filter="all">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="16"/>
+          <line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        Все
+      </button>
+      <button class="filter-btn" id="btnMapFilter" data-filter="map">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+          <line x1="8" y1="2" x2="8" y2="18"/>
+          <line x1="16" y1="6" x2="16" y2="22"/>
+        </svg>
+        На карте
+      </button>
     </div>
 
     <main class="content" id="groupsContainer">
@@ -35,23 +58,33 @@
 
     <nav class="bottom-bar">
       <a href="/index.html" class="bar-btn">
-        <span class="ico ico-home"></span>
-        <span>🏡 Домой</span>
+        <svg class="bar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span>Главная</span>
       </a>
-      <a href="/bhaktivriksha.html" class="bar-btn">
-        <span class="ico ico-bhakti"></span>
-        <span>🌳 Бхакти-Врикша</span>
+      <a href="/namahatta.html" class="bar-btn bar-btn-active">
+        <svg class="bar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Группы</span>
       </a>
       <a href="/profile.html" class="bar-btn">
-        <span class="ico ico-profile"></span>
-        <span>👤 Профиль</span>
+        <svg class="bar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>Профиль</span>
       </a>
     </nav>
   </div>
 
-  <!-- Модальное окно карты -->
   <div id="mapModal" class="modal" style="display:none;">
-    <div class="modal-content" style="height: 80vh; padding: 0;">
+    <div class="modal-content">
       <div id="map" style="width:100%; height:100%;"></div>
       <button id="closeMap" class="btn btn-ghost" style="position:absolute; top:12px; right:12px; z-index:1000;">Закрыть</button>
     </div>
@@ -64,21 +97,12 @@
       return div.innerHTML;
     }
 
-    // Функция для получения координат браузера
     function getUserLocation() {
         return new Promise((resolve) => {
-            if (!navigator.geolocation) {
-                resolve(null);
-                return;
-            }
+            if (!navigator.geolocation) { resolve(null); return; }
             navigator.geolocation.getCurrentPosition(
                 (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-                (err) => {
-                    // [ИСПРАВЛЕНИЕ] Если Android заблокировал окно, мы ловим ошибку 
-                    // и возвращаем null, чтобы сайт не зависал, а просто показал группы без сортировки
-                    console.warn("Геолокация недоступна:", err.message);
-                    resolve(null); 
-                },
+                (err) => { console.warn("Геолокация недоступна:", err.message); resolve(null); },
                 { timeout: 5000, enableHighAccuracy: true }
             );
         });
@@ -89,32 +113,19 @@
         container.innerHTML = '<div class="loading">Загрузка...</div>';
     
         try {
-            // Определяем базовый тип для текущего файла (в bhakti_vriksha.html замените 'namahatta' на 'bhakti_vriksha')
             const currentType = 'namahatta';
             let url = `/api/get_groups.php?type=${currentType}`;
     
-            if (filter === 'online') {
-                url += '&online=1';
-            } else if (filter === 'all' || filter === 'map') {
-                url += '&all=1';
-            }
+            if (filter === 'online') url += '&online=1';
+            else if (filter === 'all' || filter === 'map') url += '&all=1';
     
-            // [НОВОЕ] Если выбран фильтр РЯДОМ, запрашиваем координаты пользователя и добавляем их в URL
-
             if (filter === 'nearby') {
                 const loc = await getUserLocation();
-                if (loc) {
-                    url += `&user_lat=${loc.lat}&user_lng=${loc.lng}`;
-                }
+                if (loc) url += `&user_lat=${loc.lat}&user_lng=${loc.lng}`;
             }
-            /*
-            if (filter === 'nearby') {
-                url += `&user_lat=&user_lng=`; 
-            }
-    */
+    
             const response = await fetch(url);
             const data = await response.json();
-    
             if (!data.success) throw new Error(data.error || 'Ошибка сервера');
     
             container.innerHTML = '';
@@ -125,8 +136,6 @@
     
             data.groups.forEach(group => {
                 const isOnline = group.is_online === '1' || group.is_online === 1;
-                
-                // [ИСПРАВЛЕНИЕ] Больше никакого Math.random()! Берем реальное расстояние от бэкенда
                 let distanceText = '';
                 if (isOnline) {
                     distanceText = 'Онлайн';
@@ -134,7 +143,7 @@
                     const dist = parseFloat(group.distance);
                     distanceText = `${escapeHtml(group.city)} • ${dist < 1 ? Math.round(dist * 1000) + ' м' : dist.toFixed(1) + ' км'}`;
                 } else {
-                    distanceText = `${escapeHtml(group.city)}`;
+                    distanceText = escapeHtml(group.city);
                 }
     
                 const card = document.createElement('div');
@@ -144,18 +153,12 @@
                     <div class="group-info">
                         <h3 class="group-title">${escapeHtml(group.name)}</h3>
                         <p class="group-desc">${escapeHtml(group.description)}</p>
-                        <div class="group-meta">
-                            <span>📍 </span> ${distanceText} • 
-                            <span>👥 </span> ${group.member_count} участников
-                        </div>
+                        <div class="group-meta">${distanceText} • ${group.member_count} участников</div>
                     </div>
                 `;
-                card.addEventListener('click', () => {
-                    window.location.href = `/group.html?id=${group.id}`;
-                });
+                card.addEventListener('click', () => { window.location.href = `/group.html?id=${group.id}`; });
                 container.appendChild(card);
             });
-    
         } catch (error) {
             console.error('Ошибка:', error);
             container.innerHTML = '<p class="error-state">Не удалось загрузить группы</p>';
@@ -168,36 +171,25 @@
           document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           const filter = btn.dataset.filter;
-
-          if (filter === 'map') {
-            openMapModal();
-          } else {
-            loadGroups(filter);
-          }
+          if (filter === 'map') { openMapModal(); }
+          else { loadGroups(filter); }
         });
       });
-
       loadGroups('nearby');
-
       document.getElementById('closeMap')?.addEventListener('click', () => {
         document.getElementById('mapModal').style.display = 'none';
       });
     });
 
-    // === Карта ===
     let mapInitialized = false;
-    let cachedMapGroups = null;
+    let leafletMapInstance = null;
 
     async function loadLeaflet() {
       return new Promise((resolve) => {
-        if (typeof L !== 'undefined') {
-          resolve();
-          return;
-        }
+        if (typeof L !== 'undefined') { resolve(); return; }
         if (!document.getElementById('leaflet-css')) {
           const css = document.createElement('link');
-          css.id = 'leaflet-css';
-          css.rel = 'stylesheet';
+          css.id = 'leaflet-css'; css.rel = 'stylesheet';
           css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
           document.head.appendChild(css);
         }
@@ -207,235 +199,71 @@
         document.head.appendChild(script);
       });
     }
-    let leafletMapInstance = null; // Добавим для отслеживания экземпляра карты
-	/*
+
     async function openMapModal() {
       document.getElementById('mapModal').style.display = 'flex';
-      // [НОВОЕ] Если карта уже была создана ранее, просто обновляем её размеры в полноэкранном режиме
-        if (mapInitialized && leafletMapInstance) {
-            setTimeout(() => {
-                leafletMapInstance.invalidateSize();
-            }, 100);
-            return;
-        }
-
-      try {
-        await loadLeaflet();
-        const mapContainer = document.getElementById('map');
-        mapContainer.innerHTML = '';
-
-        const map = L.map('map').setView([55.751244, 37.618423], 10);
-        leafletMapInstance = map; // Запоминаем карту
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
-
-        const currentType = 'namahatta';
-		const res = await fetch(`/api/get_groups_for_map.php?type=${currentType}`);
-		const mapGroups = await res.json();
-
-        if (mapGroups.length > 0) {
-          let latSum = 0, lngSum = 0, validCount = 0;
-          mapGroups.forEach(group => {
-            if (group.lat && group.lng) {
-              const lat = parseFloat(group.lat);
-              const lng = parseFloat(group.lng);
-              if (isNaN(lat) || isNaN(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return;
-              latSum += lat;
-              lngSum += lng;
-              validCount++;
-              // [ИСПРАВЛЕНО] Создаем маркер группы
-                    const currentMarker = L.marker([lat, lng]).addTo(map);
-
-                    // Сборка красивого HTML-контента балуна с кнопкой перехода
-                    const popupContent = [
-                        '<div style="text-align: center; font-family: \'Montserrat\', sans-serif; padding: 5px; min-width: 160px;">',
-                        '   <b style="color: #4a90e2; font-size: 14px; display: block; margin-bottom: 2px;">' + escapeHtml(group.name) + '</b>',
-                        '   <span style="color: #666; font-size: 12px; display: block; margin-bottom: 10px;">📍 ' + escapeHtml(group.city) + '</span>',
-                        '   <a href="/group.html?id=' + group.id + '" style="display: inline-block; padding: 8px 16px; background: #4a90e2; color: #fff; text-decoration: none; border-radius: 8px; font-size: 12px; font-weight: 600; box-shadow: 0 2px 6px rgba(74,144,226,0.25); transition: background 0.2s;">Перейти в группу ➡️</a>',
-                        '</div>'
-                    ].join("");
-
-                    // Привязываем красивое окно к нашему маркеру
-                    currentMarker.bindPopup(popupContent);
-
-                    // ДОБАВЛЕНО: Если пользователь тапает по маркеру на телефоне, сразу перекидываем его на страницу этой группы
-                    currentMarker.on('click', function() {
-                        window.location.href = '/group.html?id=' + group.id;
-                    });
-            }
-          });
-          if (validCount > 0) {
-            map.setView([latSum / validCount, lngSum / validCount], 10);
-          }
-        }
-        mapInitialized = true;
-        setTimeout(() => {
-            map.invalidateSize();
-        }, 100);
-      } catch (err) {
-			showToast('❌ Ошибка загрузки карты: ' + err.message);
-		}
-    }
-	*/
-    async function openMapModal() {
-      document.getElementById('mapModal').style.display = 'flex';
-
-      // Если карта уже была создана ранее, просто обновляем её размеры
       if (mapInitialized && leafletMapInstance) {
-        setTimeout(() => {
-          leafletMapInstance.invalidateSize();
-        }, 100);
+        setTimeout(() => { leafletMapInstance.invalidateSize(); }, 100);
         return;
       }
-
       try {
         await loadLeaflet();
         const mapContainer = document.getElementById('map');
         mapContainer.innerHTML = '';
-
-        // Получаем геолокацию пользователя
-        let mapCenter = [55.751244, 37.618423]; // Москва по умолчанию
+        let mapCenter = [55.751244, 37.618423];
         let mapZoom = 10;
-
         const userLoc = await getUserLocation();
-        if (userLoc) {
-          mapCenter = [userLoc.lat, userLoc.lng];
-          mapZoom = 12;
-        }
-
+        if (userLoc) { mapCenter = [userLoc.lat, userLoc.lng]; mapZoom = 12; }
         const map = L.map('map').setView(mapCenter, mapZoom);
-        leafletMapInstance = map; // Запоминаем карту
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
-        }).addTo(map);
-
-        const currentType = 'namahatta';
-        // [ИСПРАВЛЕНО] Вызываем правильный файл, который мы отрефакторили
-        const res = await fetch(`/api/get_groups_for_map.php?type=${currentType}`);
+        leafletMapInstance = map;
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>' }).addTo(map);
+        const res = await fetch(`/api/get_groups_for_map.php?type=namahatta`);
         const mapGroups = await res.json();
-
         if (mapGroups.length > 0) {
-          let latSum = 0, lngSum = 0, validCount = 0;
-
-          // 1. Создаем объект, куда временно сгруппируем наши Нама-Хатты по адресам
           const groupsByAddress = {};
-
           mapGroups.forEach(group => {
             if (group.lat && group.lng) {
-              const lat = parseFloat(group.lat);
-              const lng = parseFloat(group.lng);
-              if (isNaN(lat) || isNaN(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return;
-
-              // Создаем уникальный текстовый ключ для этих координат (убираем микросмещения)
+              const lat = parseFloat(group.lat), lng = parseFloat(group.lng);
+              if (isNaN(lat) || isNaN(lng)) return;
               const coordKey = lat.toFixed(5) + "_" + lng.toFixed(5);
-
-              if (!groupsByAddress[coordKey]) {
-                groupsByAddress[coordKey] = {
-                  lat: lat,
-                  lng: lng,
-                  groupsList: []
-                };
-              }
-              // Складываем все группы с одинаковыми координатами в один ящик
+              if (!groupsByAddress[coordKey]) groupsByAddress[coordKey] = { lat, lng, groupsList: [] };
               groupsByAddress[coordKey].groupsList.push(group);
             }
           });
-
-          // 2. Теперь перебираем сгруппированные адреса и ставим ровно ПО ОДНОМУ маркеру на точку
           Object.keys(groupsByAddress).forEach(key => {
             const point = groupsByAddress[key];
-
-            latSum += point.lat;
-            lngSum += point.lng;
-            validCount++;
-
-            // Ставим ОДИН маркер на дом
             const currentMarker = L.marker([point.lat, point.lng]).addTo(map);
-
-            // Начинаем собирать HTML-текст для всплывающего окошка балуна
-            let popupHtml = '<div style="font-family: \'Montserrat\', sans-serif; min-width: 170px; max-width: 240px; max-height: 240px; overflow-y: auto; padding-right: 3px; text-align: center;">';
-
-            // Добавляем внутрь этого окошка каждую группу этого адреса по очереди
+            let popupHtml = '<div style="font-family:sans-serif; max-width:200px; text-align:center;">';
             point.groupsList.forEach((group, index) => {
-              // Если групп больше одной, разделяем их тонкой серой линией
-              if (index > 0) {
-                popupHtml += '<hr style="border: 0; border-top: 1px solid #e0e0e0; margin: 10px 0;">';
-              }
-
-              // Добавляем название, город, адрес и персональную кнопку перехода
-              popupHtml += '<div>';
-              popupHtml += '   <b style="color: #4a90e2; font-size: 13px; display: block; margin-bottom: 2px;">' + escapeHtml(group.name) + '</b>';
-              popupHtml += '   <span style="color: #333; font-size: 11px; display: block; margin-bottom: 2px;">🏙️ ' + escapeHtml(group.city) + '</span>';
-              popupHtml += '   <span style="color: #666; font-size: 11px; display: block; margin-bottom: 8px; font-style: italic;">🏠 ' + (group.address ? escapeHtml(group.address) : 'Адрес не указан') + '</span>';
-              popupHtml += '   <a href="/group.html?id=' + group.id + '" style="display: inline-block; padding: 6px 14px; background: #4a90e2; color: #fff; text-decoration: none; border-radius: 6px; font-size: 11px; font-weight: 600; box-shadow: 0 2px 4px rgba(74,144,226,0.2);">Перейти в группу ➡️</a>';
-              popupHtml += '</div>';
+              if (index > 0) popupHtml += '<hr style="border:0; border-top:1px solid #e0e0e0; margin:8px 0;">';
+              popupHtml += `<div><b style="color:#0071e3; font-size:13px; display:block;">${escapeHtml(group.name)}</b><span style="color:#666; font-size:11px; display:block;">${escapeHtml(group.city)}</span><a href="/group.html?id=${group.id}" style="display:inline-block; padding:6px 14px; background:#0071e3; color:#fff; text-decoration:none; border-radius:6px; font-size:11px; font-weight:600; margin-top:4px;">Перейти ➡️</a></div>`;
             });
-
             popupHtml += '</div>';
-
-            // Привязываем итоговый склеенный список к нашему единственному маркеру
             currentMarker.bindPopup(popupHtml);
           });
-
-          if (validCount > 0) {
-            // Если геолокация не получена — центрируем по среднему значению групп
-            if (!userLoc) {
-              map.setView([latSum / validCount, lngSum / validCount], 10);
-            }
-          }
         }
-
         mapInitialized = true;
-        setTimeout(() => {
-          map.invalidateSize();
-        }, 100);
-
-      } catch (err) {
-        showToast('❌ Ошибка загрузки карты: ' + err.message);
-      }
+        setTimeout(() => { map.invalidateSize(); }, 100);
+      } catch (err) { showToast('❌ Ошибка загрузки карты: ' + err.message); }
     }
-
   </script>
 
-	<script src="/android.js"></script>
-
-<!-- Web Push Notifications -->
-<script src="/web-push-suppression.js"></script>
-<script src="/web-push.js"></script>
-<script>
+  <script src="/android.js"></script>
+  <script src="/web-push-suppression.js"></script>
+  <script src="/web-push.js"></script>
+  <script>
  const IS_DEBUG = true; 
  const APP_VERSION = '1.0.0'; 
-
  (function() {
      const version = IS_DEBUG ? Date.now() : APP_VERSION;
-
      const mainStyle = document.querySelector('link[href^="style.css"]');
-     if (mainStyle) {
-         mainStyle.href = 'style.css?v=' + version;
-     }
-
+     if (mainStyle) { mainStyle.href = 'style.css?v=' + version; }
      const themeScript = document.createElement('script');
      themeScript.src = 'theme.js?v=' + version;
      document.body.appendChild(themeScript);
  })();
-
-// Инициализация Web Push
-if (typeof WEB_PUSH !== 'undefined') {
-    WEB_PUSH.init();
-}
-// Устанавливаем контекст видимости
-if (typeof window.WEB_PUSH_VISIBILITY !== 'undefined') {
-    window.WEB_PUSH_VISIBILITY.setHome();
-}
-</script>
-	
-<!-- Web Push Notifications -->
-<script src="/web-push-suppression.js"></script>
-<script src="/web-push.js"></script>
-
+ if (typeof WEB_PUSH !== 'undefined') { WEB_PUSH.init(); }
+ if (typeof window.WEB_PUSH_VISIBILITY !== 'undefined') { window.WEB_PUSH_VISIBILITY.setHome(); }
+  </script>
 </body>
 </html>

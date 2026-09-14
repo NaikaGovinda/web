@@ -11,23 +11,21 @@ html, body {
 }
 
 :root {
-  /* Цвета */
-  --frontboard: #f5f0e6;
-  /* --color-bg: #ffffff; */
-  --color-bg: #f5f0e6;
+  /* Цвета — Apple минимализм */
+  --frontboard: #ffffff;
+  --color-bg: #ffffff;
   --color-text: #1d1d1f;
-  --color-muted: #8e8e93;
-  --color-border: #e0e0e0;
-  /* --color-card-bg: #ffffff;*/
-  --color-card-bg: #e8f5e9;
-  --color-beige: #f5f0e6;
-  --color-sage: #e8f5e9;
+  --color-muted: #86868b;
+  --color-border: #d2d2d7;
+  --color-card-bg: #ffffff;
+  --color-beige: #f5f5f7;
+  --color-sage: #f5f5f7;
 
   /* Основные цвета */
-  --color-primary: #007aff;    /* синий (Apple) */
-  --color-success: #34c759;    /* зелёный */
-  --color-danger: #ff3b30;     /* красный */
-  --color-warning: #ff9500;    /* оранжевый */
+  --color-primary: #0071e3;    /* Apple blue */
+  --color-success: #34c759;
+  --color-danger: #ff3b30;
+  --color-warning: #ff9500;
 
   /* Отступы и радиусы */
   --radius-s: 8px;
@@ -37,11 +35,11 @@ html, body {
   --space-s: 8px;
   --space-m: 16px;
   --space-l: 24px;
-  --space-xl: 32px;
+  --space-xl: 40px;
 
-  /* Тени */
-  --shadow-card: 0 2px 8px rgba(0,0,0,0.08);
-  --shadow-btn: 0 1px 3px rgba(0,0,0,0.1);
+  /* Тени — только для глубины, не для объёма */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-btn: none;
 
 }
 
@@ -88,10 +86,9 @@ body {
     flex: 1 1 auto !important;
     width: 100% !important;
     max-width: 100% !important;
-    padding: 15px 16px 80px 16px !important;
+    padding: 20px 20px 80px 20px !important;
     
-    /* ИСПРАВЛЕНО: Задаем правильный фоновый цвет страницы для контраста */
-    background-color: #f4f3f0 !important; 
+    background-color: #ffffff !important;
     
     overflow-y: auto !important;
     overflow-x: hidden !important;
@@ -109,22 +106,23 @@ body {
   box-shadow: var(--shadow-card);
 }
 
-/* === Текст и заголовки === */
+/* === Текст и заголовки — тонкие === */
 h1, h2, h3, h4 {
-  font-weight: 700;
+  font-weight: 600;
   margin-bottom: var(--space-m);
+  letter-spacing: -0.02em;
 }
 
-h1 { font-size: 24px; }
-h2 { font-size: 20px; }
-h3 { font-size: 18px; }
-h4 { font-size: 16px; }
+h1 { font-size: 28px; }
+h2 { font-size: 22px; }
+h3 { font-size: 17px; }
+h4 { font-size: 15px; }
 
 p, li {
   margin-bottom: var(--space-s);
 }
 
-/* === Кнопки === */
+/* === Кнопки — минимализм === */
 .btn {
   display: inline-block;
   width: 100%;
@@ -134,17 +132,16 @@ p, li {
   border: none;
   border-radius: var(--radius-l);
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 500;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow-btn);
+  transition: opacity 0.15s ease;
+  letter-spacing: -0.01em;
   margin: var(--space-s) 0;
 }
 
 .btn:hover, .btn:active {
-  opacity: 0.9;
-  transform: translateY(1px);
+  opacity: 0.85;
 }
 
 .btn-ghost {
@@ -226,24 +223,34 @@ p, li {
   margin-right: var(--space-s);
 }
 
-/* === Шапка === */
+/* === Шапка — минимализм === */
 .app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-l) var(--space-m) var(--space-m);
-  background: var(--color-bg);
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   position: sticky;
   top: 0;
   z-index: 100;
+  border-bottom: 0.5px solid #d2d2d7;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .org-name {
-  font-weight: 800;
-  font-size: 18px;
+  font-weight: 600;
+  font-size: 17px;
   text-align: center;
   flex: 1;
-  margin: 0 16px;
+  letter-spacing: -0.01em;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .back-btn {
@@ -253,88 +260,80 @@ p, li {
   padding: 8px;
   border-radius: 50%;
   color: var(--color-primary);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-/* === Нижняя панель === */
+/* === Нижняя панель — iOS style === */
 .bottom-bar {
     flex-shrink: 0 !important;
-    position: absolute !important; /* Прибиваем к низу каркаса */
+    position: absolute !important;
     bottom: 0 !important;
     left: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     z-index: 1000 !important;
-    background: #ffffff !important;
-    border-top: 1px solid #e0e0e2 !important;
+    background: rgba(255,255,255,0.92) !important;
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-top: 0.5px solid #d2d2d7 !important;
 
     display: flex !important;
     flex-direction: row !important;
-    justify-content: space-around !important;
+    justify-content: center !important;
     align-items: center !important;
+    gap: 40px !important;
 
-    /* Обнуляем отступы самого контейнера */
     padding: 0 !important;
-    
-    /* Жестко фиксируем высоту: 50 пикселей для Android! Панель станет аккуратной и узкой */
     height: 50px !important;
     box-sizing: border-box !important;
 }
 
-/* Наводим жесткий порядок ВНУТРИ кнопок подвала (чтобы они не распирали высоту) */
-.bottom-bar a, 
+.bottom-bar a,
 .bottom-bar .bar-btn {
     display: flex !important;
-    flex-direction: column !important; /* Иконка сверху, текст снизу */
+    flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
     flex: 1 !important;
-    
-    /* Кнопка должна занимать ровно высоту подвала и ни пикселем больше */
-    height: 50px !important; 
-    padding: 2px 0 !important; /* Минимальный аккуратный отступ сверху и снизу */
+    height: 50px !important;
+    padding: 0 !important;
     margin: 0 !important;
     box-sizing: border-box !important;
     text-decoration: none !important;
-    
-    /* Текст черный и жирный */
-    color: #000000 !important;
-    font-weight: 600 !important;
+    color: var(--color-muted) !important;
+    font-weight: 400 !important;
     opacity: 1 !important;
 }
 
-/* Ограничиваем размер иконок (emoji или шрифтовых) внутри кнопок */
-.bottom-bar .bar-btn span.ico,
-.bottom-bar a span:first-child {
-    font-size: 16px !important; /* Делаем размер иконки аккуратным */
-    line-height: 1 !important;
-    margin-bottom: 2px !important; /* Маленький зазор до текста */
+.bottom-bar .bar-icon {
+    width: 22px !important;
+    height: 22px !important;
+    flex-shrink: 0 !important;
+    margin-bottom: 2px !important;
     padding: 0 !important;
 }
 
-/* Делаем подписи кнопок тонкими, мобильными и аккуратными */
-.bottom-bar .bar-btn span:last-child,
-.bottom-bar a span:last-child {
-    color: #000000 !important;
-    font-weight: 600 !important;
-    font-size: 11px !important; /* Уменьшаем шрифт надписи, чтобы она не раздувала панель */
-    line-height: 1.1 !important;
+.bottom-bar .bar-btn span:last-child {
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
     margin: 0 !important;
     padding: 0 !important;
 }
 
-/* Защита цвета для активной кнопки */
 .bottom-bar a.bar-btn-active,
-.bottom-bar a.bar-btn-active span,
+.bottom-bar a.bar-btn-active .bar-icon,
 .bottom-bar .bar-btn-active,
-.bottom-bar .bar-btn-active span {
-    color: var(--color-primary, #4a90e2) !important;
-    font-weight: 700 !important;
+.bottom-bar .bar-btn-active .bar-icon {
+    color: var(--color-primary) !important;
+    stroke: var(--color-primary) !important;
 }
 
-
-.bottom-bar a:not(.bar-btn-active) svg {
-    stroke: #000000 !important; /* Перекрашивает контур иконок */
-    fill: none; /* Если иконки контурные, оставляет их без заливки */
+.bottom-bar .bar-btn:not(.bar-btn-active) .bar-icon {
+    stroke: var(--color-muted) !important;
+    fill: none;
 }
 
 
@@ -397,6 +396,22 @@ p, li {
   padding: var(--space-l);
   text-align: center;
   color: var(--color-muted);
+}
+
+/* Skeleton loader — тонкий, Apple-стиль */
+.skeleton-loader {
+  display: inline-block;
+  width: 180px;
+  height: 36px;
+  border-radius: 18px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .error-state {
@@ -490,73 +505,99 @@ p, li {
   color: var(--color-muted);
 }
 
-/* === Главная страница === */
+/* === Главная страница — Apple минимализм === */
 .welcome-card {
   text-align: center;
-  padding: var(--space-xl) var(--space-m);
+  padding: var(--space-xl) 0 0;
 }
 
 .sacred-symbol {
-  font-size: 48px;
-  margin-bottom: var(--space-l);
+  font-size: 36px;
+  margin-bottom: var(--space-m);
+  opacity: 0.5;
 }
 
 .welcome-title {
   font-size: 28px;
-  font-weight: 800;
-  margin-bottom: var(--space-m);
-  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-s);
+  line-height: 1.2;
+}
+
+.welcome-subtitle {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--color-muted);
+  margin-bottom: var(--space-xl);
+  line-height: 1.5;
 }
 
 .path-selection {
   display: flex;
   flex-direction: column;
-  gap: var(--space-l);
-  margin: var(--space-xl) 0;
+  gap: 1px;
+  margin: 0;
+  background: var(--color-border);
+  border-radius: var(--radius-l);
+  overflow: hidden;
 }
 
 .path-btn {
   display: flex;
-  gap: var(--space-m);
+  align-items: center;
+  gap: 16px;
   text-decoration: none;
   color: var(--color-text);
-  padding: var(--space-l);
-  border-radius: var(--radius-m);
-  background: var(--color-beige); /* белый по умолчанию */
-  box-shadow: var(--shadow-card);
-  transition: transform 0.2s;
+  padding: 18px 20px;
+  background: #ffffff;
+  transition: background 0.15s ease;
 }
 
-/* Специфичные фоны — после общего */
-.path-btn.namahatta {
-  background: var(--color-sage);
+.path-btn:first-child {
+  border-radius: var(--radius-l) var(--radius-l) 0 0;
 }
 
-.path-btn.bhakti {
-  background: var(--color-sage);
+.path-btn:last-child {
+  border-radius: 0 0 var(--radius-l) var(--radius-l);
 }
 
 .path-btn:hover {
-  transform: translateY(-2px);
+  background: var(--color-beige);
 }
 
-.path-icon {
-  font-size: 24px;
+.path-btn:active {
+  background: #e8e8ed;
+  transition: background 0.05s ease;
+}
+
+.path-icon-svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.path-content {
+  text-align: left;
+  flex: 1;
 }
 
 .path-name {
-  font-weight: 700;
-  font-size: 18px;
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
 }
 
 .path-desc {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-muted);
+  line-height: 1.4;
 }
 
 .user-location {
   margin-top: var(--space-l);
   color: var(--color-muted);
+  font-size: 14px;
 }
 
 /* === Фильтры === */
@@ -564,24 +605,46 @@ p, li {
   display: flex;
   justify-content: center;
   gap: var(--space-s);
-  /* Было: padding: 0 var(--space-m) var(--space-m); */
-    padding: 0 var(--space-m) 4px; /* Уменьшили нижний отступ до 4px */
+  padding: 0 var(--space-m) 12px;
+  max-width: 360px;
+  margin: 0 auto;
+  background: var(--color-bg);
 }
 
 .filter-btn {
-  padding: 6px 16px;
-  background: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-s);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--color-bg);
+  border: none;
+  border-radius: 20px;
   color: var(--color-muted);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.filter-btn.active, .filter-btn:hover {
+.filter-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  stroke: currentColor;
+}
+
+.filter-btn:active {
+  opacity: 0.7;
+  transform: scale(0.96);
+}
+
+.filter-btn.active {
   background: var(--color-primary);
   color: white;
-  border-color: var(--color-primary);
+  font-weight: 600;
 }
 
 .theme-color {
@@ -1047,6 +1110,13 @@ p, li {
     background-color: #fafafa !important;
 }
 
+/* Тактильный фидбек для групповых карточек на тач-устройствах */
+.frontboard .card:active, 
+.content .card:active {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
 /* Заголовки групп делаем крупнее, жирнее и солиднее */
 .frontboard .card h4, 
 .content .card h4 {
@@ -1279,4 +1349,402 @@ p, li {
     font-size: 11px;
     color: #c7c7cc;
     margin: 0;
+}
+
+/* === APK Download Card — минимализм === */
+.android-download-card {
+    text-align: center;
+    margin: 24px 0;
+    padding: 24px 20px;
+    background: var(--color-beige);
+    border-radius: var(--radius-l);
+    box-sizing: border-box;
+}
+
+.android-download-card__title {
+    margin: 0 0 8px;
+    color: var(--color-text);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.android-download-card__desc {
+    font-size: 14px;
+    color: var(--color-muted);
+    margin: 0 0 16px;
+    line-height: 1.5;
+}
+
+.android-download-card__btn {
+    display: inline-block;
+    background: var(--color-primary);
+    color: #fff;
+    font-weight: 500;
+    text-decoration: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 15px;
+    text-align: center;
+    transition: opacity 0.15s ease;
+}
+
+.android-download-card__btn:active {
+    opacity: 0.7;
+}
+
+.android-download-card__qr {
+    margin: 16px auto 0;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    display: inline-block;
+}
+
+.android-download-card__qr-img {
+    width: 100px;
+    height: 100px;
+    display: block;
+    border-radius: 0;
+    opacity: 0.7;
+}
+
+/* Бейдж непрочитанных сообщений */
+.unread-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #ff3b30;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    animation: pulseUnread 2s infinite;
+}
+
+.bottom-bar .bar-btn {
+    position: relative;
+}
+
+/* === Чаты === */
+.chat-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 16px 0 8px;
+}
+
+.chat-list {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-border);
+    border-radius: var(--radius-l);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.chat-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.chat-item:active {
+    background: var(--color-beige);
+}
+
+.chat-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--color-beige);
+}
+
+.chat-avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    background: var(--color-beige);
+    border: 1px solid var(--color-border);
+}
+
+.chat-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-item-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-item-meta {
+    font-size: 13px;
+    color: var(--color-muted);
+    margin-top: 2px;
+}
+
+.chat-empty {
+    padding: 16px;
+    text-align: center;
+    color: var(--color-muted);
+    font-size: 14px;
+    background: #ffffff;
+}
+
+/* === Инфо-центр === */
+.info-search-wrap {
+    padding: 0 16px 12px;
+    background: #ffffff;
+    position: sticky;
+    top: 44px;
+    z-index: 50;
+}
+
+.info-search {
+    margin: 0 !important;
+    padding: 10px 14px !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 12px !important;
+    background: var(--color-beige) !important;
+    font-size: 15px !important;
+}
+
+.info-card {
+    position: relative;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
+
+.info-card:last-child {
+    margin-bottom: 0;
+}
+
+.info-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.info-card-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.info-card-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.info-card-desc {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: var(--color-muted);
+}
+
+.info-card-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-card-actions {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: flex;
+    gap: 8px;
+}
+
+.info-card-action-btn {
+    background: none;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 2px;
+    opacity: 0.6;
+}
+
+/* === Auth страницы === */
+.auth-card {
+    max-width: 400px;
+    margin: 20px auto;
+    padding: 24px 20px;
+    text-align: left;
+}
+
+.auth-subtitle {
+    font-size: 15px;
+    color: var(--color-muted);
+    margin: 0 0 20px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 6px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.form-actions .btn {
+    flex: 1;
+    margin: 0;
+}
+
+.auth-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 20px;
+    font-size: 14px;
+    color: var(--color-muted);
+}
+
+.auth-footer a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+/* === Профиль === */
+.profile-header {
+    text-align: center;
+    padding: 24px 20px;
+}
+
+.application-item-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 0;
+    border-bottom: 0.5px solid var(--color-border);
+}
+
+.application-item-content small {
+    color: var(--color-muted);
+    font-size: 13px;
+}
+
+.application-item-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 0.5px solid var(--color-border);
+}
+
+.avatar-container {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 16px;
+    width: 100px;
+    height: 100px;
+}
+
+.avatar-edit-btn {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: #ffffff;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    cursor: pointer;
+    z-index: 10;
+    transition: opacity 0.15s ease;
+}
+
+.avatar-edit-btn:active {
+    opacity: 0.7;
+}
+
+.profile-name {
+    margin: 0 0 16px;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.profile-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.profile-actions .btn {
+    width: auto;
+}
+
+.profile-info {
+    padding: 0;
+    overflow: hidden;
+}
+
+.profile-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 0.5px solid var(--color-border);
+}
+
+.profile-info-item:last-child {
+    border-bottom: none;
+}
+
+.profile-info-value {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text);
+    text-align: right;
+    order: 2;
+}
+
+.profile-info-label {
+    font-size: 15px;
+    color: var(--color-muted);
+    order: 1;
 }

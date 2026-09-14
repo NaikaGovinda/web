@@ -1,5 +1,14 @@
 <?php
 // /api/send_message.php
+
+// Глобальный перехватчик ошибок
+set_exception_handler(function($e) {
+    error_log('[send_message] FATAL ERROR: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Критическая ошибка: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+    exit;
+});
+
 header('Content-Type: application/json; charset=utf8mb4');
 
 // [АРХИТЕКТУРА] db.php подключен на самом верху, ручной вызов session_start() удален
@@ -43,9 +52,10 @@ if ($isForwarded && $forwardSenderId === $userId) {
     $isForwarded = false;
 }
 
-if ($groupId <= 0 || empty($messageText)) {
+// [ОПТИМИЗАЦИЯ] Разрешаем отправку с recipient_id без group_id (для ЛС)
+if (($groupId <= 0 && $recipientId === null) || empty($messageText)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Сообщение не может быть пустым'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => false, 'error' => 'Не указан ID группы или собеседник, или сообщение пустое'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -73,32 +83,38 @@ try {
         echo json_encode(['success' => false, 'error' => 'Наблюдатели не могут отправлять сообщения'], JSON_UNESCAPED_UNICODE);
         exit;
     }
-        $hasAccess = false;
-
-    if ($isAdmin) {
+    
+    // Для ЛС проверка доступа к группе не нужна
+    if ($recipientId !== null) {
         $hasAccess = true;
     } else {
-        // Проверяем, одобрен ли пользователь в этой группе
-        $memberCheck = $pdo->prepare("SELECT COUNT(*) FROM applications WHERE group_id = ? AND user_id = ? AND status = 'approved'");
-        $memberCheck->execute([$groupId, $userId]);
-        if ((int)$memberCheck->fetchColumn() > 0) {
+        $hasAccess = false;
+
+        if ($isAdmin) {
             $hasAccess = true;
-        }
-        
-        // [АРХИТЕКТУРА] Проверяем, является ли пользователь лидером в таблице group_leaders
-        if (!$hasAccess) {
-            $leaderCheck = $pdo->prepare("SELECT COUNT(*) FROM group_leaders WHERE group_id = ? AND user_id = ?");
-            $leaderCheck->execute([$groupId, $userId]);
-            if ((int)$leaderCheck->fetchColumn() > 0) {
+        } else {
+            // Проверяем, одобрен ли пользователь в этой группе
+            $memberCheck = $pdo->prepare("SELECT COUNT(*) FROM applications WHERE group_id = ? AND user_id = ? AND status = 'approved'");
+            $memberCheck->execute([$groupId, $userId]);
+            if ((int)$memberCheck->fetchColumn() > 0) {
                 $hasAccess = true;
             }
+            
+            // [АРХИТЕКТУРА] Проверяем, является ли пользователь лидером в таблице group_leaders
+            if (!$hasAccess) {
+                $leaderCheck = $pdo->prepare("SELECT COUNT(*) FROM group_leaders WHERE group_id = ? AND user_id = ?");
+                $leaderCheck->execute([$groupId, $userId]);
+                if ((int)$leaderCheck->fetchColumn() > 0) {
+                    $hasAccess = true;
+                }
+            }
         }
-    }
-    
-    if (!$hasAccess) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'Вы не являетесь участником этой группы'], JSON_UNESCAPED_UNICODE);
-        exit;
+        
+        if (!$hasAccess) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Вы не являетесь участником этой группы'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
     }
     
     // =========================================================================
@@ -183,6 +199,9 @@ try {
     $sql = "INSERT INTO group_messages (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";
     $stmt = $pdo->prepare($sql);
     $stmt->execute($values);
+    
+    // Логирование для отладки reply_to_id
+    error_log('[send_message] INSERT: group_id=' . $groupId . ' sender=' . $userId . ' recipient=' . $recipientId . ' reply_to_id=' . ($replyToId ?? 'NULL') . ' sql=' . $sql);
     
     // ==========================================================
     // 7. ОТПРАВКА PUSH-УВЕДОМЛЕНИЙ О НОВЫХ СООБЩЕНИЯХ
@@ -277,7 +296,7 @@ try {
     }
     
     // ==========================================================
-    // 9. ОТПРАВКА WEB PUSH УВЕДОМЛЕНИЙ
+    // 8. ОТПРАВКА WEB PUSH УВЕДОМЛЕНИЙ
     // ==========================================================
     try {
         require_once __DIR__ . '/send_web_push.php';
@@ -291,7 +310,7 @@ try {
                     'sender_id' => (string)$userId,
                     'sender_name' => $senderName,
                     'target_page' => 'group.html',
-                    'target_params' => json_encode(['id' => $groupId, 'open_private_chat' => $recipientId, 'open_private_name' => $senderName], JSON_UNESCAPED_UNICODE)
+                    'target_params' => json_encode(['id' => $groupId, 'open_private_chat' => $userId, 'open_private_name' => $senderName], JSON_UNESCAPED_UNICODE)
                 ]);
             }
         } else {
@@ -322,15 +341,18 @@ try {
     }
     
     // ==========================================================
-    // 8. СОХРАНЕНИЕ УВЕДОМЛЕНИЙ В БАЗУ ДАННЫХ
+    // 9. СОХРАНЕНИЕ УВЕДОМЛЕНИЙ В БАЗЕ ДАННЫХ
     // ==========================================================
     try {
+        // Готовим stmt ДО условного оператора
+        $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, group_id, target_page, target_params, `read`) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
+        
         if ($recipientId !== null) {
             // Личное сообщение — уведомляем получателя
-            $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, group_id, target_page, target_params, `read`) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
-            $targetParams = json_encode(['id' => $groupId, 'open_private_chat' => $recipientId, 'open_private_name' => urlencode($senderName)], JSON_UNESCAPED_UNICODE);
+            // ВАЖНО: open_private_chat должен быть ID ОТПРАВИТЕЛЯ ($userId), чтобы получатель мог открыть чат с отправителем
+            $targetParams = json_encode(['id' => $groupId, 'open_private_chat' => $userId, 'open_private_name' => urlencode($senderName)], JSON_UNESCAPED_UNICODE);
             $notifStmt->execute([
-                $recipientId,
+                $recipientId,  // <-- Уведомление ДЛЯ получателя
                 'chat_message',
                 'Личное сообщение 💬',
                 "{$senderName}: {$messageText}",
@@ -338,13 +360,15 @@ try {
                 'group.html',
                 $targetParams
             ]);
+            
+            // Логирование для отладки ЛС
+            error_log('[send_message] Private chat: sender=' . $userId . ' (' . $senderName . ') -> recipient=' . $recipientId . ', group_id=' . $groupId);
         } else {
             // Сообщение в общий чат — уведомляем всех участников группы, кроме отправителя
             $stmtNotifMembers = $pdo->prepare("SELECT user_id FROM applications WHERE group_id = ? AND status = 'approved' AND user_id != ?");
             $stmtNotifMembers->execute([$groupId, $userId]);
             $memberIds = $stmtNotifMembers->fetchAll(PDO::FETCH_COLUMN);
             
-            $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, group_id, target_page, target_params, `read`) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
             foreach ($memberIds as $memberId) {
                 try {
                     $targetParams = json_encode(['id' => $groupId, 'open_chat' => 1], JSON_UNESCAPED_UNICODE);
@@ -361,18 +385,23 @@ try {
                     // Таблица notifications может ещё не существовать
                 }
             }
+            
+            // Логирование для групповых сообщений
+            error_log('[send_message] Group chat: group_id=' . $groupId . ', sender=' . $userId . ' (' . $senderName . '), members_count=' . count($memberIds));
         }
     } catch (Exception $notifEx) {
         // Не критично — уведомление всё равно появится через push и localStorage
-        error_log("Ошибка сохранения уведомления о сообщении: " . $notifEx->getMessage());
+        error_log("[send_message] ERROR saving notification: " . $notifEx->getMessage() . " | SQL: " . $notifEx->getTraceAsString());
     }
     
     echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
 
 } catch (\PDOException $e) {
     if (http_response_code() === 200) { http_response_code(500); }
+    error_log('[send_message] PDO Exception: ' . $e->getMessage());
     echo json_encode(['success' => false, 'error' => 'Ошибка базы данных: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
 } catch (\Exception $e) {
     if (http_response_code() === 200) { http_response_code(500); }
+    error_log('[send_message] Exception: ' . $e->getMessage() . ' File: ' . $e->getFile() . ' Line: ' . $e->getLine());
     echo json_encode(['success' => false, 'error' => 'Системная ошибка: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }
