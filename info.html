@@ -20,7 +20,7 @@
 
     <!-- Строка живого поиска -->
     <div style="padding: 0 16px 10px 16px; background-color: #f4f3f0;">
-        <input type="text" id="infoSearchInput" class="input-field" placeholder="🔍 Быстрый поиск по названию..." style="margin: 0; padding: 10px 14px; border: 1px solid #e2dbd0; border-radius: 12px; background: #fff; font-size: 15px;">
+        <input type="text" id="infoSearchInput" class="input-field" placeholder="🔍 Быстрый поиск по названию..." aria-label="Поиск по названию" style="margin: 0; padding: 10px 14px; border: 1px solid #e2dbd0; border-radius: 12px; background: #fff; font-size: 15px;">
     </div>
 
     <!-- Основной скроллящийся контент -->
@@ -31,18 +31,18 @@
         <!-- Форма создания записи (скрыта по умолчанию) -->
         <div id="addInfoFormBlock" class="card" style="display: none; border: 1px solid #34c759; margin-bottom: 20px;">
             <h3 style="margin-top: 0; margin-bottom: 15px; color: #34c759;">Новый материал</h3>
-            <input type="text" id="newInfoTitle" class="input-field" placeholder="Название (например: Правила общины)" style="margin-bottom: 12px; border-bottom: 1px solid #ddd; padding: 6px 0;">
-            <textarea id="newInfoDesc" class="textarea-field" placeholder="Краткое описание / подзаголовок (необязательно)" style="min-height: 60px; margin-bottom: 12px; border-bottom: 1px solid #ddd; padding: 6px 0;"></textarea>
+            <input type="text" id="newInfoTitle" class="input-field" placeholder="Название (например: Правила общины)" aria-label="Название материала" style="margin-bottom: 12px; border-bottom: 1px solid #ddd; padding: 6px 0;">
+            <textarea id="newInfoDesc" class="textarea-field" placeholder="Краткое описание / подзаголовок (необязательно)" aria-label="Краткое описание" style="min-height: 60px; margin-bottom: 12px; border-bottom: 1px solid #ddd; padding: 6px 0;"></textarea>
             
             <label style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 4px; color: #555;">Тип содержимого:</label>
-            <select id="newInfoType" class="select-field" style="margin-bottom: 15px; border-bottom: 1px solid #ddd; padding: 8px 0; font-family: inherit;">
+            <select id="newInfoType" class="select-field" aria-label="Тип содержимого" style="margin-bottom: 15px; border-bottom: 1px solid #ddd; padding: 8px 0; font-family: inherit;">
                 <option value="link">🌐 Интернет-ссылка (Сайт, YouTube, Zoom)</option>
                 <option value="text">📄 Текстовая статья / Объявление</option>
                 <option value="file">📁 Файл для скачивания (PDF, Документ)</option>
                 <option value="phone">📞 Телефонный контакт общины</option>
             </select>
 
-            <textarea id="newInfoContent" class="textarea-field" placeholder="Вставьте сюда ссылку, номер телефона или текст статьи..." style="min-height: 100px; margin-bottom: 15px; border: 1px solid #e2dbd0; border-radius: 8px; padding: 10px; background: #fafafa;"></textarea>
+            <textarea id="newInfoContent" class="textarea-field" placeholder="Вставьте сюда ссылку, номер телефона или текст статьи..." aria-label="Содержимое материала" style="min-height: 100px; margin-bottom: 15px; border: 1px solid #e2dbd0; border-radius: 8px; padding: 10px; background: #fafafa;"></textarea>
             
             <div style="display: flex; gap: 10px;">
 				<input type="hidden" id="editInfoId" value="">
@@ -189,13 +189,6 @@ document.getElementById('btnCancelAddInfo').addEventListener('click', () => {
     document.getElementById('btnShowAddForm').style.display = 'block';
     clearAddFormFields();
 });
-
-function clearAddFormFields() {
-    document.getElementById('newInfoTitle').value = '';
-    document.getElementById('newInfoDesc').value = '';
-    document.getElementById('newInfoContent').value = '';
-    document.getElementById('newInfoType').value = 'link';
-}
 
 // Отправка новой записи в базу данных MySQL через AJAX
 document.getElementById('btnSaveInfoItem').addEventListener('click', async () => {
