@@ -62,7 +62,7 @@
 <div id="customInfoDeleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
     <div class="card" style="width: 85%; max-width: 320px; text-align: center; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto;">
         <h3 style="margin-top: 0; font-size: 18px;">Удалить запись?</h3>
-        <p style="color: var(--color-text-muted, #666); font-size: 14px; margin-bottom: 20px;">Вы действительно хотите удалить этот информационный блок из общей библиотеки?</p>
+        <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Вы действительно хотите удалить этот информационный блок из общей библиотеки?</p>
         <div style="display: flex; gap: 10px;">
             <button class="btn btn-ghost" id="btnCancelInfoDelete" style="flex: 1; margin: 0;">Отмена</button>
             <button class="btn btn-danger" id="btnConfirmInfoDelete" style="flex: 1; margin: 0; background: #ff3b30; color: #fff; border: none;">Удалить</button>
@@ -122,52 +122,50 @@ function renderInfoItems(items) {
         let badgeColor = '#8e8e93';
 
         // Распределяем поведение карточки в мобильном WebView
+        var escapedContent = escapeHtml(item.content);
         if (item.type === 'link') {
             icon = '🌐';
             badgeText = 'Ссылка';
             badgeColor = '#007aff'; // Синий
-            actionAttr = `onclick="window.open('${escapeHtml(item.content)}', '_blank')"`;
+            actionAttr = 'onclick="window.open(\'' + escapedContent + '\', \'' + '_blank' + '\')"';
         } else if (item.type === 'file') {
             icon = '📁';
             badgeText = 'Файл';
             badgeColor = '#ff9500'; // Оранжевый
-            actionAttr = `onclick="window.open('${escapeHtml(item.content)}', '_blank')"`;
+            actionAttr = 'onclick="window.open(\'' + escapedContent + '\', \'' + '_blank' + '\')"';
         } else if (item.type === 'phone') {
             icon = '📞';
             badgeText = 'Контакт';
             badgeColor = '#34c759'; // Зеленый
-            actionAttr = `onclick="window.location.href='tel:${escapeHtml(item.content)}'"`;
+            actionAttr = 'onclick="window.location.href=\'' + 'tel:' + escapedContent + '\'"';
         } else {
             // Обычная статья: при клике выводим текст в красивом тосте без алертов
-            actionAttr = `onclick="showToast('📄 ' + this.querySelector('.js-hidden-text').textContent)"`;
+            actionAttr = 'onclick="showToast(\'' + '📄 ' + '\' + this.querySelector(\'.js-hidden-text\').textContent)"';
         }
 
-        const isModeratorMode = document.getElementById('btnShowAddForm').style.display === 'block';
+        var isModeratorMode = document.getElementById('btnShowAddForm').style.display === 'block';
+        var paddingRight = isModeratorMode ? '40px' : '0';
+        var descriptionHtml = item.description ? '<p style="margin: 0 0 8px 0; font-size: 13.5px; color:#48484a;">' + escapeHtml(item.description) + '</p>' : '';
+        var moderatorButtons = '';
+        if (isModeratorMode) {
+            moderatorButtons = '<div style="position: absolute; top: 14px; right: 14px; display: flex; gap: 10px; z-index: 10;">' +
+                '<button onclick="initEditInfoItem(' + item.id + ')" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 2px;">✏️</button>' +
+                '<button onclick="openDeleteInfoModal(' + item.id + ')" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 2px;">🗑️</button>' +
+                '</div>';
+        }
 
-        html += `
-            <div class="card" style="position: relative; cursor: pointer;">
-                <!-- Контентный блок с поддержкой нативных кликов -->
-                <div ${actionAttr} style="padding-right: ${isModeratorMode ? '40px' : '0'};">
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                        <span style="font-size: 20px; flex-shrink:0;">${icon}</span>
-                        <h4 style="margin:0; font-size:16px; font-weight:700; color:#1d1d1f;">${escapeHtml(item.title)}</h4>
-                    </div>
-                    ${item.description ? `<p style="margin: 0 0 8px 0; font-size: 13.5px; color:#48484a;">${escapeHtml(item.description)}</p>` : ''}
-                    
-                    <span style="display:inline-block; font-size:11px; font-weight:700; color:white; background:${badgeColor}; padding:2px 8px; border-radius:10px; text-transform:uppercase; letter-spacing:0.5px;">${badgeText}</span>
-                    
-                    <span class="js-hidden-text" style="display:none;">${escapeHtml(item.content)}</span>
-                </div>
-
-                <!-- Кнопки управления для лидеров/админов (Карандашик и Ведро) -->
-                ${isModeratorMode ? `
-                    <div style="position: absolute; top: 14px; right: 14px; display: flex; gap: 10px; z-index: 10;">
-                        <button onclick="initEditInfoItem(${item.id})" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 2px;">✏️</button>
-                        <button onclick="openDeleteInfoModal(${item.id})" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 2px;">🗑️</button>
-                    </div>
-                ` : ''}
-            </div>
-        `;
+        html += '<div class="card" style="position: relative; cursor: pointer;">' +
+            '<div ' + actionAttr + ' style="padding-right: ' + paddingRight + ';">' +
+                '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">' +
+                    '<span style="font-size: 20px; flex-shrink:0;">' + icon + '</span>' +
+                    '<h4 style="margin:0; font-size:16px; font-weight:700; color:#1d1d1f;">' + escapeHtml(item.title) + '</h4>' +
+                '</div>' +
+                descriptionHtml +
+                '<span style="display:inline-block; font-size:11px; font-weight:700; color:white; background:' + badgeColor + '; padding:2px 8px; border-radius:10px; text-transform:uppercase; letter-spacing:0.5px;">' + badgeText + '</span>' +
+                '<span class="js-hidden-text" style="display:none;">' + escapeHtml(item.content) + '</span>' +
+            '</div>' +
+            moderatorButtons +
+        '</div>';
     });
 
     container.innerHTML = html;
