@@ -102,15 +102,34 @@ class MainActivity : AppCompatActivity() {
         }
         //webView.webViewClient = WebViewClient()
         // [ИСПРАВЛЕНО]: Внутренний клиент, который плавно открывает страницы чатов из балуна карты
+        // [ТОЧЕЧНОЕ ИСПРАВЛЕНИЕ]: Перехватываем переход на login.html и перенаправляем на серверную форму
         webView.webViewClient = object : WebViewClient() {
             @Deprecated("Deprecated in Java")
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                if (url != null) { view?.loadUrl(url) }
+                if (url != null) {
+                    // [БЕЗОПАСНОСТЬ]: Перенаправляем login.html на серверную форму
+                    if (url.contains("login.html") || url.contains("register.html")) {
+                        val secureUrl = url.replace("https://namahata.ru", "https://namahata.ru/secure")
+                        android.util.Log.d("APP_DEBUG", "Перенаправление на безопасную форму: $secureUrl")
+                        view?.loadUrl(secureUrl)
+                        return true
+                    }
+                    view?.loadUrl(url)
+                }
                 return true
             }
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val url = request?.url?.toString()
-                if (url != null) { view?.loadUrl(url) }
+                if (url != null) {
+                    // [БЕЗОПАСНОСТЬ]: Перенаправляем login.html на серверную форму
+                    if (url.contains("login.html") || url.contains("register.html")) {
+                        val secureUrl = url.replace("https://namahata.ru", "https://namahata.ru/secure")
+                        android.util.Log.d("APP_DEBUG", "Перенаправление на безопасную форму: $secureUrl")
+                        view?.loadUrl(secureUrl)
+                        return true
+                    }
+                    view?.loadUrl(url)
+                }
                 return true
             }
         }
@@ -143,7 +162,7 @@ class MainActivity : AppCompatActivity() {
             override fun handleOnBackPressed() {
                 val currentUrl = webView.url ?: ""
 
-                // Если мы на странице входа/регистрации — идём на главную
+                // [БЕЗОПАСНОСТЬ] Если мы на странице входа/регистрации (включая secure/) — идём на главную
                 if (currentUrl.contains("login") || currentUrl.contains("auth") || currentUrl.contains("register")) {
                     webView.loadUrl("https://namahata.ru/index.html")
                     return

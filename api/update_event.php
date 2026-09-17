@@ -4,19 +4,12 @@ header('Content-Type: application/json; charset=utf8mb4');
 
 // [АРХИТЕКТУРА] db.php подключен на самом верху, ручной вызов session_start() полностью удален
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
-// Теперь проверка авторизации отработает корректно
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Требуется вход'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+$user_id = requireAuth($pdo);
 
 try {
-    // [ИСПРАВЛЕНО] Удалена дублирующая строка чтения php://input
     $input = json_decode(file_get_contents('php://input'), true);
-
-    $user_id = (int)$_SESSION['user_id'];
     
     // Перебираем все возможные варианты написания ID события
     $event_id = (int)($input['id'] ?? $input['event_id'] ?? 0);

@@ -1,110 +1,153 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Вход — Нама-Хатта</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Вход — Нама-Хатта</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="app">
-    <header class="app-header">
-      <button class="back-btn" onclick="history.back()" aria-label="Назад">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 18 9 12 15 6"/>
-        </svg>
-      </button>
-      <h1 class="org-name">Вход</h1>
-    </header>
+<div id="app">
+  <header class="app-header">
+    <button class="back-btn" onclick="history.back()" aria-label="Назад">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+    <h1 class="org-name">Вход</h1>
+  </header>
 
-    <main class="content">
-      <div class="auth-card">
-        <h2>Добро пожаловать</h2>
-        <p class="auth-subtitle">Войдите в свой аккаунт</p>
-        <form id="loginForm">
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" class="input-field" placeholder="your@email.com" required>
-          </div>
-          <div class="form-group">
-            <label for="password">Пароль</label>
-            <input type="password" id="password" class="input-field" placeholder="••••••••" required>
-          </div>
-          <button type="submit" class="btn btn-primary">Войти</button>
-        </form>
-        <div class="auth-footer">
-          <a href="#" id="btnForgotPassword">Забыли пароль?</a>
-          <span>Нет аккаунта? </span>
-          <a href="/register.html">Зарегистрироваться</a>
-        </div>
+  <main class="content">
+    <div class="auth-card">
+      <h2>Добро пожаловать</h2>
+      <p class="auth-subtitle">Войдите в свой аккаунт</p>
+
+      <div class="social-login">
+        <div id="vk-login-widget"></div>
       </div>
-    </main>
-  </div>
 
-<script src="/android.js"></script>
+      <div class="divider">
+        <span>или</span>
+      </div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" class="input-field" placeholder="your@email.com" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Пароль</label>
+          <input type="password" id="password" class="input-field" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Войти</button>
+      </form>
+      <div class="auth-footer">
+        <a href="#" id="btnForgotPassword">Забыли пароль?</a>
+        <span>Нет аккаунта? </span>
+        <a href="/register.html">Зарегистрироваться</a>
+      </div>
+    </div>
+  </main>
+</div>
+
 <script>
- const IS_DEBUG = true; 
- const APP_VERSION = '1.0.0'; 
+  const IS_DEBUG = true;
+  const APP_VERSION = '1.0.0';
 
- (function() {
-     const version = IS_DEBUG ? Date.now() : APP_VERSION;
-     const mainStyle = document.querySelector('link[href^="style.css"]');
-     if (mainStyle) { mainStyle.href = 'style.css?v=' + version; }
-     const themeScript = document.createElement('script');
-     themeScript.src = 'theme.js?v=' + version;
-     document.body.appendChild(themeScript);
- })();
+  (function() {
+    const version = IS_DEBUG ? Date.now() : APP_VERSION;
+    const mainStyle = document.querySelector('link[href^="style.css"]');
+    if (mainStyle) { mainStyle.href = 'style.css?v=' + version; }
+    const themeScript = document.createElement('script');
+    themeScript.src = 'theme.js?v=' + version;
+    document.body.appendChild(themeScript);
+  })();
 </script>
 
 <script>
-async function generateSecureToken() {
+  async function generateSecureToken() {
     const array = new Uint8Array(32);
     window.crypto.getRandomValues(array);
     return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
-}
+  }
 
-document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
+  document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitBtn = e.target.querySelector('button[type="submit"]');
     if (submitBtn) submitBtn.disabled = true;
 
     const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
 
     try {
-        const clientToken = await generateSecureToken();
-        const response = await fetch('/api/login_by_token.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: emailInput.value.trim(), client_token: clientToken })
-        });
+      const clientToken = await generateSecureToken();
+      const response = await fetch('/api/login_by_token.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailInput.value.trim(), client_token: clientToken })
+      });
 
-        const cleanRawText = await response.text();
-        const jsonIdx = cleanRawText.indexOf('{');
-        if (jsonIdx === -1) throw new Error("JSON не найден");
-        const data = JSON.parse(cleanRawText.substring(jsonIdx));
+      const cleanRawText = await response.text();
+      const jsonIdx = cleanRawText.indexOf('{');
+      if (jsonIdx === -1) throw new Error("JSON не найден");
+      const data = JSON.parse(cleanRawText.substring(jsonIdx));
 
-        if (data.success) {
-            showToast('Вход выполнен!');
-            localStorage.setItem('auth_token', clientToken);
-            localStorage.setItem('user_id', data.user_id);
-            if (typeof sendUserIdToAndroid === 'function') sendUserIdToAndroid();
-            setTimeout(() => { window.location.href = '/profile.html'; }, 1000);
-        } else {
-            showToast('❌ ' + (data.error || 'Неверный логин или пароль'));
-            if (submitBtn) submitBtn.disabled = false;
-        }
-    } catch (err) {
-        console.error(err);
-        showToast('❌ Ошибка соединения');
+      if (data.success) {
+        showToast('Вход выполнен!');
+        localStorage.setItem('auth_token', clientToken);
+        localStorage.setItem('user_id', data.user_id);
+        if (typeof sendUserIdToAndroid === 'function') sendUserIdToAndroid();
+        setTimeout(() => { window.location.href = '/profile.html'; }, 1000);
+      } else {
+        showToast('❌ ' + (data.error || 'Неверный логин или пароль'));
         if (submitBtn) submitBtn.disabled = false;
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('❌ Ошибка соединения');
+      if (submitBtn) submitBtn.disabled = false;
     }
-});
+  });
 
-document.getElementById('btnForgotPassword')?.addEventListener('click', (e) => {
+  document.getElementById('btnForgotPassword')?.addEventListener('click', (e) => {
     e.preventDefault();
     window.location.href = '/forgot_password.html';
-});
+  });
+
+  // VK ID Widget - локальный SDK
+  (function() {
+    var vkContainer = document.getElementById('vk-login-widget');
+    if (!vkContainer) return;
+
+    var script = document.createElement('script');
+    script.src = '/assets/vkid-sdk.js';
+    script.crossOrigin = 'anonymous';
+
+    script.onload = function() {
+      if (typeof VKIDSDK !== 'undefined') {
+        var VKID = VKIDSDK;
+
+        VKID.Config.init({
+          app: 54773774,
+          redirectUrl: 'https://namahata.ru/auth_vk_callback.html',
+          responseMode: VKID.ConfigResponseMode.Redirect,
+          source: VKID.ConfigSource.LOWCODE,
+          scope: 'email',
+        });
+
+        var oneTap = new VKID.OneTap();
+
+        oneTap.render({
+          container: vkContainer,
+          showAlternativeLogin: true
+        })
+                .on(VKID.WidgetEvents.ERROR, function(error) {
+                  console.error('VK ID Error:', error);
+                });
+      }
+    };
+    document.head.appendChild(script);
+  })();
 </script>
 </body>
 </html>

@@ -2,16 +2,12 @@
 //cancel_application.php
 header('Content-Type: application/json; charset=utf8mb4');
 
-    $pdo = require __DIR__ . '/db.php';
-	
-	if (!isset($_SESSION['user_id'])) {
-		http_response_code(403);
-		echo json_encode(['success' => false, 'error' => 'Требуется вход']);
-		exit;
-	}
+$pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
+
+$user_id = requireAuth($pdo);
 
 try {
-
 
     $input = json_decode(file_get_contents('php://input'), true);
     $app_id = (int)($input['application_id'] ?? 0);
@@ -27,7 +23,7 @@ try {
 	FROM `applications` 
 	WHERE id = ? AND user_id = ? AND status IN ('pending', 'rejected')
 	");
-    $stmt->execute([$app_id, $_SESSION['user_id']]);
+    $stmt->execute([$app_id, $user_id]);
 
     if (!$stmt->fetch()) {
         throw new Exception('Заявка не найдена или уже обработана');
@@ -44,7 +40,7 @@ try {
         // Используем profile.html как целевую страницу
         $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, group_id, target_page, target_params, `read`) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
         $targetParams = json_encode([], JSON_UNESCAPED_UNICODE);
-        $notifStmt->execute([$_SESSION['user_id'], 'application_cancelled', 'Заявка отменена ↩️', 'Вы отменили заявку на вступление в группу.', null, 'profile.html', $targetParams]);
+        $notifStmt->execute([$user_id, 'application_cancelled', 'Заявка отменена ↩️', 'Вы отменили заявку на вступление в группу.', null, 'profile.html', $targetParams]);
     } catch (Exception $e) {
         error_log("Ошибка сохранения уведомления: " . $e->getMessage());
     }

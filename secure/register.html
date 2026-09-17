@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Регистрация — Нама-Хатта</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <button class="back-btn" onclick="history.back()" aria-label="Назад">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <h1 class="org-name">Регистрация</h1>
+    </header>
+
+    <main class="content">
+      <div class="auth-card">
+        <h2>Создать аккаунт</h2>
+        <p class="auth-subtitle">Заполните данные для регистрации</p>
+        
+        <!-- [БЕЗОПАСНОСТЬ] Форма использует стандартный POST, данные НЕ проходят через JS/fetch -->
+        <form id="registerForm" method="POST" action="../api/register.php">
+          <div class="form-group">
+            <label for="first_name">Имя *</label>
+            <input type="text" id="first_name" name="first_name" class="input-field" placeholder="Иван" required>
+          </div>
+          <div class="form-group">
+            <label for="last_name">Фамилия</label>
+            <input type="text" id="last_name" name="last_name" class="input-field" placeholder="Необязательно">
+          </div>
+          <div class="form-group">
+            <label for="email">Email *</label>
+            <input type="email" id="email" name="email" class="input-field" placeholder="your@email.com" required>
+          </div>
+          <div class="form-group">
+            <label for="phone">Телефон</label>
+            <input type="tel" id="phone" name="phone" class="input-field" placeholder="+7 (___) ___-__-__">
+          </div>
+          <div class="form-group">
+            <label for="password">Пароль *</label>
+            <input type="password" id="password" name="password" class="input-field" placeholder="Минимум 6 символов" required minlength="6">
+          </div>
+          <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+        </form>
+        
+        <div class="auth-footer">
+          <span>Уже есть аккаунт? </span>
+          <a href="../login.html">Войти</a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<script>
+// [БЕЗОПАСНОСТЬ] Минимальный JS — только для обработки ошибок
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registerForm');
+    if (!form) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    
+    if (error) {
+        showToast('❌ ' + decodeURIComponent(error));
+    }
+});
+
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: 8px; z-index: 10000; font-size: 14px;';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+</script>
+</body>
+</html>

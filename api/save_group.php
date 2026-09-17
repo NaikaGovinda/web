@@ -1,7 +1,7 @@
 <?php
 // save_group.php
 ob_start();
-header('Content-Type: application/json; charset=utf8mb4');
+header('Content-Type: application/json; charset=utf-8');
 
 $logFile = __DIR__ . '/save_group_debug.log';
 
@@ -14,24 +14,18 @@ function writeTrace($step, $data) {
 writeTrace("ШАГ 1", "Скрипт save_group.php вызван");
 
 $pdo = require __DIR__ . '/db.php';
-writeTrace("ШАГ 2", "db.php успешно подключен");
+require_once __DIR__ . '/auth_helper.php';
+writeTrace("ШАГ 2", "db.php и auth_helper.php успешно подключены");
 
-if (!isset($_SESSION['user_id'])) {
-    writeTrace("ВНИМАНИЕ", "Пользователь не авторизован в сессии");
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Требуется вход'], JSON_UNESCAPED_UNICODE);
-    ob_end_flush();
-    exit;
-}
+// Проверяем авторизацию (сессия ИЛИ токен)
+$user_id = requireAuth($pdo);
+writeTrace("ШАГ 3", "ID пользователя: " . $user_id);
 
 try {
-    $user_id = (int)$_SESSION['user_id'];
-    writeTrace("ШАГ 3", "ID пользователя из сессии: " . $user_id);
-
     $stmt = $pdo->prepare("SELECT is_admin FROM users WHERE id = ?");
     $stmt->execute([$user_id]);
     $user = $stmt->fetch();
-    
+
     if (!$user || (int)$user['is_admin'] !== 1) {
         writeTrace("ВНИМАНИЕ", "У пользователя нет флага is_admin=1");
         throw new Exception('Доступ запрещён. Требуются права администратора.');
@@ -51,11 +45,11 @@ try {
     // === БЛОК ГЕОКОДИРОВАНИЯ НА СЕРВЕРЕ ===
     $lat = (isset($input['lat']) && $input['lat'] !== null && $input['lat'] !== '') ? (float)$input['lat'] : null;
     $lng = (isset($input['lng']) && $input['lng'] !== null && $input['lng'] !== '') ? (float)$input['lng'] : null;
-    
+
     $address = isset($input['address']) ? trim($input['address']) : '';
     $city = isset($input['city']) ? trim($input['city']) : '';
-    
-    // Подстраховка: если карты совсем лежат, ставим дефолт Красноярска, чтобы поля НЕ были NULL!
+
+    // Подстраховка: если карты совсем лежат, ставим дефолт Красноярска
     if ($lat === null || $lng === null) {
         $lat = 56.0153;
         $lng = 92.8932;
@@ -86,7 +80,7 @@ try {
         writeTrace("ШАГ 11 (РЕЖИМ ОБНОВЛЕНИЯ)", "Редактируем группу ID: " . $id);
 
         $stmt = $pdo->prepare("
-            UPDATE `groups` SET 
+            UPDATE `groups` SET
                 name = ?, description = ?, type = ?, is_online = ?, city = ?, address = ?, timezone = ?, lat = ?, lng = ?
             WHERE id = ?
         ");

@@ -1,29 +1,19 @@
 <?php
 header('Content-Type: application/json; charset=utf8mb4');
 
-// Подключаем db.php. Внутри него стартует ваша сессия и настраивается PDO
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
-// Проверяем, авторизован ли пользователь.
-// Если сессия пустая из-за ограничений CORS/XAMPP, пробуем прочитать куку напрямую!
-if (!isset($_SESSION['user_id']) && isset($_COOKIE['PHPSESSID'])) {
-    session_id($_COOKIE['PHPSESSID']);
-    @session_start();
-}
-$userId = $_SESSION['user_id'] ?? 0;
-$isAdmin = $_SESSION['is_admin'] ?? 0;
+$user_id = requireAuth($pdo);
 
-// Прямая подстраховка проверки прав админа в таблице пользователей
-if ($userId > 0 && $isAdmin == 0) {
-    $checkStmt = $pdo->prepare("SELECT is_admin FROM users WHERE id = ?");
-    $checkStmt->execute([$userId]);
-    $isAdmin = (int)$checkStmt->fetchColumn();
-}
+// Проверяем, что пользователь — админ
+$stmt = $pdo->prepare("SELECT is_admin FROM users WHERE id = ?");
+$stmt->execute([$user_id]);
+$user = $stmt->fetch();
 
-// Проверка безопасности
-if ($userId <= 0 || $isAdmin != 1) {
+if (!$user || (int)$user['is_admin'] !== 1) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Отказано в доступе. Сессия не подтверждена.']);
+    echo json_encode(['success' => false, 'error' => 'Доступ запрещён. Требуются права администратора.']);
     exit;
 }
 
@@ -40,7 +30,7 @@ if (!in_array($newRole, $allowedRoles)) {
     }
 
     // Защита от случайного разжалования самого себя
-    if ($userIdToEdit === (int)$_SESSION['user_id']) {
+    if ($userIdToEdit === (int)$user_id) {
         throw new Exception('Вы не можете менять глобальную роль самому себе!');
     }
 

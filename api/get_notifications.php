@@ -2,11 +2,13 @@
 header('Content-Type: application/json; charset=utf8mb4');
 
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
-$user_id = $_GET['user_id'] ?? null;
+$user_id = getAuthUserId($pdo);
 
 if (!$user_id) {
-    echo json_encode(['success' => false, 'error' => 'User ID required']);
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Требуется вход']);
     exit;
 }
 
@@ -30,7 +32,7 @@ try {
         // Определяем тип уведомления и ключ группировки
         $isPrivate = false;
         $groupKey = null;
-        
+
         if ($notif['target_params']) {
             try {
                 $params = json_decode($notif['target_params'], true);
@@ -46,7 +48,7 @@ try {
                 // Ignoring parse errors
             }
         }
-        
+
         // Если есть ключ группировки и это chat_message — добавляем в группу
         if ($notif['type'] === 'chat_message' && $groupKey) {
             if (!isset($grouped[$groupKey])) {
@@ -84,7 +86,7 @@ try {
         usort($group['items'], function($a, $b) {
             return strtotime($b['created_at']) - strtotime($a['created_at']);
         });
-        
+
         // Если в группе только 1 сообщение — не группируем, показываем отдельно
         if ($group['count'] === 1) {
             $result[] = [
@@ -114,13 +116,13 @@ try {
 
     // Добавляем несгруппированные
     $result = array_merge($result, $ungrouped);
-    
+
     // Отладка: логируем результаты группировки
     error_log('[get_notifications] User ' . $user_id . ': Grouped groups: ' . count($grouped) . ', Ungrouped count: ' . count($ungrouped));
     foreach ($grouped as $gKey => $group) {
         error_log('[get_notifications] Group ' . $gKey . ' has ' . $group['count'] . ' items');
     }
-    
+
     // Отладка: логируем финальный ответ
     $debugResult = $result;
     error_log('[get_notifications] User ' . $user_id . ': Final notifications count: ' . count($result));

@@ -5,15 +5,11 @@ header('Content-Type: application/json; charset=utf8mb4');
 // [АРХИТЕКТУРА] db.php подключен на самом верху, ручной вызов session_start() полностью удален
 $pdo = require __DIR__ . '/db.php';
 $config = require __DIR__ . '/config.php';
+require_once __DIR__ . '/auth_helper.php';
 
-// 1. Проверяем авторизацию пользователя по сессии с корректным HTTP-кодом
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Требуется авторизация'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+// 1. Проверяем авторизацию пользователя
+$userId = requireAuth($pdo);
 
-$userId = (int)$_SESSION['user_id'];
 $groupId = (int)($_POST['group_id'] ?? 0);
 
 if ($groupId <= 0) {

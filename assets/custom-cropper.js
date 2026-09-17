@@ -334,6 +334,32 @@ function saveCustomCroppedAvatar() {
                 if (typeof loadProfile === 'function') {
                     loadProfile();
                 }
+                
+                // Если на странице группы — обновляем превью аватара группы и перезагружаем страницу
+                const groupAvatarPreview = document.getElementById('groupAvatarPreview');
+                if (groupAvatarPreview) {
+                    const groupId = urlParams.get('id');
+                    if (groupId) {
+                        // Обновляем превью
+                        const newSrc = result.avatar_url || result.group_avatar_url;
+                        if (newSrc) {
+                            if (groupAvatarPreview.tagName === 'DIV') {
+                                const newImg = document.createElement('img');
+                                newImg.id = 'groupAvatarPreview';
+                                newImg.style.cssText = groupAvatarPreview.style.cssText;
+                                newImg.style.objectFit = 'contain';
+                                newImg.src = newSrc + '?t=' + t;
+                                groupAvatarPreview.replaceWith(newImg);
+                            } else {
+                                groupAvatarPreview.src = newSrc + '?t=' + t;
+                            }
+                            // Перезагружаем страницу через 1 секунду
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        }
+                    }
+                }
             } else {
                 showToast('❌ Ошибка: ' + (result.error || 'Не удалось сохранить'));
             }

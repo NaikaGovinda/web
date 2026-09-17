@@ -5,15 +5,9 @@ header('Content-Type: application/json; charset=utf8mb4');
 // [АРХИТЕКТУРА] db.php подключен на самом верху, ручной вызов session_start() полностью удален
 $pdo = require __DIR__ . '/db.php';
 $config = require __DIR__ . '/config.php';
+require_once __DIR__ . '/auth_helper.php';
 
-// 1. Проверяем авторизацию с корректным HTTP-статусом
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Требуется авторизация'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-$userId = (int)$_SESSION['user_id'];
+$userId = requireAuth($pdo);
 
 // Fallback для PHP dev-сервера (register_argc_argv может быть выключен)
 if (empty($_GET) && isset($_SERVER['QUERY_STRING'])) {

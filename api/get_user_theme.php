@@ -4,9 +4,12 @@ header('Content-Type: application/json; charset=utf8mb4');
 
 // [АРХИТЕКТУРА] db.php подключен на самом верху. Теперь сессия гарантированно инициализирована
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
 // Если пользователь не авторизован — возвращаем тему по умолчанию
-if (!isset($_SESSION['user_id'])) {
+$user_id = getAuthUserId($pdo);
+
+if (!$user_id) {
     echo json_encode([
         'success' => true,
         'theme' => ['background_type' => 'color', 'background_value' => '#f5f0e6']
@@ -15,7 +18,6 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 try {
-    $user_id = (int)$_SESSION['user_id'];
 
     // Проверяем, что пользователь существует (опционально)
     $stmt = $pdo->prepare("SELECT id FROM users WHERE id = ?");

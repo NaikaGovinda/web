@@ -1,8 +1,7 @@
 <?php
 // get_admin_data.php
-header('Content-Type: application/json; charset=utf8mb4');
+header('Content-Type: application/json; charset=utf-8');
 
-// [АРХИТЕКТУРА] Регистрация логирования ошибок на самый верх
 register_shutdown_function(function() {
     $error = error_get_last();
     if ($error) {
@@ -10,33 +9,27 @@ register_shutdown_function(function() {
     }
 });
 
-// [АРХИТЕКТУРА] db.php вынесен на самый верх, до выполнения какой-либо логики
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
 try {
-    if (!isset($_SESSION['user_id'])) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'Требуется вход']);
-        exit;
-    }
-    
-    $user_id = (int)$_SESSION['user_id'];
-    
-    // [ИСПРАВЛЕНО] Получаем числовое значение флага из БД
+    // Проверяем авторизацию (сессия ИЛИ токен)
+    $user_id = requireAuth($pdo);
+
+    // Проверяем, что пользователь — админ
     $stmt = $pdo->prepare("SELECT is_admin FROM users WHERE id = ?");
     $stmt->execute([$user_id]);
     $user = $stmt->fetch();
-    
-    // [АРХИТЕКТУРА] Строгая проверка на числовой флаг по стандарту проекта (=== 1)
+
     if (!$user || (int)$user['is_admin'] !== 1) {
         http_response_code(403);
         echo json_encode(['success' => false, 'error' => 'Доступ запрещён']);
         exit;
     }
-    
-    // Получаем все группы + лидеров через group_leaders
+
+    // Получаем все группы + лидеров
     $stmt = $pdo->prepare("
-        SELECT 
+        SELECT
             g.id,
             g.name,
             g.city,
@@ -53,8 +46,8 @@ try {
     ");
     $stmt->execute();
     $groups = $stmt->fetchAll();
-    
-    // Группируем лидеров (с поддержкой множественного лидерства в группе)
+
+    // Группируем лидеров
     $grouped = [];
     foreach ($groups as $row) {
         $id = $row['id'];
@@ -77,12 +70,12 @@ try {
             ];
         }
     }
-    
+
     echo json_encode([
         'success' => true,
         'groups' => array_values($grouped)
     ], JSON_UNESCAPED_UNICODE);
-    
+
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);

@@ -4,15 +4,11 @@ header('Content-Type: application/json; charset=utf8mb4');
 
 // [АРХИТЕКТУРА] db.php подключен на самом верху. Теперь сессия гарантированно инициализирована
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Требуется вход'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+$user_id = requireAuth($pdo);
 
 try {
-    $user_id = (int)$_SESSION['user_id'];
 
     $input = json_decode(file_get_contents('php://input'), true);
     $application_id = (int)($input['application_id'] ?? 0);
@@ -53,7 +49,7 @@ try {
     try {
         require_once __DIR__ . '/send_web_push.php';
         
-        sendWebPushToUser($pdo, $user_id, 'Вы покинули группу 🚪', 
+        sendWebPushToUser($pdo, $userId, 'Вы покинули группу 🚪', 
             'Вы успешно вышли из группы «' . $app['group_name'] . '».', [
             'action' => 'group_removed',
             'group_id' => (string)$app['group_id'],

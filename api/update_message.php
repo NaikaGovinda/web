@@ -1,33 +1,26 @@
 <?php
 // /api/update_message.php
-// Редактирование сообщений пользователями
+// Редактирование сообщений
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, X-Auth-Token');
 
 try {
-    // Обработка preflight запроса
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
         http_response_code(200);
         exit;
     }
 
-    // Подключаем сессию и БД
     require __DIR__ . '/load_env.php';
-    session_start();
     $pdo = require __DIR__ . '/db.php';
+    require_once __DIR__ . '/auth_helper.php';
 
-    // 1. Проверяем авторизацию
-    if (!isset($_SESSION['user_id'])) {
-        echo json_encode(['success' => false, 'error' => 'Требуется авторизация']);
-        exit;
-    }
+    // Проверяем авторизацию (сессия ИЛИ токен)
+    $userId = requireAuth($pdo);
 
-    $userId = intval($_SESSION['user_id']);
-
-    // 2. Получаем JSON-данные из запроса
+    // Получаем JSON
     $input = file_get_contents('php://input');
     $data = json_decode($input, true);
 
@@ -49,14 +42,13 @@ try {
         exit;
     }
 
-    // Ограничение на длину сообщения
     if (strlen($newText) > 2000) {
-        echo json_encode(['success' => false, 'error' => 'Сообщение слишком длинное (макс. 2000 символов)']);
+        echo json_encode(['success' => false, 'error' => 'Сообщение слишком длинное']);
         exit;
     }
 
-    // 3. Проверяем, существует ли сообщение
-    $msgStmt = $pdo->prepare("SELECT group_id, sender_id, message_text, created_at FROM group_messages WHERE id = ?");
+    // Проверяем сообщение
+    $msgStmt = $pdo->prepare("SELECT group_id, sender_id, message_text, created_at, is_forwarded FROM group_messages WHERE id = ?");
     $msgStmt->execute([$messageId]);
     $messageData = $msgStmt->fetch();
 
@@ -70,58 +62,42 @@ try {
     $originalText = $messageData['message_text'];
     $createdAt = $messageData['created_at'];
 
-    // 3.5. ПРОВЕРКА: Запрещено редактировать пересланные сообщения
-    $isForwarded = isset($messageData['is_forwarded']) && intval($messageData['is_forwarded']) === 1;
-    if ($isForwarded) {
+    // Запрет редактирования пересланных
+    if (isset($messageData['is_forwarded']) && intval($messageData['is_forwarded']) === 1) {
         echo json_encode(['success' => false, 'error' => 'Пересланные сообщения нельзя редактировать']);
         exit;
     }
 
-    // 4. ПРОВЕРКА ПРАВ: Редактировать может только автор сообщения
-    // (лидеры и админы могут только удалять, но не редактировать чужие тексты)
+    // Только автор может редактировать
     if ($userId !== $senderId) {
-        echo json_encode(['success' => false, 'error' => 'Только автор сообщения может его редактировать']);
+        echo json_encode(['success' => false, 'error' => 'Только автор может редактировать']);
         exit;
     }
 
-    // 5. Ограничение по времени (редактируем в течение 24 часов)
-    $createdTimestamp = strtotime($createdAt);
-    $currentTimestamp = time();
-    $maxEditTime = 24 * 60 * 60; // 24 часа в секундах
-
-    if (($currentTimestamp - $createdTimestamp) > $maxEditTime) {
-        echo json_encode(['success' => false, 'error' => 'Сообщение можно редактировать только в течение 24 часов после отправки']);
+    // Лимит 24 часа
+    if ((time() - strtotime($createdAt)) > 86400) {
+        echo json_encode(['success' => false, 'error' => 'Редактирование возможно только 24 часа']);
         exit;
     }
 
-    // 6. Проверяем, изменился ли текст
     if ($newText === $originalText) {
-        echo json_encode(['success' => false, 'error' => 'Текст сообщения не изменён']);
+        echo json_encode(['success' => false, 'error' => 'Текст не изменён']);
         exit;
     }
 
-    // 7. Обновляем сообщение
     $updateStmt = $pdo->prepare("UPDATE group_messages SET message_text = ? WHERE id = ?");
     $updateStmt->execute([$newText, $messageId]);
 
-    if ($updateStmt->rowCount() === 0) {
-        echo json_encode(['success' => false, 'error' => 'Не удалось обновить сообщение']);
-        exit;
-    }
-
-    // 8. Логируем действие
-    error_log("Message {$messageId} edited by user {$userId} in group {$groupId}");
-
     echo json_encode([
         'success' => true,
-        'message' => 'Сообщение успешно обновлено',
+        'message' => 'Сообщение обновлено',
         'updated_at' => date('Y-m-d H:i:s')
     ]);
 
 } catch (\PDOException $e) {
     error_log("Update message DB error: " . $e->getMessage());
-    echo json_encode(['success' => false, 'error' => 'Ошибка базы данных: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => 'Ошибка базы данных']);
 } catch (\Exception $e) {
     error_log("Update message error: " . $e->getMessage());
-    echo json_encode(['success' => false, 'error' => 'Системная ошибка: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => 'Системная ошибка']);
 }

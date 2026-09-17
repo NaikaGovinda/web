@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Мой профиль — Нама-Хатта</title>
-    <!-- <link href="https://googleapis.com" rel="stylesheet"> -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="assets/custom-cropper.js"></script>
 </head>
@@ -26,6 +26,36 @@
             <span id="notifBadge" style="display:none; position:absolute; top:-2px; right:-4px; background:#ff3b30; color:#fff; font-size:11px; font-weight:700; min-width:18px; height:18px; border-radius:9px; text-align:center; line-height:18px; padding:0 4px;">0</span>
         </button>
     </header>
+
+    <!-- Фильтры-кнопки (Редактировать и Настройки) -->
+    <div class="filters" id="profileFilters" style="display: none;">
+        <button class="filter-btn" id="btnEditProfileFilter" onclick="openEditProfileModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Редактировать
+        </button>
+        <button class="filter-btn" id="btnSettingsFilter" onclick="toggleSettingsMenu()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            Настройки
+        </button>
+    </div>
+
+    <!-- Меню настроек -->
+    <div id="settingsMenu" style="display: none; position: fixed; top: 110px; right: 15px; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000; min-width: 200px; overflow: hidden;">
+        <button id="btnLogoutMenu" style="width: 100%; padding: 12px 16px; border: none; background: none; text-align: left; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #ff3b30;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Выйти из аккаунта
+        </button>
+    </div>
 
     <!-- Основной контент -->
     <main class="content" id="profileContent">
@@ -73,7 +103,6 @@
     if (typeof showToast !== 'function') {
         window.showToast = function(message) {
             console.log('[Toast]', message);
-            // Простая реализация через alert если showToast недоступен
             if (typeof alert === 'function') {
                 alert(message);
             }
@@ -82,8 +111,6 @@
 
     // ===== УВЕДОМЛЕНИЯ =====
     let currentUserId = null;
-
-
 
     // Закрыть панель уведомлений
     function closeNotificationPanel() {
@@ -114,23 +141,17 @@
 
     // Определение целевой страницы для legacy-уведомлений (без target_page)
     function getLegacyTargetPage(type, groupId) {
-        // По умолчанию все уведомления ведут на профиль
         let targetPage = 'profile.html';
-        
         if (type === 'chat_message' && groupId) {
             targetPage = 'group.html';
         }
-        
         return targetPage;
     }
 
     // Формирование URL из target_page и target_params
     function buildNavigationUrl(targetPage, targetParams) {
         if (!targetPage) return '';
-        
         let params = {};
-        
-        // Парсим target_params если есть
         if (targetParams) {
             try {
                 const decoded = decodeURIComponent(targetParams);
@@ -139,21 +160,15 @@
                 console.error('Ошибка парсинга target_params:', e, 'raw:', targetParams);
             }
         }
-        
-        // Для личных сообщений используем chat_type=private
         if (targetPage.includes('group.html') && params.open_private_chat) {
-            // Для ЛС: НЕ подменяем id, добавляем явный флаг типа чата
             params.chat_type = 'private';
-            // Убираем group_id и id чтобы не путать с групповым чатом
             delete params.group_id;
             delete params.id;
             delete params.open_chat;
         }
-        // Для групповых чатов используем id из group_id
         else if (targetPage.includes('group.html') && params.group_id && !params.id) {
             params.id = params.group_id;
         }
-        
         const queryString = new URLSearchParams(params).toString();
         const url = queryString ? `${targetPage}?${queryString}` : targetPage;
         return url;
@@ -180,9 +195,6 @@
             }
 
             const notifications = data.notifications || [];
-            console.log('Загружено уведомлений:', notifications.length, notifications);
-            
-            // Подсчёт непрочитанных (включая сгруппированные)
             let unreadCount = 0;
             notifications.forEach(n => {
                 if (!n.is_read) {
@@ -217,15 +229,12 @@
                 const timeStr = formatNotifTime(notif.created_at || '');
 
                 if (notif.is_grouped) {
-                    // ГРУППИРОВАННЫЕ УВЕДОМЛЕНИЯ
                     const items = notif.items || [];
-                    // Сортируем по дате (новые первые)
                     items.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-                    
                     const firstNotif = items[0] || {};
                     const isUnread = !notif.is_read;
                     const extraCount = items.length - 1;
-                    
+
                     html += `
                     <div class="notif-group ${isUnread ? 'unread' : ''}" data-group-id="${notif.group_id}">
                         <div class="notif-group-header js-notif-group-header" data-group-key="${notif.group_key}">
@@ -242,17 +251,16 @@
                         </div>
                         <div class="notif-group-items" style="display:none;">
                             ${items.slice(1).map(item => {
-                                const itemTime = formatNotifTime(item.created_at || '');
-                                // Для legacy-уведомлений без target_page предоставляем значение по умолчанию
-                                const itemType = item.type || 'default';
-                                const defaultTarget = itemType === 'chat_message' && item.group_id ? 'group.html' : 'profile.html';
-                                const targetPage = item.target_page || defaultTarget;
-                                const targetParams = item.target_params || JSON.stringify({});
-                                return `
-                                <div class="notif-item-single ${!item.is_read ? 'unread' : ''}" 
-                                     data-id="${item.id}" 
-                                     data-target-page="${targetPage}" 
-                                     data-target-params="${encodeURIComponent(targetParams)}" 
+                        const itemTime = formatNotifTime(item.created_at || '');
+                        const itemType = item.type || 'default';
+                        const defaultTarget = itemType === 'chat_message' && item.group_id ? 'group.html' : 'profile.html';
+                        const targetPage = item.target_page || defaultTarget;
+                        const targetParams = item.target_params || JSON.stringify({});
+                        return `
+                                <div class="notif-item-single ${!item.is_read ? 'unread' : ''}"
+                                     data-id="${item.id}"
+                                     data-target-page="${targetPage}"
+                                     data-target-params="${encodeURIComponent(targetParams)}"
                                      data-group-id="${item.group_id || ''}">
                                     <div class="notif-content" style="padding-left:44px;">
                                         <p class="notif-text" style="font-size:13px;">${escapeHtml(item.message || '')}</p>
@@ -260,22 +268,20 @@
                                     </div>
                                 </div>
                                 `;
-                            }).join('')}
+                    }).join('')}
                         </div>
                     </div>
                     `;
                 } else {
-                    // ОТДЕЛЬНЫЕ УВЕДОМЛЕНИЯ
-                    // Для legacy-уведомлений без target_page предоставляем значение по умолчанию
                     const defaultTarget = getLegacyTargetPage(notifType, notif.group_id);
                     const targetPage = notif.target_page || defaultTarget;
                     const targetParams = notif.target_params || JSON.stringify({});
-                    
+
                     html += `
-                    <div class="notif-item ${notif.is_read ? '' : 'unread'}" 
-                         data-id="${notif.id}" 
-                         data-target-page="${targetPage}" 
-                         data-target-params="${encodeURIComponent(targetParams)}" 
+                    <div class="notif-item ${notif.is_read ? '' : 'unread'}"
+                         data-id="${notif.id}"
+                         data-target-page="${targetPage}"
+                         data-target-params="${encodeURIComponent(targetParams)}"
                          data-group-id="${notif.group_id || ''}">
                         <div class="notif-icon ${iconClass}">${icon}</div>
                         <div class="notif-content">
@@ -290,14 +296,9 @@
 
             listEl.innerHTML = html;
 
-            // ==========================================
-            // ОБРАБОТЧИКИ УВЕДОМЛЕНИЙ (ДЕЛЕГИРОВАНИЕ)
-            // ==========================================
-
             listEl.addEventListener('click', (e) => {
                 const target = e.target;
-                
-                // Клик по заголовку группы — ТОЛЬКО раскрытие/скрытие
+
                 if (target.closest('.notif-group-header')) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -305,70 +306,42 @@
                     toggleNotifGroup(header);
                     return;
                 }
-                
-                // Клик по сообщению в группе — раскрытие + переход в чат
+
                 const singleItem = target.closest('.notif-item-single[data-id]');
                 if (singleItem) {
                     e.preventDefault();
                     e.stopPropagation();
-                    
                     const notifId = singleItem.dataset.id;
                     const targetPage = singleItem.dataset.targetPage;
                     const targetParams = singleItem.dataset.targetParams;
-                    
-                    // Раскрываем группу если закрыта
                     const group = singleItem.closest('.notif-group');
                     const header = group?.querySelector('.js-notif-group-header');
                     if (header && !group.classList.contains('expanded')) {
                         toggleNotifGroup(header);
                     }
-                    
                     markNotificationRead(notifId);
                     singleItem.classList.remove('unread');
                     group?.classList.remove('unread');
-                    
                     const url = buildNavigationUrl(targetPage, targetParams);
                     if (url) {
                         window.location.href = url;
                     }
                     return;
                 }
-                
-                // Клик по одиночному уведомлению — переход
+
                 const notifItem = target.closest('.notif-item[data-id]');
                 if (notifItem) {
                     e.preventDefault();
                     e.stopPropagation();
-                    
                     const notifId = notifItem.dataset.id;
                     const targetPage = notifItem.dataset.targetPage;
                     const targetParams = notifItem.dataset.targetParams;
-                    
-                    console.log('[notif] click single:', { notifId, targetPage, targetParams });
-                    
                     markNotificationRead(notifId);
                     notifItem.classList.remove('unread');
-                    
                     const url = buildNavigationUrl(targetPage, targetParams);
-                    console.log('[notif] navigate to:', url);
-                    
                     if (url) {
                         window.location.href = url;
                     }
-                    return;
-                }
-            });
-            
-            // Обработка клика по одиночному уведомлению (не в группе) — для уведомлений без target_page
-            listEl.addEventListener('click', (e) => {
-                const target = e.target;
-                
-                // Ищем уведомление, которое не является частью группы
-                const standaloneNotif = target.closest('.notif-item:not([data-id])');
-                if (standaloneNotif) return; // Уже обработано выше
-                
-                // Проверяем, что это не заголовок группы и не элемент внутри группы
-                if (target.closest('.notif-group-header') || target.closest('.notif-group-items')) {
                     return;
                 }
             });
@@ -385,10 +358,9 @@
         const itemsContainer = group?.querySelector('.notif-group-items');
         const actionsContainer = headerEl.querySelector('.js-notif-group-actions');
         const arrow = actionsContainer?.querySelector('.notif-group-arrow');
-        
+
         if (group && itemsContainer) {
             const isExpanded = group.classList.contains('expanded');
-            
             if (isExpanded) {
                 group.classList.remove('expanded');
                 itemsContainer.style.display = 'none';
@@ -417,22 +389,17 @@
     // Очистить все уведомления
     async function clearAllNotifications() {
         try {
-            // Очищаем localStorage локально (мгновенный отклик)
             if (currentUserId) {
                 localStorage.removeItem('notifications_' + currentUserId);
             }
-            
-            // Очищаем на сервере
             const response = await fetch('/api/clear_notifications.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({ user_id: currentUserId })
             });
-            
             const result = await response.json();
             if (result.success) {
-                // Мгновенно обновляем UI
                 updateNotifBadge(0);
                 const listEl = document.getElementById('notificationsList');
                 if (listEl) {
@@ -469,12 +436,10 @@
         const diffMins = Math.floor(diffMs / 60000);
         const diffHours = Math.floor(diffMs / 3600000);
         const diffDays = Math.floor(diffMs / 86400000);
-
         if (diffMins < 1) return 'Только что';
         if (diffMins < 60) return diffMins + ' мин. назад';
         if (diffHours < 24) return diffHours + ' ч. назад';
         if (diffDays < 7) return diffDays + ' дн. назад';
-
         return date.toLocaleDateString('ru-RU');
     }
 
@@ -490,22 +455,27 @@
             read: false,
             created_at: new Date().toISOString()
         });
-        // Храним только последние 50
         if (notifs.length > 50) notifs.length = 50;
         localStorage.setItem('notifications_' + currentUserId, JSON.stringify(notifs));
-        // Обновляем бейдж
         const unread = notifs.filter(n => !n.read).length;
         updateNotifBadge(unread);
     }
 
-    // Загружаем профиль пользователя
+    // ==========================================================
+    // ИСПРАВЛЕНИЕ: Загружаем профиль с передачей auth_token
+    // ==========================================================
     async function loadProfile() {
         const contentContainer = document.getElementById('profileContent');
         if (!contentContainer) return;
 
         try {
-            // ШАГ 1: Запрашиваем авторизацию
-            const authResponse = await fetch('/api/check_auth.php?v=' + Date.now());
+            // Берём токен из localStorage (сохранён после VK-входа)
+            const authToken = localStorage.getItem('auth_token') || '';
+
+            // ШАГ 1: Запрашиваем авторизацию (android.js автоматически добавит X-Auth-Token)
+            const authResponse = await fetch('/api/check_auth.php?v=' + Date.now(), {
+                credentials: 'include'
+            });
             const authRawText = await authResponse.text();
 
             let authData = { is_authenticated: false };
@@ -524,8 +494,10 @@
                 return;
             }
 
-            // ШАГ 2: Запрашиваем данные профиля
-            const response = await fetch('/api/get_profile.php?v=' + Date.now());
+            // ШАГ 2: Запрашиваем данные профиля (android.js автоматически добавит X-Auth-Token)
+            const response = await fetch('/api/get_profile.php?v=' + Date.now(), {
+                credentials: 'include'
+            });
             const rawText = await response.text();
 
             let data;
@@ -540,7 +512,25 @@
             }
 
             if (!data || !data.success) {
-                window.location.href = '/login.html';
+                contentContainer.innerHTML = `
+        <div class="card" style="padding:20px; margin:20px;">
+            <h3 style="color:red;">🔍 Отладка get_profile</h3>
+
+            <p><strong>get_profile вернул:</strong></p>
+            <pre style="background:#f0f0f2;padding:10px;border-radius:8px;overflow:auto;">${JSON.stringify(data, null, 2)}</pre>
+
+            <p><strong>auth_token в localStorage:</strong></p>
+            <pre style="background:#f0f0f2;padding:10px;border-radius:8px;overflow:auto;word-break:break-all;">${localStorage.getItem('auth_token') || 'ПУСТО'}</pre>
+
+            <p><strong>user_id в localStorage:</strong></p>
+            <pre style="background:#f0f0f2;padding:10px;border-radius:8px;">${localStorage.getItem('user_id') || 'ПУСТО'}</pre>
+
+            <p><strong>user_info из ответа:</strong></p>
+            <pre style="background:#f0f0f2;padding:10px;border-radius:8px;overflow:auto;">${JSON.stringify(data.user_info || data.user || 'НЕТ', null, 2)}</pre>
+
+            <a href="/login.html" style="display:inline-block;margin-top:15px;padding:10px 20px;background:#0077FF;color:white;text-decoration:none;border-radius:8px;">Вернуться на вход</a>
+        </div>
+    `;
                 return;
             }
 
@@ -550,12 +540,10 @@
             currentUserId = user_info.id || null;
             localStorage.setItem('userInfo', JSON.stringify(user_info));
 
-            // Инициализируем бейдж из ответа сервера
             if (data.unread_notifications !== undefined) {
                 updateNotifBadge(data.unread_notifications);
             }
 
-            // Бэкенд возвращает null для несуществующих аватаров
             let avatarPreviewHtml = '';
             if (user_info.avatar_url) {
                 avatarPreviewHtml = `<img id="avatarPreview" src="${user_info.avatar_url}" alt="Аватар" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; display: block; border: 2px solid var(--color-primary, #4A90E2);">`;
@@ -576,15 +564,11 @@
         <input type="file" id="avatarFile" accept="image/*" style="display: none;">
     </div>
     <h2 class="profile-name">${escapeHtml(user_info.first_name)} ${escapeHtml(user_info.last_name || '')}</h2>
-    <div class="profile-actions">
-        <button class="btn btn-small" id="btnEditProfile">Редактировать</button>
-        <button type="button" class="btn btn-small btn-danger" id="btnLogout">Выйти</button>
-    </div>
 </div>
 
 <div class="profile-info card">
     <div class="profile-info-item">
-        <span class="profile-info-value">${escapeHtml(user_info.email)}</span>
+        <span class="profile-info-value">${escapeHtml(user_info.email || 'Не указан')}</span>
         <span class="profile-info-label">Email</span>
     </div>
     <div class="profile-info-item">
@@ -606,13 +590,12 @@
     <p class="android-download-card__desc">
         Скачайте приложение для Android для мгновенных пуш-уведомлений
     </p>
-    <a href="/namahatta.apk" download="namahatta.apk" class="android-download-card__btn">
+    <a href="/namahatta.apk" download="namahatta.apk" class="android-download-card__btn" style="display: inline-block; padding: 10px 20px; background: #e8f0fe; color: #1a73e8; border: 1px solid #a8c7fa; border-radius: 10px; font-weight: 600; text-decoration: none; text-align: center;">
         Скачать APK
     </a>
 </div>
 `;
 
-            // Мои личные заявки
             if (applications && applications.length > 0) {
                 html += `
 <div class="card">
@@ -621,7 +604,7 @@
         <span class="js-accordion-arrow" style="transition:transform 0.2s ease; font-size:12px; color:var(--color-muted);">▶</span>
     </div>
     <div class="js-accordion-content" style="max-height:0; overflow:hidden; transition:max-height 0.3s ease;">
-        <div class="applications-list" style="padding-top:12px;">`; 
+        <div class="applications-list" style="padding-top:12px;">`;
 
                 applications.forEach((app) => {
                     let statusText = 'Ожидает';
@@ -643,13 +626,13 @@
                             <span class="status-badge ${statusClass}">${statusText}</span>`;
 
                     if (app.status === 'pending') {
-                        html += `<button class="btn btn-small btn-danger js-btn-cancel" data-app-id="${app.id}">Отменить</button>`;
+                        html += `<button class="js-btn-cancel" data-app-id="${app.id}" style="padding:6px 12px; border-radius:8px; border:1px solid #e0a0a0; background:#fde8e8; color:#c62828; font-size:13px; font-weight:600; cursor:pointer;">Отменить</button>`;
                     }
                     if (app.status === 'approved') {
-                        html += `<button class="btn btn-small btn-ghost js-btn-leave" data-app-id="${app.id}" data-group-name="${escapeHtml(app.group_name)}">Выйти</button>`;
+                        html += `<button class="js-btn-leave" data-app-id="${app.id}" data-group-name="${escapeHtml(app.group_name)}" style="padding:6px 12px; border-radius:8px; border:1px solid #ccc; background:#f5f5f7; color:#666; font-size:13px; font-weight:600; cursor:pointer;">Выйти</button>`;
                     }
                     if (app.status === 'rejected') {
-                        html += `<button class="btn btn-small btn-ghost js-btn-cancel" data-app-id="${app.id}" style="color: var(--color-muted, #888); border-color: #ddd;">Удалить</button>`;
+                        html += `<button class="js-btn-cancel" data-app-id="${app.id}" style="padding:6px 12px; border-radius:8px; border:1px solid #ddd; background:#f5f5f7; color:#888; font-size:13px; font-weight:600; cursor:pointer;">Удалить</button>`;
                     }
 
                     html += `</div></div>`;
@@ -660,11 +643,12 @@
                 html += '<div class="card"><p style="color:var(--color-muted);">Вы пока не подавали заявок.</p></div>';
             }
 
-            // Заявки на мои группы (для лидера или админа)
             if (user_info && (user_info.role === 'leader' || user_info.role === 'admin')) {
                 let leader_applications = [];
                 try {
-                    const leaderResponse = await fetch('/api/get_leader_applications.php?v=' + Date.now());
+                    const leaderResponse = await fetch('/api/get_leader_applications.php?v=' + Date.now(), {
+                        credentials: 'include'
+                    });
 
                     if (leaderResponse.status === 403 || leaderResponse.status === 401) {
                         console.log("Доступ к панели лидера ограничен согласно роли аккаунта.");
@@ -672,7 +656,15 @@
                         const leaderData = await leaderResponse.json();
                         leader_applications = leaderData.success ? leaderData.applications : [];
 
-                        html += '<div class="card"><h3>📬 Заявки на мои группы</h3>';
+                        html += `
+<div class="card">
+    <div class="js-accordion-header" style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; cursor:pointer; user-select:none;" onclick="toggleAccordion(this)">
+        <h3 style="margin:0; font-size:17px; font-weight:600;">📬 Заявки на мои группы</h3>
+        <span class="js-accordion-arrow" style="transition:transform 0.2s ease; font-size:12px; color:var(--color-muted);">▶</span>
+    </div>
+    <div class="js-accordion-content" style="max-height:0; overflow:hidden; transition:max-height 0.3s ease;">
+        <div style="padding-top:12px;">`;
+
                         if (leader_applications && leader_applications.length > 0) {
                             html += '<ul class="applications-list">';
                             leader_applications.forEach(app => {
@@ -683,8 +675,12 @@
                                         <small style="color:var(--color-muted);">${escapeHtml(app.group_name)} • ${escapeHtml(app.message)}</small>
                                     </div>
                                     <div style="display:flex; gap:8px;">
-                                        <button class="btn btn-small btn-success js-leader-approve" data-app-id="${app.id}">✅</button>
-                                        <button class="btn btn-small btn-danger js-leader-reject" data-app-id="${app.id}">❌</button>
+                                        <button class="js-leader-approve" data-app-id="${app.id}" style="padding:6px 12px; border-radius:8px; border:1px solid #a8d5a2; background:#e8f5e9; color:#2e7d32; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px;">
+                                            <span>✅</span> Одобрить
+                                        </button>
+                                        <button class="js-leader-reject" data-app-id="${app.id}" style="padding:6px 12px; border-radius:8px; border:1px solid #e0a0a0; background:#fde8e8; color:#c62828; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px;">
+                                            <span>❌</span> Отклонить
+                                        </button>
                                     </div>
                                 </li>
                                 `;
@@ -693,7 +689,8 @@
                         } else {
                             html += '<p style="color:var(--color-muted); text-align:center; margin:0;">Нет новых заявок</p>';
                         }
-                        html += '</div>';
+
+                        html += '</div></div></div>';
                     }
                 } catch (e) {
                     console.warn("Внутренний пропуск чтения панели лидера:", e);
@@ -701,25 +698,26 @@
             }
 
             if (user_info.role === 'admin') {
-                html += '<a href="/admin.html" class="btn btn-block" style="margin-top:var(--space-m);">🛠 Админка</a>';
+                html += '<a href="/admin.html" class="btn btn-block" style="margin-top:var(--space-m); display: block; text-align: center; padding: 10px 16px; background: #f0f0f2; color: #666; border-radius: 10px; text-decoration: none; font-weight: 600;">🛠 Админка</a>';
             }
 
             contentContainer.innerHTML = html;
 
-            // Навешиваем обработчики на кнопки (после создания HTML!)
+            const filters = document.getElementById('profileFilters');
+            if (filters) filters.style.display = 'flex';
+
             setupEventListeners();
 
         } catch (error) {
             console.error('Ошибка профиля:', error);
 
-            // Красивое окно сбоя
             contentContainer.innerHTML = `
             <div class="card" style="text-align: center; padding: 25px 20px; border: 1px solid rgba(255,59,48,0.15); box-shadow: 0 6px 16px rgba(255,59,48,0.06) !important;">
                 <div style="font-size: 40px; margin-bottom: 10px; user-select: none;">⚠️</div>
                 <h3 style="margin: 0 0 6px 0; font-size: 16px; font-weight: 700; color: #1d1d1f;">Не удалось загрузить профиль</h3>
                 <p style="color: #666; font-size: 13px; margin: 0 0 20px 0; line-height: 1.4;">Возникла временная ошибка связи с сервером или сбой кэширования данных.</p>
 
-                <button onclick="window.location.reload(true)" class="btn" style="margin: 0 auto; width: auto; min-width: 160px; padding: 10px 20px; font-size: 14px; background: #007aff; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,122,255,0.2);">
+                <button onclick="window.location.reload(true)" class="btn" style="margin: 0 auto; width: auto; min-width: 160px; padding: 10px 20px; font-size: 14px; background: #e8f0fe; color: #1a73e8; border: 1px solid #a8c7fa; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
                     <span>Обновить экран</span> 🔄
                 </button>
             </div>
@@ -733,10 +731,6 @@
 
     // Настройка обработчиков событий
     function setupEventListeners() {
-        // ==========================================
-        // [ДОБАВЛЕНО] ЗАГРУЗКА АВАТАРА
-        // ==========================================
-
         // Перехват клика по кнопке камеры (для Android WebView)
         const avatarLabel = document.querySelector('label[for="avatarFile"]');
         if (avatarLabel) {
@@ -749,13 +743,10 @@
             });
         }
 
-        // Обработчик выбора файла из галереи
         document.getElementById('avatarFile')?.addEventListener('change', function(e) {
             const files = e.target.files;
             if (files && files.length > 0) {
                 const file = files[0];
-
-                // Убираем проверку типа — пусть кроппер сам разбирается
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     openCropperModal(event.target.result, '/api/update_profile.php');
@@ -764,28 +755,10 @@
             }
         });
 
-        // ==========================================
-        // РЕДАКТИРОВАНИЕ ПРОФИЛЯ
-        // ==========================================
-
-        // Открыть модальное окно
-        document.getElementById('btnEditProfile')?.addEventListener('click', () => {
-            const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-
-            document.getElementById('editProfFirstName').value = userInfo.first_name || '';
-            document.getElementById('editProfLastName').value = userInfo.last_name || '';
-            document.getElementById('editProfCity').value = userInfo.city || '';
-            document.getElementById('editProfPhone').value = userInfo.phone || '';
-
-            document.getElementById('editProfileModal').style.display = 'flex';
-        });
-
-        // Закрыть модальное окно
         document.getElementById('btnCancelEditProfile')?.addEventListener('click', () => {
             document.getElementById('editProfileModal').style.display = 'none';
         });
 
-        // Сохранить изменения
         document.getElementById('btnSaveEditProfile')?.addEventListener('click', async () => {
             const button = document.getElementById('btnSaveEditProfile');
             button.disabled = true;
@@ -822,13 +795,6 @@
             }
         });
 
-        // ==========================================
-        // ВЫХОД ИЗ АККАУНТА
-        // ==========================================
-        document.getElementById('btnLogout')?.addEventListener('click', () => {
-            const modal = document.getElementById('customLogoutModal');
-            if (modal) modal.style.display = 'flex';
-        });
         document.getElementById('btnCancelLogout')?.addEventListener('click', () => {
             const modal = document.getElementById('customLogoutModal');
             if (modal) modal.style.display = 'none';
@@ -840,6 +806,8 @@
                 const response = await fetch('/api/logout.php', { method: 'POST' });
                 const result = await response.json();
                 if (result.success) {
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('user_id');
                     window.location.href = '/login.html';
                 } else {
                     showToast('❌ Не удалось выйти: ' + (result.error || 'ошибка'));
@@ -850,9 +818,6 @@
             }
         });
 
-        // ==========================================
-        // ВЫХОД ИЗ ГРУППЫ
-        // ==========================================
         document.querySelectorAll('.js-btn-leave').forEach(btn => {
             btn.addEventListener('click', () => {
                 pendingLeaveApplicationId = btn.dataset.appId;
@@ -878,6 +843,7 @@
                 const response = await fetch('/api/leave_group.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ application_id: parseInt(pendingLeaveApplicationId) })
                 });
                 const result = await response.json();
@@ -896,9 +862,6 @@
             }
         });
 
-        // ==========================================
-        // ОТМЕНА СВОЕЙ ЗАЯВКИ
-        // ==========================================
         document.querySelectorAll('.js-btn-cancel').forEach(btn => {
             btn.addEventListener('click', () => {
                 pendingCancelApplicationId = btn.dataset.appId;
@@ -920,9 +883,13 @@
             pendingCancelApplicationId = null;
         });
 
-        // ==========================================
-        // УВЕДОМЛЕНИЯ
-        // ==========================================
+        document.getElementById('btnLogoutMenu')?.addEventListener('click', () => {
+            const modal = document.getElementById('customLogoutModal');
+            if (modal) modal.style.display = 'flex';
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
+        });
+
         document.getElementById('btnNotifications')?.addEventListener('click', openNotificationPanel);
         document.getElementById('btnCloseNotifs')?.addEventListener('click', closeNotificationPanel);
         document.getElementById('btnClearAllNotifs')?.addEventListener('click', () => {
@@ -931,9 +898,6 @@
             }
         });
 
-        // ==========================================
-        // КНОПКИ ОДОБРЕНИЯ / ОТКЛОНЕНИЯ ЗАЯВОК
-        // ==========================================
         document.querySelectorAll('.js-leader-approve, .js-leader-reject').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const appId = btn.dataset.appId;
@@ -949,6 +913,7 @@
             const response = await fetch('/api/cancel_application.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ application_id: parseInt(appId) })
             });
             const result = await response.json();
@@ -971,6 +936,7 @@
             const response = await fetch('/api/update_application_status.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ application_id: parseInt(appId), status: status })
             });
 
@@ -1002,11 +968,62 @@
         }
     }
 
+    // Открыть модальное окно редактирования профиля
+    function openEditProfileModal() {
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+
+        document.getElementById('editProfFirstName').value = userInfo.first_name || '';
+        document.getElementById('editProfLastName').value = userInfo.last_name || '';
+        document.getElementById('editProfCity').value = userInfo.city || '';
+        document.getElementById('editProfPhone').value = userInfo.phone || '';
+
+        document.getElementById('editProfileModal').style.display = 'flex';
+    }
+
+    // Закрытие модальных окон при клике на затемненный фон
+    document.addEventListener('DOMContentLoaded', function() {
+        const modals = [
+            'editProfileModal',
+            'customLeaveGroupModal',
+            'customCancelAppModal',
+            'customLogoutModal',
+            'cropperModal'
+        ];
+
+        modals.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            }
+        });
+    });
+
+    // Открыть/закрыть меню настроек
+    function toggleSettingsMenu() {
+        const menu = document.getElementById('settingsMenu');
+        if (menu) {
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+    }
+
+    // Закрыть меню настроек при клике вне его
+    document.addEventListener('click', function(e) {
+        const menu = document.getElementById('settingsMenu');
+        const settingsBtn = document.getElementById('btnSettingsFilter');
+        if (menu && !menu.contains(e.target) && (!settingsBtn || !settingsBtn.contains(e.target))) {
+            menu.style.display = 'none';
+        }
+    });
+
     // Функция для раскрывающегося списка
     function toggleAccordion(header) {
         const content = header.nextElementSibling;
         const arrow = header.querySelector('.js-accordion-arrow');
-        
+
         if (content && arrow) {
             const isExpanded = content.style.maxHeight === '500px';
             content.style.maxHeight = isExpanded ? '0' : '500px';
@@ -1079,7 +1096,7 @@
         <p id="leaveGroupModalText" style="color: var(--color-muted, #666); font-size: 14px; margin-bottom: 20px;">Вы действительно хотите покинуть эту группу?</p>
         <div style="display: flex; gap: 10px;">
             <button class="btn btn-ghost" id="btnCancelLeaveGroup" style="flex: 1; margin: 0;">Отмена</button>
-            <button class="btn btn-danger" id="btnConfirmLeaveGroup" style="flex: 1; margin: 0; background: #ff3b30; color: #fff; border: none;">Покинуть</button>
+            <button class="btn" id="btnConfirmLeaveGroup" style="flex: 1; margin: 0; background: #fde8e8; color: #c62828; border: 1px solid #e0a0a0; border-radius: 8px; font-weight: 600;">Покинуть</button>
         </div>
     </div>
 </div>
@@ -1091,7 +1108,7 @@
         <p style="color: var(--color-muted, #666); font-size: 14px; margin-bottom: 20px;">Вы действительно хотите отозвать свою заявку на вступление?</p>
         <div style="display: flex; gap: 10px;">
             <button class="btn btn-ghost" id="btnCancelAppModalClose" style="flex: 1; margin: 0;">Назад</button>
-            <button class="btn btn-danger" id="btnConfirmCancelApp" style="flex: 1; margin: 0; background: #ff3b30; color: #fff; border: none;">Отменить</button>
+            <button class="btn" id="btnConfirmCancelApp" style="flex: 1; margin: 0; background: #fde8e8; color: #c62828; border: 1px solid #e0a0a0; border-radius: 8px; font-weight: 600;">Отменить</button>
         </div>
     </div>
 </div>
@@ -1103,7 +1120,7 @@
         <p style="color: var(--color-muted, #666); font-size: 14px; margin-bottom: 20px;">Вы действительно хотите выйти из своего профиля?</p>
         <div style="display: flex; gap: 10px;">
             <button class="btn btn-ghost" id="btnCancelLogout" style="flex: 1; margin: 0;">Отмена</button>
-            <button class="btn btn-danger" id="btnConfirmLogout" style="flex: 1; margin: 0; background: #ff3b30; color: #fff; border: none;">Выйти</button>
+            <button class="btn" id="btnConfirmLogout" style="flex: 1; margin: 0; background: #fde8e8; color: #c62828; border: 1px solid #e0a0a0; border-radius: 8px; font-weight: 600;">Выйти</button>
         </div>
     </div>
 </div>
@@ -1114,7 +1131,7 @@
         <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #e0e0e2; background:#fff;">
             <h3 style="margin:0; font-size:18px; font-weight:700;">Уведомления</h3>
             <div style="display:flex; gap:12px; align-items:center;">
-                <button id="btnClearAllNotifs" style="background:none; border:none; color:#007aff; font-size:14px; font-weight:600; cursor:pointer; padding:4px 8px;">Очистить все</button>
+                <button id="btnClearAllNotifs" style="background:none; border:none; color:#888; font-size:14px; font-weight:600; cursor:pointer; padding:4px 8px;">Очистить все</button>
                 <button id="btnCloseNotifs" style="background:none; border:none; font-size:20px; cursor:pointer; padding:4px 8px;">✕</button>
             </div>
         </div>
@@ -1122,7 +1139,7 @@
             <div class="loading" style="padding:40px 0; text-align:center;">Загрузка...</div>
         </div>
     </div>
-    </div>
+</div>
 </div>
 
 <script src="/android.js"></script>
@@ -1151,13 +1168,12 @@
         themeScript.src = 'theme.js?v=' + version;
         document.body.appendChild(themeScript);
     })();
-    
+
     // Инициализация Web Push
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof WEB_PUSH !== 'undefined') {
             WEB_PUSH.init();
         }
-        // Устанавливаем контекст видимости
         if (typeof window.WEB_PUSH_VISIBILITY !== 'undefined') {
             window.WEB_PUSH_VISIBILITY.setProfile();
         }

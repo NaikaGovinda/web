@@ -4,8 +4,10 @@ header('Content-Type: application/json; charset=utf8mb4');
 
 // [АРХИТЕКТУРА] db.php подключен на самом верху, структура сессий соблюдена
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
-$userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+// Разрешаем просмотр без авторизации, но проверяем токен для авторизованных
+$userId = getAuthUserId($pdo); // Проверяет и сессию, и токен
 
 try {
     $type = $_GET['type'] ?? 'namahatta';

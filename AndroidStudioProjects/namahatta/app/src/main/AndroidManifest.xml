@@ -47,6 +47,9 @@
         <activity
             android:name=".GroupMembersActivity"
             android:exported="true" />
+        <activity
+            android:name=".GroupDetailActivity"
+            android:exported="false" />
 
     </application>
 

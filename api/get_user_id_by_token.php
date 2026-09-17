@@ -4,6 +4,7 @@ header('Content-Type: application/json; charset=utf8mb4');
 
 // [АРХИТЕКТУРА] db.php подключен на самом верху по нашему строгому стандарту
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_tokens.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 $token = $input['token'] ?? '';
@@ -13,16 +14,10 @@ if (!$token) {
     exit;
 }
 
-$stmt = $pdo->prepare("SELECT id FROM users WHERE auth_token = ? AND is_active = 1");
-$stmt->execute([$token]);
-$user = $stmt->fetch();
+$userId = validateAuthToken($pdo, $token);
 
-if ($user) {
-    // [ОПТИМИЗАЦИЯ] Принудительное приведение ID пользователя к int для Android WebView
-    echo json_encode([
-        'success' => true, 
-        'user_id' => (int)$user['id']
-    ], JSON_UNESCAPED_UNICODE);
+if ($userId) {
+    echo json_encode(['success' => true, 'user_id' => $userId], JSON_UNESCAPED_UNICODE);
 } else {
     echo json_encode(['success' => false], JSON_UNESCAPED_UNICODE);
 }

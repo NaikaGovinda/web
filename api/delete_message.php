@@ -5,14 +5,10 @@ header('Content-Type: application/json; charset=utf8mb4');
 try {
     // 3. Подключаем БД по вашему стандарту
     $pdo = require __DIR__ . '/db.php';
+    require_once __DIR__ . '/auth_helper.php';
 
-	// 1. Проверяем авторизацию
-	if (!isset($_SESSION['user_id'])) {
-		echo json_encode(['success' => false, 'error' => 'Требуется авторизация']);
-		exit;
-	}
-
-	$userId = intval($_SESSION['user_id']);
+    // 1. Проверяем авторизацию
+    $userId = requireAuth($pdo);
 
 	// 2. Получаем JSON-данные из запроса
 	$input = file_get_contents('php://input');

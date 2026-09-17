@@ -8,15 +8,19 @@ header('Content-Type: application/json');
 
 // Подключаем базу данных
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
-// Проверяем авторизацию
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Требуется авторизация']);
-    exit;
-}
+// ==========================================================
+// ПРОВЕРКА АВТОРИЗАЦИИ: сессия ИЛИ токен
+// ==========================================================
+$userId = requireAuth($pdo);
 
-$userId = (int)$_SESSION['user_id'];
+// Если не авторизован — ошибка (requireAuth уже завершил выполнение)
+// Дальше — ваш существующий код без изменений
+
+// ==========================================================
+// Дальше — ваш существующий код без изменений
+// ==========================================================
 
 // Получаем JSON-данные
 $input = file_get_contents('php://input');
@@ -42,18 +46,16 @@ try {
     // Проверяем, существует ли таблица
     $tableCheck = $pdo->query("SHOW TABLES LIKE 'user_web_push_visibility'");
     $tableExists = ($tableCheck && $tableCheck->rowCount() > 0);
-    
+
     if (!$tableExists) {
-        // Таблица ещё не создана - это не критично, просто игнорируем
         echo json_encode(['success' => true, 'message' => 'Table not created yet, skipping']);
         exit;
     }
-    
+
     // Обновляем или создаём запись о видимости
-    // Используем REPLACE INTO для upsert-операции
     $sql = "REPLACE INTO user_web_push_visibility (user_id, page, group_id, is_visible, updated_at)
             VALUES (:user_id, :page, :group_id, :visible, NOW())";
-    
+
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         ':user_id' => $userId,
@@ -61,12 +63,10 @@ try {
         ':group_id' => $groupId,
         ':visible' => $visible ? 1 : 0
     ]);
-    
+
     echo json_encode(['success' => true]);
-    
+
 } catch (\PDOException $e) {
-    // Таблица может не существовать - это не критично
     error_log("Web push visibility update error: " . $e->getMessage());
-    // Не возвращаем ошибку клиенту, так как это не критично
     echo json_encode(['success' => true, 'message' => 'Visibility tracking skipped']);
 }

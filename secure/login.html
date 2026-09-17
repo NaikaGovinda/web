@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Вход — Нама-Хатта</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <button class="back-btn" onclick="history.back()" aria-label="Назад">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <h1 class="org-name">Вход</h1>
+    </header>
+
+    <main class="content">
+      <div class="auth-card">
+        <h2>Добро пожаловать</h2>
+        <p class="auth-subtitle">Войдите в свой аккаунт</p>
+        
+        <!-- [БЕЗОПАСНОСТЬ] Форма использует стандартный POST, данные НЕ проходят через JS/fetch -->
+        <form id="loginForm" method="POST" action="../api/login.php">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" class="input-field" placeholder="your@email.com" required>
+          </div>
+          <div class="form-group">
+            <label for="password">Пароль</label>
+            <input type="password" id="password" name="password" class="input-field" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Войти</button>
+        </form>
+        
+        <div class="auth-footer">
+          <a href="../forgot_password.html">Забыли пароль?</a>
+          <span>Нет аккаунта? </span>
+          <a href="../register.html">Зарегистрироваться</a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<script>
+// [БЕЗОПАСНОСТЬ] Минимальный JS — только для обработки ошибок и редиректа
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('loginForm');
+    if (!form) return;
+
+    // Проверяем, есть ли ошибка в URL (например, при редиректе после неверного пароля)
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    
+    if (error) {
+        showToast('❌ ' + decodeURIComponent(error));
+    }
+});
+
+function showToast(message) {
+    // Простая реализация toast-уведомления
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: 8px; z-index: 10000; font-size: 14px;';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+</script>
+</body>
+</html>

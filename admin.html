@@ -6,6 +6,7 @@
     <title>Админка — Нама-Хатта</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="/android.js"></script>
 </head>
 <body>
 <div id="app">
@@ -49,60 +50,58 @@
     </nav>
 </div>
 
-<!-- Модальное окно группы -->
-<div id="groupModal" class="modal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-    <div class="modal-content" style="background: #fff; padding: 20px; border-radius: 16px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; box-shadow: 0 4px 24px rgba(0,0,0,0.15); box-sizing: border-box;">
-        <button id="cancelGroup" class="btn btn-ghost">✕ Закрыть</button>
-        <h3 id="modalTitle">Создать группу</h3>
-        <input type="hidden" id="groupId">
-
-        <label>Название *</label>
-        <input type="text" id="groupName" class="input-field" placeholder="Например: Харе Кришна Москва" required><br><br>
-
-        <label>Описание *</label>
-        <textarea id="groupDesc" class="textarea-field" placeholder="Киртаны, лекции, воскресные обеды" required></textarea><br><br>
-
-        <label>Тип *</label>
-        <select id="groupType" class="select-field" required>
-            <option value="namahatta">Нама-Хатта</option>
-            <option value="bhakti_vriksha">Бхакти-Врикша</option>
-        </select><br><br>
-
-        <label>
-            <input type="checkbox" id="groupOnline"> Онлайн-группа
-        </label><br><br>
-
-        <div id="cityField">
-            <label>Город *</label>
-            <input type="text" id="groupCity" class="input-field" placeholder="Москва" required><br><br>
-
-            <label>Адрес (улица, дом)</label>
-            <div style="display: flex; gap: 8px; align-items: center;">
-                <input type="text" id="groupAddress" class="input-field" placeholder="ул. Тверская, 1" style="flex: 1;">
-                <button type="button" id="btnOpenMap" class="btn btn-ghost" style="padding: 8px 12px; white-space: nowrap;" title="Выбрать на карте">🗺️</button>
-            </div>
-            <input type="hidden" id="groupLat" name="lat">
-            <input type="hidden" id="groupLng" name="lng">
+<!-- Модальное окно группы (создание/редактирование) -->
+<div id="groupModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+    <div style="width: 90%; max-width: 400px; max-height: 85vh; background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto; display: flex; flex-direction: column;">
+        <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e2; flex-shrink: 0;">
+            <h3 id="modalTitle" style="margin: 0; font-size: 18px; text-align: center;">Создать группу</h3>
         </div>
-
-        <label>Лидер группы *</label>
-        <select id="groupLeaderId" multiple size="3" class="multi-select">
-            <option value="">— Выберите лидеров —</option>
-        </select>
-
-        <button id="saveGroup" class="btn">Сохранить</button>
-        <button id="cancelGroup2" class="btn btn-ghost">Отмена</button>
+        <div style="overflow-y: auto; padding: 20px; flex: 1;">
+            <input type="hidden" id="groupId">
+            <label for="groupName" style="display:block; margin-bottom:5px; font-weight:600;">Название *</label>
+            <input type="text" id="groupName" class="input-field" placeholder="Например: Харе Кришна Москва" required>
+            <label for="groupDesc" style="display:block; margin-bottom:5px; font-weight:600;">Описание *</label>
+            <textarea id="groupDesc" class="textarea-field" placeholder="Киртаны, лекции, воскресные обеды" required></textarea>
+            <label for="groupType" style="display:block; margin-bottom:5px; font-weight:600;">Тип *</label>
+            <select id="groupType" class="select-field" required>
+                <option value="namahatta">Нама-Хатта</option>
+                <option value="bhakti_vriksha">Бхакти-Врикша</option>
+            </select>
+            <label style="display:block; margin-bottom:5px; font-weight:600;">
+                <input type="checkbox" id="groupOnline"> Онлайн-группа
+            </label>
+            <div id="cityField">
+                <label for="groupCity" style="display:block; margin-bottom:5px; font-weight:600;">Город *</label>
+                <input type="text" id="groupCity" class="input-field" placeholder="Москва" required>
+                <label for="groupAddress" style="display:block; margin-bottom:5px; font-weight:600;">Адрес (улица, дом)</label>
+                <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+                    <input type="text" id="groupAddress" class="input-field" placeholder="ул. Тверская, 1" style="flex: 1; margin-top: 0;">
+                    <button type="button" id="btnOpenMap" class="btn btn-ghost" style="padding: 8px 12px; white-space: nowrap;" title="Выбрать на карте">🗺️</button>
+                </div>
+                <input type="hidden" id="groupLat" name="lat">
+                <input type="hidden" id="groupLng" name="lng">
+            </div>
+            <label for="groupLeaderId" style="display:block; margin-bottom:5px; font-weight:600;">Лидер группы *</label>
+            <select id="groupLeaderId" multiple size="3" class="multi-select">
+                <option value="">— Выберите лидеров —</option>
+            </select>
+        </div>
+        <div style="padding: 16px 20px; border-top: 1px solid #e0e0e2; flex-shrink: 0;">
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-ghost" id="btnCancelGroupModal" style="flex: 1; margin: 0;">Отмена</button>
+                <button class="btn" id="btnSaveGroupModal" style="flex: 1; margin: 0; background: #4a90e2; color: #fff;">Сохранить</button>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Модальное окно карты для выбора точки -->
+<!-- Модальное окно карты -->
 <div id="mapModal" class="modal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99999; align-items: center; justify-content: center;">
     <div class="modal-content" style="background: #fff; padding: 0; border-radius: 16px; width: 95%; max-width: 800px; height: 85vh; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.15); display: flex; flex-direction: column;">
         <div style="padding: 12px 16px; background: #f8f9fa; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center;">
             <h3 style="margin: 0; font-size: 16px;">Выберите точку на карте</h3>
             <button id="closeMapModal" class="btn btn-ghost" style="padding: 4px 8px;">✕</button>
         </div>
-        <!-- Поля ввода адреса и координат -->
         <div style="padding: 10px 16px; background: #fff; border-bottom: 1px solid #dee2e6;">
             <div style="margin-bottom: 8px;">
                 <label style="font-size: 12px; color: #666; display: block; margin-bottom: 4px;">📍 Адрес (улица, город)</label>
@@ -139,7 +138,7 @@
     </div>
 </div>
 
-<!-- Кастомное окно подтверждения удаления ГРУППЫ (вместо confirm) -->
+<!-- Кастомное окно подтверждения удаления ГРУППЫ -->
 <div id="customGroupDeleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
     <div class="card" style="width: 85%; max-width: 320px; text-align: center; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto;">
         <h3 style="margin-top: 0; font-size: 18px;">Удалить группу?</h3>
@@ -160,11 +159,10 @@
         return div.innerHTML;
     }
 
-    let pendingGroupIdToDelete = null; // Хранит ID группы, которую админ хочет удалить
+    let pendingGroupIdToDelete = null;
 
     async function loadAdmin() {
         try {
-            // Проверяем авторизацию и роль
             const authRes = await fetch('/api/check_auth.php');
             const authData = await authRes.json();
 
@@ -173,7 +171,6 @@
                 return;
             }
 
-            // Загружаем данные админки
             const res = await fetch('/api/get_admin_data.php');
             const data = await res.json();
 
@@ -182,12 +179,27 @@
                 return;
             }
 
-            // Данные групп находятся напрямую в data.groups
             let html = `
           <div class="card">
-            <h3>👥 Группы (${data.groups.length})</h3>
-            <button class="btn btn-block" id="btnCreateGroup">➕ Создать группу</button>
-            <div id="groupsList"></div>
+            <div class="js-accordion-header" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;" onclick="toggleAccordion(this)">
+              <div style="display:flex; align-items:center; gap: 10px;">
+                <span style="font-size: 18px;">👥</span>
+                <h3 style="margin: 0; font-size: 17px;">Группы (${data.groups.length})</h3>
+              </div>
+              <span class="js-accordion-arrow" style="transition:transform 0.2s ease; font-size:12px; color:var(--color-muted);">▶</span>
+            </div>
+            <div class="js-accordion-content" style="max-height: 0px; overflow: hidden; transition: max-height 0.3s ease;">
+              <div style="padding-top: 12px; max-height: 400px; overflow-y: auto;">
+                <button class="btn" id="btnCreateGroup" style="margin-bottom: 12px;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  Создать группу
+                </button>
+                <div id="groupsList"></div>
+              </div>
+            </div>
           </div>
 
           <div class="card">
@@ -197,14 +209,12 @@
 
           <div class="card" style="margin-top: 20px; border-top: 2px solid var(--color-primary, #4a90e2);">
             <h3>👑 Управление ролями пользователей</h3>
-            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Здесь вы можете изменить глобальный статус любого преданного в системе (например, сделать его Администратором).</p>
-
+            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Здесь вы можете изменить глобальный статус любого преданного в системе.</p>
             <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px;">
               <label style="font-weight: 600; font-size: 13px;">1. Выберите пользователя:</label>
               <select id="assignLeaderUserId" class="select-field" style="width: 100%; height: 40px; margin: 0; padding: 5px 10px; border-radius: 8px; border: 1px solid #ddd;">
                 <option value="">-- Загрузка пользователей... --</option>
               </select>
-
               <label style="font-weight: 600; font-size: 13px;">2. Назначить глобальную роль:</label>
               <select id="assignUserRoleValue" class="select-field" style="width: 100%; height: 40px; margin: 0; padding: 5px 10px; border-radius: 8px; border: 1px solid #ddd;">
                 <option value="user">Обычный пользователь (Участник)</option>
@@ -213,7 +223,6 @@
                 <option value="observer">Наблюдатель (только просмотр, без права писать)</option>
               </select>
             </div>
-
             <button type="button" class="btn btn-block" onclick="executeChangeUserRole()" style="background: #4a90e2; color: #fff; font-weight: 600;">
               Сохранить новую роль пользователя 💾
             </button>
@@ -222,26 +231,32 @@
 
             document.getElementById('adminContent').innerHTML = html;
             loadUsersForRoleManagement();
-
-            // Кнопка создания
             document.getElementById('btnCreateGroup').addEventListener('click', createGroup);
 
-            // Рендер групп
             const groupsEl = document.getElementById('groupsList');
-            data.groups.forEach(g => {
-                const leaders = g.leaders?.map(l => `${l.first_name} ${l.last_name || ''}`.trim()).join(', ') || '—';
-
-                groupsEl.innerHTML += `
-            <div class="card" style="margin:8px 0;">
-              <h4>${escapeHtml(g.name)} ${g.is_online ? '(онлайн)' : ''}</h4>
-              <p>📍 ${escapeHtml(g.city)} | 👥 ${g.member_count || 0} | Лидеры: ${escapeHtml(leaders)}</p>
-              <button class="btn btn-small btn-ghost" onclick="editGroup(${g.id})">✏️ Редактировать</button>
-              <button class="btn btn-small btn-danger" onclick="deleteGroup(${g.id})">🗑 Удалить</button>
+            if (data.groups && data.groups.length > 0) {
+                data.groups.forEach(g => {
+                    const leaders = g.leaders?.map(l => `${l.first_name} ${l.last_name || ''}`.trim()).join(', ') || '—';
+                    const cityInfo = g.city ? `📍 ${escapeHtml(g.city)}` : '';
+                    const metaInfo = [cityInfo, `👥 ${g.member_count || 0}`, `Лидеры: ${escapeHtml(leaders)}`].filter(Boolean).join(' | ');
+                    const onlineBadge = g.is_online ? '<span style="font-size: 12px; color: var(--color-muted);">(онлайн)</span>' : '';
+                    groupsEl.innerHTML += `
+            <div class="application-item" style="display:flex; justify-content:space-between; align-items:flex-start; padding: 12px 0; border-bottom: 0.5px solid var(--color-border);">
+              <div class="application-item-content" style="flex: 1;">
+                <strong style="font-size: 15px; font-weight: 600;">${escapeHtml(g.name)} ${onlineBadge}</strong>
+                <small style="display:block; color:var(--color-muted); font-size: 13px; margin-top: 4px;">${escapeHtml(metaInfo)}</small>
+              </div>
+              <div style="display:flex; gap: 8px; align-items:center; margin-left: 12px; flex-shrink: 0;">
+                <button class="btn btn-ghost" onclick="editGroup(${g.id})" style="padding: 6px 12px; border-radius: 8px; border: 1px solid #ccc; background: #f5f5f7; color: #666; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;">Редактировать</button>
+                <button class="btn" onclick="deleteGroup(${g.id})" style="padding: 6px 12px; border-radius: 8px; border: 1px solid #e0a0a0; background: #fde8e8; color: #c62828; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;">Удалить</button>
+              </div>
             </div>
           `;
-            });
+                });
+            } else {
+                groupsEl.innerHTML = '<p style="color: var(--color-muted); text-align: center; padding: 20px 0;">Нет созданных групп</p>';
+            }
 
-            // Рендер заявок
             const appsEl = document.getElementById('applicationsList');
             if (data.applications && data.applications.length) {
                 data.applications.forEach(a => {
@@ -263,7 +278,6 @@
         }
     }
 
-    // Загрузка всех пользователей (без групп)
     async function loadUsersForRoleManagement() {
         const userSelect = document.getElementById('assignLeaderUserId');
         if (!userSelect) return;
@@ -298,7 +312,6 @@
         }
     }
 
-    // Сетевой запрос на изменение роли в таблице users
     async function executeChangeUserRole() {
         const userId = document.getElementById('assignLeaderUserId').value;
         const roleValue = document.getElementById('assignUserRoleValue').value;
@@ -383,12 +396,9 @@
             document.getElementById('groupOnline').checked = parseInt(g.is_online) === 1;
             document.getElementById('groupCity').value = g.city || '';
             document.getElementById('groupAddress').value = g.address || '';
-
-            // Фиксируем старые координаты в форме перед редактированием
             document.getElementById('groupLat').value = g.lat !== null && g.lat !== undefined ? g.lat : '';
             document.getElementById('groupLng').value = g.lng !== null && g.lng !== undefined ? g.lng : '';
 
-            // Загружаем лидеров в мультиселект
             const leadersRes = await fetch('/api/get_leaders.php');
             const leadersData = await leadersRes.json();
             const select = document.getElementById('groupLeaderId');
@@ -400,8 +410,6 @@
                     const option = document.createElement('option');
                     option.value = l.id;
                     option.textContent = name;
-
-                    // Проверяем, назначен ли этот пользователь лидером
                     if (g.leaders && g.leaders.map(Number).includes(parseInt(l.id))) {
                         option.selected = true;
                     }
@@ -416,14 +424,12 @@
         }
     }
 
-    function toggleCityField() {
-        // Заглушка (при необходимости можно раскомментировать логику)
-    }
+    function toggleCityField() {}
 
     let isSaving = false;
 
     async function saveGroup() {
-        const button = document.getElementById('saveGroup');
+        const button = document.getElementById('btnSaveGroupModal');
         if (!button || isSaving) return;
 
         isSaving = true;
@@ -432,17 +438,14 @@
         try {
             const city = document.getElementById('groupCity')?.value.trim() || '';
             const address = document.getElementById('groupAddress')?.value.trim() || '';
-
             let latVal = null;
             let lngVal = null;
-
             const existingLat = document.getElementById('groupLat')?.value;
             const existingLng = document.getElementById('groupLng')?.value;
 
             if (existingLat && existingLng) {
                 latVal = parseFloat(existingLat);
                 lngVal = parseFloat(existingLng);
-                console.log("Используем координаты из карты:", latVal, lngVal);
             } else {
                 button.textContent = 'Поиск координат...';
                 button.disabled = true;
@@ -450,7 +453,6 @@
                 try {
                     const cleanCity = city.toLowerCase() === 'онлайн' ? '' : city;
                     const cleanAddress = address.toLowerCase() === 'онлайн' ? '' : address;
-
                     let searchQuery = '';
                     if (cleanAddress && cleanCity && cleanAddress.toLowerCase().includes(cleanCity.toLowerCase())) {
                         searchQuery = cleanAddress;
@@ -459,29 +461,22 @@
                     } else {
                         searchQuery = cleanAddress || cleanCity;
                     }
-
                     searchQuery = searchQuery.replace(/\s+/g, ' ').trim();
 
                     if (searchQuery) {
                         try {
                             var urlArray = [
-                                "https://",
-                                "nominatim.",
-                                "openstreetmap.org",
-                                "/search?q=",
-                                encodeURIComponent(searchQuery),
-                                "&format=json&limit=1&accept-language=ru"
+                                "https://", "nominatim.", "openstreetmap.org", "/search?q=",
+                                encodeURIComponent(searchQuery), "&format=json&limit=1&accept-language=ru"
                             ];
                             const controller = new AbortController();
                             const timeout = setTimeout(() => controller.abort(), 8000);
                             const geoRes = await fetch(urlArray.join(""), { signal: controller.signal });
                             clearTimeout(timeout);
                             const geoData = await geoRes.json();
-
                             if (geoData && Array.isArray(geoData) && geoData.length > 0 && geoData[0]) {
                                 latVal = parseFloat(geoData[0].lat);
                                 lngVal = parseFloat(geoData[0].lon);
-                                console.log("Координаты из Nominatim:", latVal, lngVal);
                             }
                         } catch (nominatimErr) {
                             console.warn('Nominatim failed, trying Photon:', nominatimErr);
@@ -492,12 +487,10 @@
                                 const geoRes2 = await fetch(photonUrl, { signal: controller2.signal });
                                 clearTimeout(timeout2);
                                 const photonData = await geoRes2.json();
-                                
                                 if (photonData && photonData.features && photonData.features.length > 0) {
                                     const f = photonData.features[0];
                                     latVal = parseFloat(f.geometry.coordinates[1]);
                                     lngVal = parseFloat(f.geometry.coordinates[0]);
-                                    console.log("Координаты из Photon:", latVal, lngVal);
                                 }
                             } catch (photonErr) {
                                 console.error('Photon also failed:', photonErr);
@@ -562,13 +555,28 @@
                 button.disabled = false;
             }
         }
-    } // ← ИСПРАВЛЕНО: добавлена закрывающая скобка функции saveGroup
+    }
 
     function cancelGroup() {
         document.getElementById('groupModal').style.display = 'none';
     }
 
-    // ===== КАРТА ДЛЯ ВЫБОРА ТОЧКИ =====
+    function toggleAccordion(header) {
+        const content = header.nextElementSibling;
+        const inner = content.querySelector('[style*="max-height: 400px"]');
+        const arrow = header.querySelector('.js-accordion-arrow');
+        if (content && inner && arrow) {
+            const isExpanded = content.style.maxHeight === '0px';
+            if (isExpanded) {
+                content.style.maxHeight = (inner.scrollHeight + 50) + 'px';
+            } else {
+                content.style.maxHeight = '0px';
+            }
+            arrow.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(90deg)';
+        }
+    }
+
+    // ===== КАРТА =====
     let mapPickerInstance = null;
     let mapPickerMarker = null;
     let selectedLat = null;
@@ -576,10 +584,7 @@
 
     async function loadLeafletAsync() {
         return new Promise((resolve, reject) => {
-            if (typeof L !== 'undefined') {
-                resolve();
-                return;
-            }
+            if (typeof L !== 'undefined') { resolve(); return; }
             const css = document.createElement('link');
             css.rel = 'stylesheet';
             css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
@@ -614,38 +619,26 @@
         try {
             const mapContainer = document.getElementById('map');
             mapContainer.innerHTML = '';
-
-            let center = [55.751244, 37.618423]; // Москва по умолчанию
+            let center = [55.751244, 37.618423];
             let zoom = 12;
 
             if (navigator.geolocation) {
                 try {
                     const pos = await new Promise((resolve, reject) => {
-                        navigator.geolocation.getCurrentPosition(resolve, reject, {
-                            timeout: 5000,
-                            enableHighAccuracy: true
-                        });
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000, enableHighAccuracy: true });
                     });
                     center = [pos.coords.latitude, pos.coords.longitude];
                 } catch (e) {
-                    console.log('Геолокация недоступна, используем Москву');
+                    console.log('Геолокация недоступна');
                 }
             }
 
-            mapPickerInstance = L.map('map', {
-                zoomControl: true,
-                attributionControl: false
-            }).setView(center, zoom);
-
-            // Автозаполнение полей при открытии карты
+            mapPickerInstance = L.map('map', { zoomControl: true, attributionControl: false }).setView(center, zoom);
             document.getElementById('inputLat').value = center[0].toFixed(6);
             document.getElementById('inputLng').value = center[1].toFixed(6);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19
-            }).addTo(mapPickerInstance);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(mapPickerInstance);
 
-            // Клик по карте
             mapPickerInstance.on('click', async function (e) {
                 const { lat, lng } = e.latlng;
                 selectedLat = lat;
@@ -661,56 +654,21 @@
                 document.getElementById('inputLat').value = lat.toFixed(6);
                 document.getElementById('inputLng').value = lng.toFixed(6);
 
-                // Обратное геокодирование с fallback
-                const reverseGeocode = async () => {
-                    // Пробуем Nominatim
-                    try {
-                        const urlArray = [`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ru`];
-                        const controller = new AbortController();
-                        const timeout = setTimeout(() => controller.abort(), 8000);
-                        const geoRes = await fetch(urlArray.join(""), { signal: controller.signal });
-                        clearTimeout(timeout);
-                        const data = await geoRes.json();
-                        if (data && data.display_name) return data;
-                    } catch (e) {
-                        console.warn('Nominatim reverse failed:', e);
-                    }
-                    
-                    // Fallback на Photon
-                    try {
-                        const url = `https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}`;
-                        const controller = new AbortController();
-                        const timeout = setTimeout(() => controller.abort(), 5000);
-                        const geoRes = await fetch(url, { signal: controller.signal });
-                        clearTimeout(timeout);
-                        const data = await geoRes.json();
-                        if (data && data.feature && data.feature.geometry) {
-                            return {
-                                display_name: data.feature.properties.name || ''
-                            };
-                        }
-                    } catch (e) {
-                        console.warn('Photon reverse failed:', e);
-                    }
-                    
-                    return null;
-                };
-
                 try {
-                    const geoData = await reverseGeocode();
-                    if (geoData && geoData.display_name) {
-                        const address = geoData.display_name;
-                        document.getElementById('mapAddress').textContent = address.substring(0, 80) + (address.length > 80 ? '...' : '');
-                    } else {
-                        document.getElementById('mapAddress').textContent = 'Адрес не найден';
+                    const urlArray = [`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ru`];
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 8000);
+                    const geoRes = await fetch(urlArray.join(""), { signal: controller.signal });
+                    clearTimeout(timeout);
+                    const data = await geoRes.json();
+                    if (data && data.display_name) {
+                        document.getElementById('mapAddress').textContent = data.display_name.substring(0, 80);
                     }
                 } catch (err) {
-                    console.error('Ошибка обратного геокодирования:', err);
-                    document.getElementById('mapAddress').textContent = 'Не удалось определить адрес';
+                    console.error('Ошибка геокодирования:', err);
                 }
             });
 
-            // Кнопка "Моё местоположение"
             document.getElementById('btnUseMyLocation').onclick = async function () {
                 if (!navigator.geolocation) {
                     showToast('❌ Геолокация не поддерживается');
@@ -718,10 +676,7 @@
                 }
                 try {
                     const pos = await new Promise((resolve, reject) => {
-                        navigator.geolocation.getCurrentPosition(resolve, reject, {
-                            timeout: 8000,
-                            enableHighAccuracy: true
-                        });
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 8000, enableHighAccuracy: true });
                     });
                     const lat = pos.coords.latitude;
                     const lng = pos.coords.longitude;
@@ -734,43 +689,18 @@
                 }
             };
 
-            // Кнопка "Выбрать"
             document.getElementById('btnSelectMapPoint').onclick = async function () {
                 if (selectedLat !== null && selectedLng !== null) {
                     document.getElementById('groupLat').value = selectedLat;
                     document.getElementById('groupLng').value = selectedLng;
 
-                    // Обратное геокодирование с fallback
-                    const reverseGeocode = async () => {
-                        try {
-                            const urlArray = [`https://nominatim.openstreetmap.org/reverse?lat=${selectedLat}&lon=${selectedLng}&format=json&accept-language=ru`];
-                            const controller = new AbortController();
-                            const timeout = setTimeout(() => controller.abort(), 8000);
-                            const geoRes = await fetch(urlArray.join(""), { signal: controller.signal });
-                            clearTimeout(timeout);
-                            const data = await geoRes.json();
-                            if (data && data.display_name) return data;
-                        } catch (e) {
-                            console.warn('Nominatim reverse failed:', e);
-                        }
-                        try {
-                            const url = `https://photon.komoot.io/reverse?lat=${selectedLat}&lon=${selectedLng}`;
-                            const controller = new AbortController();
-                            const timeout = setTimeout(() => controller.abort(), 5000);
-                            const geoRes = await fetch(url, { signal: controller.signal });
-                            clearTimeout(timeout);
-                            const data = await geoRes.json();
-                            if (data && data.feature) {
-                                return { display_name: data.feature.properties.name || '' };
-                            }
-                        } catch (e) {
-                            console.warn('Photon reverse failed:', e);
-                        }
-                        return null;
-                    };
-
                     try {
-                        const geoData = await reverseGeocode();
+                        const urlArray = [`https://nominatim.openstreetmap.org/reverse?lat=${selectedLat}&lon=${selectedLng}&format=json&accept-language=ru`];
+                        const controller = new AbortController();
+                        const timeout = setTimeout(() => controller.abort(), 8000);
+                        const geoRes = await fetch(urlArray.join(""), { signal: controller.signal });
+                        clearTimeout(timeout);
+                        const geoData = await geoRes.json();
                         if (geoData && geoData.display_name) {
                             const addr = geoData.address || {};
                             const street = addr.road || '';
@@ -792,23 +722,12 @@
                 }
             };
 
-            // Кнопка "Найти" по координатам
             document.getElementById('btnGoToCoords').onclick = function () {
                 const lat = parseFloat(document.getElementById('inputLat').value);
                 const lng = parseFloat(document.getElementById('inputLng').value);
 
                 if (isNaN(lat) || isNaN(lng)) {
                     showToast('⚠️ Введите корректные координаты');
-                    return;
-                }
-
-                if (lat < -90 || lat > 90) {
-                    showToast('⚠️ Широта должна быть от -90 до 90');
-                    return;
-                }
-
-                if (lng < -180 || lng > 180) {
-                    showToast('⚠️ Долгота должна быть от -180 до 180');
                     return;
                 }
 
@@ -823,17 +742,8 @@
                 }
 
                 document.getElementById('mapCoords').textContent = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-
-                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ru&email=achyutagauradas@mail.ru`)
-                    .then(r => r.json())
-                    .then(data => {
-                        const address = data.display_name || 'Адрес не найден';
-                        document.getElementById('mapAddress').textContent = address.substring(0, 80) + (address.length > 80 ? '...' : '');
-                    })
-                    .catch(err => console.error('Ошибка геокодирования:', err));
             };
 
-            // Кнопка "Найти" по адресу
             document.getElementById('btnSearchAddress').onclick = async function () {
                 const address = document.getElementById('inputAddress').value.trim();
                 if (!address) {
@@ -841,77 +751,20 @@
                     return;
                 }
 
-                // Функция поиска через Nominatim
-                const searchNominatim = async () => {
+                try {
                     const urlArray = [
-                        "https://",
-                        "nominatim.",
-                        "openstreetmap.org",
-                        "/search?q=",
-                        encodeURIComponent(address),
-                        "&format=json&limit=1&accept-language=ru"
+                        "https://", "nominatim.", "openstreetmap.org", "/search?q=",
+                        encodeURIComponent(address), "&format=json&limit=1&accept-language=ru"
                     ];
                     const controller = new AbortController();
                     const timeout = setTimeout(() => controller.abort(), 8000);
-                    
-                    try {
-                        const geoRes = await fetch(urlArray.join(""), { signal: controller.signal });
-                        clearTimeout(timeout);
-                        return await geoRes.json();
-                    } catch (e) {
-                        clearTimeout(timeout);
-                        throw e;
-                    }
-                };
-
-                // Функция поиска через Photon (fallback)
-                const searchPhoton = async () => {
-                    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(address)}&limit=1&lang=ru`;
-                    const controller = new AbortController();
-                    const timeout = setTimeout(() => controller.abort(), 5000);
-                    
-                    try {
-                        const geoRes = await fetch(url, { signal: controller.signal });
-                        clearTimeout(timeout);
-                        const data = await geoRes.json();
-                        
-                        // Преобразуем формат Photon в формат Nominatim
-                        if (data && data.features && data.features.length > 0) {
-                            const f = data.features[0];
-                            return [{
-                                lat: f.geometry.coordinates[1].toString(),
-                                lon: f.geometry.coordinates[0].toString(),
-                                display_name: f.properties.name || address,
-                                address: f.properties
-                            }];
-                        }
-                        return [];
-                    } catch (e) {
-                        clearTimeout(timeout);
-                        throw e;
-                    }
-                };
-
-                try {
-                    let geoData = null;
-                    
-                    // Сначала пробуем Nominatim
-                    try {
-                        geoData = await searchNominatim();
-                    } catch (nominatimErr) {
-                        console.warn('Nominatim не доступен, используем Photon:', nominatimErr);
-                        // Fallback на Photon
-                        geoData = await searchPhoton();
-                    }
+                    const geoRes = await fetch(urlArray.join(""), { signal: controller.signal });
+                    clearTimeout(timeout);
+                    const geoData = await geoRes.json();
 
                     if (geoData && geoData.length > 0 && geoData[0]) {
                         const lat = parseFloat(geoData[0].lat);
                         const lng = parseFloat(geoData[0].lon);
-
-                        if (isNaN(lat) || isNaN(lng)) {
-                            showToast('⚠️ Не удалось определить координаты');
-                            return;
-                        }
 
                         mapPickerInstance.setView([lat, lng], 16);
                         selectedLat = lat;
@@ -926,21 +779,14 @@
                         document.getElementById('mapCoords').textContent = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
                         document.getElementById('inputLat').value = lat.toFixed(6);
                         document.getElementById('inputLng').value = lng.toFixed(6);
-
-                        const addr = geoData[0].address || {};
-                        const street = addr.road || addr.street || '';
-                        const house = addr.house_number || '';
-                        const city = addr.city || addr.town || addr.village || '';
-                        const fullAddress = `${street}${house ? ', ' + house : ''}`;
-                        document.getElementById('mapAddress').textContent = fullAddress || geoData[0].display_name?.substring(0, 80) || address;
-                        
+                        document.getElementById('mapAddress').textContent = geoData[0].display_name?.substring(0, 80) || address;
                         showToast('✅ Адрес найден');
                     } else {
                         showToast('⚠️ Адрес не найден');
                     }
                 } catch (err) {
                     console.error('Ошибка поиска адреса:', err);
-                    showToast('❌ Ошибка при поиске. Попробуйте позже');
+                    showToast('❌ Ошибка при поиске');
                 }
             };
 
@@ -961,7 +807,6 @@
         if (modal) modal.style.display = 'flex';
     }
 
-    // Клики кнопок в модалке удаления группы
     document.getElementById('btnCancelGroupDelete')?.addEventListener('click', () => {
         const modal = document.getElementById('customGroupDeleteModal');
         if (modal) modal.style.display = 'none';
@@ -997,30 +842,31 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('saveGroup')?.addEventListener('click', saveGroup);
-        document.getElementById('cancelGroup')?.addEventListener('click', cancelGroup);
-        document.getElementById('cancelGroup2')?.addEventListener('click', cancelGroup);
+        document.getElementById('btnSaveGroupModal')?.addEventListener('click', saveGroup);
+        document.getElementById('btnCancelGroupModal')?.addEventListener('click', cancelGroup);
         document.getElementById('btnOpenMap')?.addEventListener('click', openMapPicker);
         document.getElementById('closeMapModal')?.addEventListener('click', closeMapPicker);
+
+        document.getElementById('groupModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                cancelGroup();
+            }
+        });
+
         loadAdmin();
     });
 </script>
 
 <script>
-    // ГЛОБАЛЬНЫЙ ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМА ДЛЯ ВСЕГО ФРОНТЕНДА
-    const IS_DEBUG = true; // Смени на false перед релизом, чтобы включить кэширование!
-    const APP_VERSION = '1.0.0'; // Версия для релиза
+    const IS_DEBUG = true;
+    const APP_VERSION = '1.0.0';
 
     (function() {
         const version = IS_DEBUG ? Date.now() : APP_VERSION;
-
-        // 1. Динамически обновляем версию стилей в <head>
         const mainStyle = document.querySelector('link[href^="style.css"]');
         if (mainStyle) {
             mainStyle.href = 'style.css?v=' + version;
         }
-
-        // 2. Подключаем саму тему theme.js с правильной версией
         const themeScript = document.createElement('script');
         themeScript.src = 'theme.js?v=' + version;
         document.body.appendChild(themeScript);

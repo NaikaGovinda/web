@@ -4,14 +4,9 @@ header('Content-Type: application/json; charset=utf8mb4');
 
 // [АРХИТЕКТУРА] db.php перенесен на самый верх, ручной session_start() отсутствует
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Требуется вход']);
-    exit;
-}
-
-$user_id = (int)$_SESSION['user_id'];
+$user_id = requireAuth($pdo);
 $event_id = (int)($_GET['id'] ?? 0);
 
 if (!$event_id) {

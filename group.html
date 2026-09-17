@@ -10,7 +10,84 @@
   <title>Группа — Нама-Хатта</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="style.css">
+	<!-- Swiper CSS -->
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+	<style>
+	.swiper {
+		width: 100%;
+		max-width: 500px;
+		margin: 0 auto;
+		border-radius: 12px;
+		overflow: hidden;
+	}
+	.swiper-wrapper {
+		width: 100%;
+	}
+	.swiper-slide {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		overflow: hidden;
+	}
+	.swiper-slide img {
+		display: block;
+		width: 100% !important;
+		height: auto !important;
+		max-height: 350px !important;
+		object-fit: contain !important;
+	}
+	
+	/* Фото группы в секции "Фотографии группы" */
+	.group-photo {
+		width: 100%;
+		max-width: 500px;
+		height: auto;
+		max-height: 400px;
+		object-fit: contain;
+		display: block;
+		margin: 0 auto;
+	}
+	.swiper-pagination-bullet {
+		background: #fff;
+		opacity: 0.5;
+	}
+	.swiper-pagination-bullet-active {
+		opacity: 1;
+		background: #4a90e2;
+	}
+	.photo-counter {
+		position: absolute;
+		top: 20px;
+		right: 20px;
+		background: rgba(0,0,0,0.6);
+		color: #fff;
+		padding: 5px 10px;
+		border-radius: 15px;
+		font-size: 12px;
+		font-weight: 600;
+		z-index: 10;
+	}
+	</style>
 	<script src="assets/custom-cropper.js"></script>
+	<!-- HEIC to JPEG converter -->
+	<script>
+	// Проверяем загрузку heic2any
+	window.heic2anyLoaded = false;
+	window.heic2anyReady = false;
+	window.heic2anyError = false;
+	
+	window.checkHeic2any = function() {
+		if (typeof window.heic2any !== 'function') {
+			console.error('❌ heic2any is NOT available!');
+			return false;
+		}
+		return true;
+	};
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js" 
+		onload="window.heic2anyLoaded=true; window.heic2anyReady=true; window.checkHeic2any();" 
+		onerror="window.heic2anyError=true; window.heic2anyLoaded=false; window.heic2anyReady=false; showToast('⚠️ HEIC конвертация недоступна');"></script>
 </head>
 <body>
   <div id="app">
@@ -21,8 +98,59 @@
         </svg>
       </button>
       <h1 class="org-name" id="groupName" style="font-size:17px;">Загрузка...</h1>
-      <button class="btn-icon" id="btnFavorite" aria-label="В избранное"></button>
+      <div style="width: 44px;"></div>
     </header>
+
+    <!-- Фильтры-кнопки (Чат и Настройки) -->
+    <div class="filters" id="groupFilters" style="display: none;">
+      <button class="filter-btn" id="btnOpenChatFilter" onclick="openGroupChat()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        Чат группы
+      </button>
+      <button class="filter-btn" id="btnSettingsFilter" onclick="toggleSettingsMenu()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        Настройки
+      </button>
+    </div>
+
+    <!-- Меню настроек -->
+    <div id="settingsMenu" style="display: none; position: fixed; top: 110px; right: 15px; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000; min-width: 200px; overflow: hidden;">
+      <button id="btnEditGroupMenu" style="width: 100%; padding: 12px 16px; border: none; background: none; text-align: left; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        Редактировать
+      </button>
+      <button id="btnUploadAvatarMenu" style="width: 100%; padding: 12px 16px; border: none; background: none; text-align: left; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <circle cx="9" cy="9" r="2"/>
+          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+        </svg>
+        Загрузить аватар
+      </button>
+      <button id="btnCreateEventMenu" style="width: 100%; padding: 12px 16px; border: none; background: none; text-align: left; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Создать событие
+      </button>
+      <button id="btnUploadPhotosMenu" style="width: 100%; padding: 12px 16px; border: none; background: none; text-align: left; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <circle cx="9" cy="9" r="2"/>
+          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+        </svg>
+        Загрузить фото
+      </button>
+    </div>
 
     <main class="content" id="groupDetail">
       <div class="loading">Загрузка...</div>
@@ -55,32 +183,130 @@
     </nav>
   </div>
 
-  <!-- Модальное окно создания события -->
-<!-- [ИСПРАВЛЕНО] Модальное окно создания события с планировщиком будильников -->
-  <div id="eventModal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <h3 id="eventModalTitle">Создать событие</h3>
-      <input type="text" id="eventTitle" class="input-field" placeholder="Название события" required><br><br>
-      <textarea id="eventDesc" class="textarea-field" placeholder="Описание (необязательно)"></textarea><br><br>
+  <!-- Модальное окно контактов лидера -->
+  <div id="leaderContactModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 90%; max-width: 400px; max-height: 80vh; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto; overflow-y: auto;">
+      <h3 style="margin-top: 0; font-size: 18px; text-align: center;">📞 Контакты лидера</h3>
       
-      <label style="font-weight: 600; display: block; margin-bottom: 5px;">Дата и время проведения:</label>
-      <input type="datetime-local" id="eventDateTime" class="input-field" required><br><br>
+      <div id="leaderContactInfo" style="margin: 20px 0;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <div id="leaderContactName" style="font-size: 20px; font-weight: 700; color: #1e1e20;"></div>
+        </div>
+        
+        <div id="leaderContactDetails" style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- Здесь будут контакты -->
+        </div>
+      </div>
       
-      <!-- [НОВОЕ] Интерактивный блок планирования ручных оповещений -->
-      <div style="background: #f8f8fa; padding: 12px; border-radius: 8px; border: 1px solid #eef0f4; margin-bottom: 20px;">
-          <label style="font-weight: 600; display: block; margin-bottom: 8px; color: #333; font-size: 14px;">🔔 Расписание оповещений (Будильники):</label>
-          
-          <!-- Сюда JavaScript будет динамически дописывать новые строчки с датами -->
-          <div id="notificationInputsContainer" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;"></div>
-          
-          <button type="button" class="btn btn-ghost" onclick="addNotificationTimeRow()" style="margin: 0; padding: 6px 12px; font-size: 13px; border-color: #4a90e2; color: #4a90e2; background: #fff; width: auto; display: inline-flex; align-items: center; gap: 4px;">
-              <span>➕</span> Добавить напоминание
-          </button>
+      <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button class="btn btn-ghost" id="btnCloseLeaderContact" style="flex: 1; margin: 0;">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно редактирования группы -->
+  <div id="editGroupModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 90%; max-width: 400px; max-height: 80vh; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto; overflow-y: auto;">
+      <h3 style="margin-top: 0; font-size: 18px; text-align: center;">✏️ Редактировать группу</h3>
+
+      <label for="editGroupNameInput" style="display:block; margin-bottom:5px; font-weight:600;">Название *</label>
+      <input type="text" id="editGroupNameInput" class="input-field" required>
+
+      <label for="editGroupAddressInput" style="display:block; margin-bottom:5px; font-weight:600;">Адрес</label>
+      <input type="text" id="editGroupAddressInput" class="input-field">
+
+      <label for="editGroupCityInput" style="display:block; margin-bottom:5px; font-weight:600;">Город</label>
+      <input type="text" id="editGroupCityInput" class="input-field">
+
+      <label for="editGroupTimeInput" style="display:block; margin-bottom:5px; font-weight:600;">Время проведения</label>
+      <input type="text" id="editGroupTimeInput" class="input-field" placeholder="Например: 18:00">
+
+      <label for="editGroupDayInput" style="display:block; margin-bottom:5px; font-weight:600;">День проведения</label>
+      <input type="text" id="editGroupDayInput" class="input-field" placeholder="Например: Суббота">
+
+      <label for="editGroupGroupDescInput" style="display:block; margin-bottom:5px; font-weight:600;">Описание группы</label>
+      <textarea id="editGroupGroupDescInput" class="textarea-field" placeholder="Описание группы для отображения на странице namahatta"></textarea>
+
+      <label for="editGroupDescInput" style="display:block; margin-bottom:5px; font-weight:600;">Описание (скрытое)</label>
+      <textarea id="editGroupDescInput" class="textarea-field" placeholder="Описание группы"></textarea>
+
+      <!-- Контакты лидера -->
+      <div id="leaderContactEditSection" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 2px solid #eef0f4;">
+        <h4 style="margin: 0 0 15px 0; font-size: 16px; color: #4a90e2;">👤 Контакты лидера</h4>
+        
+        <div id="leaderContactEditFields">
+          <!-- Поля будут добавлены динамически -->
+        </div>
       </div>
 
-      <button id="saveEvent" class="btn">Сохранить</button>
-      <button id="cancelEvent" class="btn btn-ghost">Отмена</button>
-      <input type="hidden" id="eventId">
+      <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button class="btn btn-ghost" id="btnCancelGroupEdit" style="flex: 1; margin: 0;">Отмена</button>
+        <button class="btn" id="btnSaveGroupEdit" style="flex: 1; margin: 0; background: #4a90e2; color: #fff;">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно загрузки фото группы -->
+  <div id="uploadPhotosModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 90%; max-width: 400px; max-height: 80vh; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto; overflow-y: auto;">
+      <h3 style="margin-top: 0; font-size: 18px; text-align: center;">📸 Загрузить фото</h3>
+
+      <label for="photoFileInput" style="display:block; margin-bottom:10px; font-weight:600; cursor: pointer;">
+        Выберите фото (до 10 шт., JPG/PNG/GIF/HEIC)
+        <input type="file" id="photoFileInput" accept="image/*" multiple style="display: none;">
+        <div id="photoPreviewArea" style="margin-top: 10px; min-height: 60px; border: 2px dashed #ccc; border-radius: 8px; padding: 10px; text-align: center; color: #888;">
+          Нажмите для выбора фото<br>
+          <small style="color: #999;">HEIC (iPhone) будет автоматически конвертирован в JPEG</small>
+        </div>
+      </label>
+
+      <!-- Превью выбранных фото -->
+      <div id="selectedPhotosPreview" style="display: none; margin-top: 15px;">
+        <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #666;">Выбранные фото:</h4>
+        <div id="photosPreviewGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 200px; overflow-y: auto;"></div>
+      </div>
+
+      <!-- Статус загрузки -->
+      <div id="uploadPhotoStatus" style="display: none; margin-top: 15px; padding: 12px; border-radius: 8px; background: #f0f4ff; text-align: center;"></div>
+
+      <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button class="btn btn-ghost" id="btnCancelUploadPhotos" style="flex: 1; margin: 0;">Отмена</button>
+        <button class="btn" id="btnExecuteUploadPhotos" style="flex: 1; margin: 0; background: #4a90e2; color: #fff;">Загрузить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно создания события -->
+  <div id="createEventModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 90%; max-width: 400px; max-height: 80vh; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto; overflow-y: auto;">
+      <h3 style="margin-top: 0; font-size: 18px; text-align: center;">➕ Создать событие</h3>
+
+      <input type="hidden" id="editEventId">
+
+      <label for="eventTitleNew" style="display:block; margin-bottom:5px; font-weight:600;">Название события *</label>
+      <input type="text" id="eventTitleNew" class="input-field" required>
+
+      <label for="eventDescNew" style="display:block; margin-bottom:5px; font-weight:600;">Описание</label>
+      <textarea id="eventDescNew" class="textarea-field" placeholder="Описание (необязательно)"></textarea>
+
+      <label for="eventDateTimeNew" style="display:block; margin-bottom:5px; font-weight:600;">Дата и время проведения *</label>
+      <input type="datetime-local" id="eventDateTimeNew" class="input-field" required>
+
+      <label for="eventDayNew" style="display:block; margin-bottom:5px; font-weight:600;">День проведения</label>
+      <input type="text" id="eventDayNew" class="input-field" placeholder="Например: Суббота">
+
+      <div style="background: #f8f8fa; padding: 12px; border-radius: 8px; border: 1px solid #eef0f4; margin-top: 12px;">
+        <label style="font-weight: 600; display: block; margin-bottom: 8px; color: #333; font-size: 14px;">🔔 Напоминания:</label>
+        <div id="notificationInputsContainerNew" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;"></div>
+        <button type="button" class="btn btn-ghost" onclick="addNotificationTimeRowNew()" style="margin: 0; padding: 6px 12px; font-size: 13px; border-color: #4a90e2; color: #4a90e2; background: #fff; width: auto; display: inline-flex; align-items: center; gap: 4px;">
+          <span>➕</span> Добавить напоминание
+        </button>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button class="btn btn-ghost" id="btnCancelCreateEvent" style="flex: 1; margin: 0;">Отмена</button>
+        <button class="btn" id="btnSaveCreateEvent" style="flex: 1; margin: 0; background: #4a90e2; color: #fff;">Создать</button>
+      </div>
     </div>
   </div>
 
@@ -226,6 +452,18 @@
 		</div>
 	</div>
 	
+	<!-- Кастомное окно подтверждения удаления ФОТО (вместо confirm) -->
+	<div id="customPhotoDeleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+		<div class="card" style="width: 85%; max-width: 320px; text-align: center; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto;">
+			<h3 style="margin-top: 0; font-size: 18px;">Удалить фото?</h3>
+			<p style="color: #666; font-size: 14px; margin-bottom: 20px;">Вы действительно хотите безвозвратно удалить это фото?</p>
+			<div style="display: flex; gap: 10px;">
+				<button class="btn btn-ghost" id="btnCancelPhotoDelete" style="flex: 1; margin: 0;">Отмена</button>
+				<button class="btn btn-danger" id="btnConfirmPhotoDelete" style="flex: 1; margin: 0; background: #ff3b30; color: #fff; border: none;">Удалить</button>
+			</div>
+		</div>
+	</div>
+	
 	<!-- Кастомное окно подачи заявки (вместо prompt) -->
 <div id="customSubmitAppModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
     <div class="card" style="width: 90%; max-width: 360px; text-align: left; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto;">
@@ -245,6 +483,12 @@
   let currentGroupId = null;
   let currentGroupName = "";
   let currentGroupDesc = "";
+  let currentGroupGroupDesc = "";
+  let currentGroupAddress = "";
+  let currentGroupCity = "";
+  let currentGroupTime = "";
+  let currentGroupDay = "";
+  let currentLeadersData = []; // Храним данные о лидерах для модального окна
   let activeChatRecipientId = null; // null — общий чат группы, число — ID собеседника для ЛС
   let selectedMessageIds = []; // Хранит ID выделенных для удаления сообщений
   let contextMessageId = null; // ID сообщения для контекстного меню
@@ -1442,133 +1686,6 @@
 
   // === РАБОТА С СОБЫТИЯМИ (только для лидеров) ===
 
-	function saveEvent() {
-		if (!currentGroupId) {
-			showToast('❌ Ошибка: группа не загружена');
-			return;
-		}
-
-		const eventId = document.getElementById('eventId').value;
-		const title = document.getElementById('eventTitle').value.trim();
-		const desc = document.getElementById('eventDesc').value.trim();
-		const localDateTime = document.getElementById('eventDateTime').value;
-
-		if (!title || !localDateTime) {
-			showToast('⚠️ Заполните название и дату события');
-			return;
-		}
-
-		const utcDateTime = localDateTime.replace('T', ' ') + ':00';
-		const notifyInputs = document.querySelectorAll('.notify-datetime-input');
-		const notificationDates = [];
-
-		for (let input of notifyInputs) {
-			if (input.value) {
-				const formattedNotifyDate = input.value.replace('T', ' ') + ':00';
-				notificationDates.push(formattedNotifyDate);
-			}
-		}
-
-		const data = {
-			id: eventId,
-			group_id: currentGroupId,
-			title: title,
-			description: desc,
-			event_date: utcDateTime,
-			notifications: notificationDates
-		};
-
-		const url = eventId ? '/api/update_event.php' : '/api/create_event.php';
-
-		fetch(url, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			credentials: 'include',
-			body: JSON.stringify(data)
-		})
-		.then(res => {
-			if (res.status === 403) {
-				throw new Error('Требуется войти в аккаунт');
-			}
-			return res.text().then(text => { const jsonIdx = text.indexOf('{'); if (jsonIdx === -1) throw new Error('Не JSON'); return JSON.parse(text.substring(jsonIdx)); });
-		})
-		.then(result => {
-			if (result.success) {
-				showToast(eventId ? '✅ Событие обновлено!' : '🎉 Событие создано!');
-				closeEventModal();
-				loadGroup();
-			} else {
-				showToast('❌ ' + (result.error || 'Ошибка'));
-			}
-		})
-		.catch(err => {
-			if (err.message.includes('403') || err.message.includes('войти')) {
-				showToast('⚠️ Требуется авторизация');
-			} else {
-				showToast('❌ Не удалось сохранить');
-			}
-			console.error(err);
-		});
-	}
-
-    function closeEventModal() {
-        document.getElementById('eventModal').style.display = 'none';
-        document.getElementById('eventId').value = '';
-        document.getElementById('eventTitle').value = '';
-        document.getElementById('eventDesc').value = '';
-        document.getElementById('eventDateTime').value = '';
-        
-        // [НОВОЕ] Полностью вычищаем блок с инпутами будильников, чтобы они не оставались при следующем открытии
-        const container = document.getElementById('notificationInputsContainer');
-        if (container) {
-            container.innerHTML = '';
-        }
-    }
-
-      window.editEvent = async function editEvent(eventId) {
-		try {
-			const res = await fetch(`/api/get_event_for_edit.php?id=${eventId}`, {
-				credentials: 'include'
-			});
-			const rawText = await res.text();
-			const jsonIdx = rawText.indexOf('{');
-			if (jsonIdx === -1) throw new Error('Не JSON');
-			const data = JSON.parse(rawText.substring(jsonIdx));
-			if (!data.success) {
-				showToast('❌ Ошибка: ' + (data.error || 'нет доступа к редактированию'));
-				return;
-			}
-
-			const e = data.event;
-			document.getElementById('eventId').value = e.id;
-			document.getElementById('eventTitle').value = e.title;
-			document.getElementById('eventDesc').value = e.description || '';
-
-			const modalTitle = document.getElementById('eventModalTitle');
-			if (modalTitle) modalTitle.innerText = 'Редактировать событие';
-
-			// 🔥 ИСПРАВЛЕНО: Убрали 'Z' и getTimezoneOffset, чтобы убрать ложные прыжки времени
-			// Просто превращаем строку из базы (ГГГГ-ММ-ДД ВВ:ММ:СС) в формат инпута (ГГГГ-ММ-ДДТВВ:ММ)
-			const localISO = e.event_date.replace(' ', ' ').slice(0, 16).replace(' ', 'T');
-			document.getElementById('eventDateTime').value = localISO;
-
-			const container = document.getElementById('notificationInputsContainer');
-			if (container) container.innerHTML = ''; 
-
-			if (data.notifications && data.notifications.length > 0) {
-				data.notifications.forEach(notifyAt => {
-					// 🔥 ИСПРАВЛЕНО ДЛЯ БУДИЛЬНИКОВ: выводим точное время без повторных сдвигов часового пояса
-					const localNotifyISO = notifyAt.replace(' ', ' ').slice(0, 16).replace(' ', 'T');
-					addNotificationTimeRow(localNotifyISO);
-				});
-			}
-
-			document.getElementById('eventModal').style.display = 'flex';
-		} catch (err) {
-			showToast('❌ Не удалось загрузить данные события');
-		}
-	}
-
 	// Функция вызова кастомного окна подтверждения удаления события
 	window.deleteEvent = function(eventId) {
 		pendingEventIdToDelete = eventId; // Запоминаем, какое событие хотим удалить
@@ -1616,75 +1733,983 @@
 		}
 	});
 
+	// Глобальные функции для событий
+	window.editEvent = async function editEvent(eventId) {
+		try {
+			const res = await fetch(`/api/get_event_for_edit.php?id=${eventId}`, {
+				credentials: 'include'
+			});
+			const rawText = await res.text();
+			const jsonIdx = rawText.indexOf('{');
+			if (jsonIdx === -1) throw new Error('Не JSON');
+			const data = JSON.parse(rawText.substring(jsonIdx));
+			if (!data.success) {
+				showToast('❌ Ошибка: ' + (data.error || 'нет доступа к редактированию'));
+				return;
+			}
+
+			const e = data.event;
+			document.getElementById('editEventId').value = e.id;
+			document.getElementById('eventTitleNew').value = e.title;
+			document.getElementById('eventDescNew').value = e.description || '';
+			document.getElementById('eventDayNew').value = e.day || '';
+
+			// Превращаем строку из базы в формат инпута
+			const localISO = e.event_date.replace(' ', ' ').slice(0, 16).replace(' ', 'T');
+			document.getElementById('eventDateTimeNew').value = localISO;
+
+			const container = document.getElementById('notificationInputsContainerNew');
+			if (container) container.innerHTML = '';
+
+			if (data.notifications && data.notifications.length > 0) {
+				data.notifications.forEach(notifyAt => {
+					const localNotifyISO = notifyAt.replace(' ', ' ').slice(0, 16).replace(' ', 'T');
+					addNotificationTimeRowNew(localNotifyISO);
+				});
+			}
+
+			// Меняем заголовок модалки на "Редактировать"
+			document.querySelector('#createEventModal h3').textContent = '✏️ Редактировать событие';
+			document.getElementById('btnSaveCreateEvent').textContent = 'Сохранить';
+
+			document.getElementById('createEventModal').style.display = 'flex';
+		} catch (err) {
+			showToast('❌ Не удалось загрузить данные события');
+		}
+	};
+
+	window.deleteEvent = function(eventId) {
+		pendingEventIdToDelete = eventId;
+		const modal = document.getElementById('customEventDeleteModal');
+		if (modal) modal.style.display = 'flex';
+	};
+
+	// Переиспользуем saveNewEvent для редактирования
+	window.saveNewEvent = function() {
+		if (!currentGroupId) {
+			showToast('❌ Ошибка: группа не загружена');
+			return;
+		}
+
+		const isNew = document.getElementById('btnSaveCreateEvent').textContent === 'Создать';
+		const title = document.getElementById('eventTitleNew').value.trim();
+		const desc = document.getElementById('eventDescNew').value.trim();
+		const localDateTime = document.getElementById('eventDateTimeNew').value;
+		const day = document.getElementById('eventDayNew').value.trim();
+
+		if (!title || !localDateTime) {
+			showToast('⚠️ Заполните название и дату события');
+			return;
+		}
+
+		const utcDateTime = localDateTime.replace('T', ' ') + ':00';
+		const notifyInputs = document.querySelectorAll('.notify-datetime-input-new');
+		const notificationDates = [];
+
+		for (let input of notifyInputs) {
+			if (input.value) {
+				const formattedNotifyDate = input.value.replace('T', ' ') + ':00';
+				notificationDates.push(formattedNotifyDate);
+			}
+		}
+
+		const data = {
+			group_id: currentGroupId,
+			title: title,
+			description: desc,
+			event_date: utcDateTime,
+			day: day,
+			notifications: notificationDates
+		};
+
+		const button = document.getElementById('btnSaveCreateEvent');
+		button.disabled = true;
+		button.textContent = isNew ? 'Создание...' : 'Сохранение...';
+
+		const url = isNew ? '/api/create_event.php' : '/api/update_event.php';
+		if (!isNew) {
+			// Для редактирования нужно добавить ID события
+			// Получаем его из заголовка модалки или храним в скрытом поле
+			data.id = document.getElementById('editEventId').value;
+		}
+
+		fetch(url, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			credentials: 'include',
+			body: JSON.stringify(data)
+		})
+		.then(res => {
+			if (res.status === 403) throw new Error('Требуется войти в аккаунт');
+			return res.text().then(text => { const jsonIdx = text.indexOf('{'); if (jsonIdx === -1) throw new Error('Не JSON'); return JSON.parse(text.substring(jsonIdx)); });
+		})
+		.then(result => {
+			if (result.success) {
+				showToast(isNew ? '🎉 Событие создано!' : '✅ Событие обновлено!');
+				closeCreateEventModal();
+				loadGroup();
+			} else {
+				showToast('❌ ' + (result.error || 'Ошибка'));
+			}
+		})
+		.catch(err => {
+			if (err.message.includes('403') || err.message.includes('войти')) {
+				showToast('⚠️ Требуется авторизация');
+			} else {
+				showToast('❌ Не удалось сохранить');
+			}
+			console.error(err);
+		})
+		.finally(() => {
+			button.disabled = false;
+			button.textContent = isNew ? 'Создать' : 'Сохранить';
+		});
+	};
+
   
-    // Переключение в режим редактирования текстовых полей
-    function initEditGroupFields() {
-        const titleCont = document.getElementById('groupTitleContainer');
-        const descCont = document.getElementById('groupDescContainer');
-        const editBtn = document.getElementById('btnToggleEditGroup');
+    // Открытие модального окна редактирования группы
+    function openEditGroupModal() {
+        const headerName = document.getElementById('groupName')?.textContent || '';
+        document.getElementById('editGroupNameInput').value = headerName;
+        document.getElementById('editGroupAddressInput').value = currentGroupAddress || '';
+        document.getElementById('editGroupCityInput').value = currentGroupCity || '';
+        document.getElementById('editGroupTimeInput').value = currentGroupTime || '';
+        document.getElementById('editGroupDayInput').value = currentGroupDay || '';
+        document.getElementById('editGroupGroupDescInput').value = currentGroupGroupDesc;
+        document.getElementById('editGroupDescInput').value = currentGroupDesc;
         
-        if (titleCont && descCont && editBtn) {
-            // Заменяем заголовок на инпут
-            titleCont.innerHTML = `<input type="text" id="editGroupNameInput" class="input-field" value="${escapeHtml(currentGroupName)}" style="width:100%; font-size:16px; margin-top:10px;" required>`;
-            // Заменяем описание на textarea
-            descCont.innerHTML = `<textarea id="editGroupDescInput" class="textarea-field" style="width:100%; min-height:100px;" required>${escapeHtml(currentGroupDesc)}</textarea>`;
-            
-            // Меняем кнопку на «Сохранить»
-            editBtn.textContent = '💾 Сохранить инфо';
-            editBtn.setAttribute('onclick', 'saveGroupTextData()');
-            editBtn.className = 'btn btn-small';
+        // Заполняем поля контактов лидера
+        renderLeaderContactEditFields();
+        
+        document.getElementById('editGroupModal').style.display = 'flex';
+    }
+    
+    // Рендер полей редактирования контактов лидера
+    function renderLeaderContactEditFields() {
+        const section = document.getElementById('leaderContactEditSection');
+        const container = document.getElementById('leaderContactEditFields');
+        
+        if (!section || !container) return;
+        
+        if (!currentLeadersData || currentLeadersData.length === 0) {
+            section.style.display = 'none';
+            return;
         }
+        
+        section.style.display = 'block';
+        
+        let html = '';
+        
+        currentLeadersData.forEach((leader, index) => {
+            const fullName = `${escapeHtml(leader.first_name || '')} ${escapeHtml(leader.last_name || '')}`.trim();
+            const leaderId = leader.id;
+            
+            html += `
+                <div style="background: #f8f8fa; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #eef0f4;">
+                    <div style="font-size: 14px; font-weight: 700; color: #1e1e20; margin-bottom: 12px;">
+                        ${fullName || 'Лидер #' + (index + 1)}
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div>
+                            <label for="leaderPhone_${leaderId}" style="display:block; margin-bottom:5px; font-weight:600; font-size:13px;">📱 Телефон</label>
+                            <input type="text" id="leaderPhone_${leaderId}" class="input-field" placeholder="+7 (999) 123-45-67" 
+                                   value="${escapeHtml(leader.phone || '')}" style="font-size: 14px;">
+                        </div>
+                        
+                        <div>
+                            <label for="leaderMax_${leaderId}" style="display:block; margin-bottom:5px; font-weight:600; font-size:13px;">💬 MAX</label>
+                            <input type="text" id="leaderMax_${leaderId}" class="input-field" placeholder="Ссылка или username" 
+                                   value="${escapeHtml(leader.max_contact || '')}" style="font-size: 14px;">
+                        </div>
+                        
+                        <div>
+                            <label for="leaderVk_${leaderId}" style="display:block; margin-bottom:5px; font-weight:600; font-size:13px;">🔵 ВКонтакте</label>
+                            <input type="text" id="leaderVk_${leaderId}" class="input-field" placeholder="Ссылка или username" 
+                                   value="${escapeHtml(leader.vk_contact || '')}" style="font-size: 14px;">
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+
+    // Закрытие модального окна редактирования группы
+    function closeEditGroupModal() {
+        document.getElementById('editGroupModal').style.display = 'none';
+    }
+
+    // Открытие модального окна создания события
+    function openCreateEventModal() {
+        document.getElementById('editEventId').value = '';
+        document.getElementById('eventTitleNew').value = '';
+        document.getElementById('eventDescNew').value = '';
+        document.getElementById('eventDayNew').value = '';
+        document.getElementById('notificationInputsContainerNew').innerHTML = '';
+        
+        const now = new Date();
+        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        const year = tomorrow.getFullYear();
+        const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+        const day = String(tomorrow.getDate()).padStart(2, '0');
+        const hours = String(tomorrow.getHours()).padStart(2, '0');
+        const minutes = String(tomorrow.getMinutes()).padStart(2, '0');
+        document.getElementById('eventDateTimeNew').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+        
+        document.getElementById('createEventModal').style.display = 'flex';
+    }
+
+    // Закрытие модального окна создания/редактирования события
+    function closeCreateEventModal() {
+        document.getElementById('createEventModal').style.display = 'none';
+        document.getElementById('editEventId').value = '';
+    }
+
+    // Добавление строки напоминания для нового события
+    function addNotificationTimeRowNew(value = '') {
+        const container = document.getElementById('notificationInputsContainerNew');
+        if (!container) return;
+        if (container.children.length >= 10) {
+            showToast('⚠ Максимум 10 напоминаний для одного события');
+            return;
+        }
+        const row = document.createElement('div');
+        row.className = 'notify-time-row';
+        row.style.cssText = 'display: flex; align-items: center; gap: 10px; width: 100%;';
+        row.innerHTML = `
+            <input type="datetime-local" class="input-field notify-datetime-input-new" value="${value}" required style="margin: 0; flex: 1;">
+            <button type="button" class="btn btn-danger" onclick="removeNotificationTimeRowNew(this)" style="margin: 0; padding: 0 10px; height: 38px; width: 38px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: #ff3b30; border: none; border-radius: 6px; color: #fff; cursor: pointer;">❌</button>
+        `;
+        container.appendChild(row);
+    }
+
+    function removeNotificationTimeRowNew(button) {
+        const row = button.parentElement;
+        if (row) row.remove();
+    }
+
+    // Сохранение нового события
+    function saveNewEvent() {
+        if (!currentGroupId) {
+            showToast('❌ Ошибка: группа не загружена');
+            return;
+        }
+
+        const title = document.getElementById('eventTitleNew').value.trim();
+        const desc = document.getElementById('eventDescNew').value.trim();
+        const localDateTime = document.getElementById('eventDateTimeNew').value;
+        const day = document.getElementById('eventDayNew').value.trim();
+
+        if (!title || !localDateTime) {
+            showToast('⚠️ Заполните название и дату события');
+            return;
+        }
+
+        const utcDateTime = localDateTime.replace('T', ' ') + ':00';
+        const notifyInputs = document.querySelectorAll('.notify-datetime-input-new');
+        const notificationDates = [];
+
+        for (let input of notifyInputs) {
+            if (input.value) {
+                const formattedNotifyDate = input.value.replace('T', ' ') + ':00';
+                notificationDates.push(formattedNotifyDate);
+            }
+        }
+
+        const data = {
+            group_id: currentGroupId,
+            title: title,
+            description: desc,
+            event_date: utcDateTime,
+            day: day,
+            notifications: notificationDates
+        };
+
+        const button = document.getElementById('btnSaveCreateEvent');
+        button.disabled = true;
+        button.textContent = 'Создание...';
+
+        fetch('/api/create_event.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(data)
+        })
+        .then(res => {
+            if (res.status === 403) throw new Error('Требуется войти в аккаунт');
+            return res.text().then(text => { const jsonIdx = text.indexOf('{'); if (jsonIdx === -1) throw new Error('Не JSON'); return JSON.parse(text.substring(jsonIdx)); });
+        })
+        .then(result => {
+            if (result.success) {
+                showToast('🎉 Событие создано!');
+                closeCreateEventModal();
+                loadGroup();
+            } else {
+                showToast('❌ ' + (result.error || 'Ошибка'));
+            }
+        })
+        .catch(err => {
+            if (err.message.includes('403') || err.message.includes('войти')) {
+                showToast('⚠️ Требуется авторизация');
+            } else {
+                showToast('❌ Не удалось сохранить');
+            }
+            console.error(err);
+        })
+        .finally(() => {
+            button.disabled = false;
+            button.textContent = 'Создать';
+        });
     }
 
     // Функция сбора данных и отправки на сервер
     async function saveGroupTextData() {
-        const editBtn = document.getElementById('btnToggleEditGroup');
-        const newName = document.getElementById('editGroupNameInput').value.trim();
-        const newDesc = document.getElementById('editGroupDescInput').value.trim();
+        const button = document.getElementById('btnSaveGroupEdit');
+        button.disabled = true;
+        button.textContent = 'Сохранение...';
+
+        try {
+            const formData = new FormData();
+            formData.append('group_id', currentGroupId);
+            formData.append('name', document.getElementById('editGroupNameInput').value.trim());
+            formData.append('description', document.getElementById('editGroupDescInput').value.trim());
+            formData.append('group_description', document.getElementById('editGroupGroupDescInput').value.trim());
+            formData.append('address', document.getElementById('editGroupAddressInput').value.trim());
+            formData.append('city', document.getElementById('editGroupCityInput').value.trim());
+            formData.append('time', document.getElementById('editGroupTimeInput').value.trim());
+            formData.append('day', document.getElementById('editGroupDayInput').value.trim());
+
+            const response = await fetch('/api/update_group_info.php?v=' + Date.now(), {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showToast('✅ Данные группы обновлены!');
+            } else {
+                showToast('❌ Ошибка: ' + (result.error || 'Не удалось сохранить'));
+                button.disabled = false;
+                button.textContent = 'Сохранить';
+                return;
+            }
+            
+            // Сохраняем контакты лидера (если есть изменения)
+            if (currentLeadersData && currentLeadersData.length > 0) {
+                for (const leader of currentLeadersData) {
+                    const phoneInput = document.getElementById(`leaderPhone_${leader.id}`);
+                    const maxInput = document.getElementById(`leaderMax_${leader.id}`);
+                    const vkInput = document.getElementById(`leaderVk_${leader.id}`);
+                    
+                    if (phoneInput && maxInput && vkInput) {
+                        const contactData = {
+                            group_id: currentGroupId,
+                            leader_user_id: leader.id,
+                            phone: phoneInput.value.trim(),
+                            max_contact: maxInput.value.trim(),
+                            vk_contact: vkInput.value.trim()
+                        };
+                        
+                        try {
+                            const contactResponse = await fetch('/api/update_leader_contact.php', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify(contactData)
+                            });
+                            
+                            const contactResult = await contactResponse.json();
+                            if (!contactResult.success) {
+                                console.error('Ошибка сохранения контактов лидера:', contactResult.error);
+                            }
+                        } catch (err) {
+                            console.error('Ошибка сети при сохранении контактов:', err);
+                        }
+                    }
+                }
+            }
+            
+            closeEditGroupModal();
+            loadGroup(); // Перезагружаем карточку, чтобы отобразить обновленный текст
+            
+        } catch (err) {
+            console.error(err);
+            showToast('❌ Не удалось связаться с сервером');
+        } finally {
+            button.disabled = false;
+            button.textContent = 'Сохранить';
+        }
+    }  
+    
+    // Меню настроек
+    function toggleSettingsMenu() {
+        const menu = document.getElementById('settingsMenu');
+        if (menu) {
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+    }
+
+    // Закрытие меню настроек при клике вне его
+    // Закрытие меню настроек при клике вне его
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('settingsMenu');
+        const btn = document.getElementById('btnSettingsFilter');
+        if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
+            menu.style.display = 'none';
+        }
+    });
+
+    // Обработчики меню настроек
+    document.getElementById('btnEditGroupMenu')?.addEventListener('click', () => {
+        openEditGroupModal();
+        document.getElementById('settingsMenu').style.display = 'none';
+    });
+
+
+
+    document.getElementById('btnCreateEventMenu')?.addEventListener('click', () => {
+        openCreateEventModal();
+        document.getElementById('settingsMenu').style.display = 'none';
+    });
+
+    document.getElementById('btnOpenChatMenu')?.addEventListener('click', () => {
+        openGroupChat();
+        document.getElementById('settingsMenu').style.display = 'none';
+    });
+
+    // === МОДАЛЬНОЕ ОКНО КОНТАКТОВ ЛИДЕРА ===
+    function openLeaderContactModal() {
+      const modal = document.getElementById('leaderContactModal');
+      const nameEl = document.getElementById('leaderContactName');
+      const detailsEl = document.getElementById('leaderContactDetails');
+      
+      if (!modal || !nameEl || !detailsEl) return;
+      
+      if (currentLeadersData.length === 0) {
+        nameEl.textContent = 'Нет данных о лидерах';
+        detailsEl.innerHTML = '<p style="text-align: center; color: #888;">Информация недоступна</p>';
+        modal.style.display = 'flex';
+        return;
+      }
+      
+      // Берем первого лидера (если нужно для всех — можно доработать)
+      const leader = currentLeadersData[0];
+      const fullName = `${escapeHtml(leader.first_name || '')} ${escapeHtml(leader.last_name || '')}`.trim();
+      nameEl.textContent = fullName || 'Лидер группы';
+      
+      let detailsHtml = '';
+      
+      // Телефон
+      if (leader.phone) {
+        detailsHtml += `
+          <a href="tel:${leader.phone.replace(/[^\d+]/g, '')}" 
+             style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #f8f8fa; border-radius: 12px; text-decoration: none; color: #1e1e20; border: 1px solid #eef0f4;">
+            <span style="font-size: 20px;">📱</span>
+            <div>
+              <div style="font-size: 12px; color: #888; margin-bottom: 2px;">Телефон</div>
+              <div style="font-size: 15px; font-weight: 600;">${escapeHtml(leader.phone)}</div>
+            </div>
+          </a>
+        `;
+      }
+      
+      // MAX
+      if (leader.max_contact) {
+        const maxLink = leader.max_contact.startsWith('http') ? leader.max_contact : `https://max.ru/${leader.max_contact}`;
+        detailsHtml += `
+          <a href="${escapeHtml(maxLink)}" target="_blank" rel="noopener noreferrer"
+             style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #f8f8fa; border-radius: 12px; text-decoration: none; color: #1e1e20; border: 1px solid #eef0f4;">
+            <span style="font-size: 20px;">💬</span>
+            <div>
+              <div style="font-size: 12px; color: #888; margin-bottom: 2px;">MAX</div>
+              <div style="font-size: 15px; font-weight: 600;">Написать в MAX</div>
+            </div>
+          </a>
+        `;
+      }
+      
+      // ВКонтакте
+      if (leader.vk_contact) {
+        const vkLink = leader.vk_contact.startsWith('http') ? leader.vk_contact : `https://vk.com/${leader.vk_contact}`;
+        detailsHtml += `
+          <a href="${escapeHtml(vkLink)}" target="_blank" rel="noopener noreferrer"
+             style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #f8f8fa; border-radius: 12px; text-decoration: none; color: #1e1e20; border: 1px solid #eef0f4;">
+            <span style="font-size: 20px;">🔵</span>
+            <div>
+              <div style="font-size: 12px; color: #888; margin-bottom: 2px;">ВКонтакте</div>
+              <div style="font-size: 15px; font-weight: 600;">Написать в VC</div>
+            </div>
+          </a>
+        `;
+      }
+      
+      if (!detailsHtml) {
+        detailsHtml = '<p style="text-align: center; color: #888;">Контактная информация отсутствует</p>';
+      }
+      
+      detailsEl.innerHTML = detailsHtml;
+      modal.style.display = 'flex';
+    }
+    
+    function closeLeaderContactModal() {
+      const modal = document.getElementById('leaderContactModal');
+      if (modal) {
+        modal.style.display = 'none';
+      }
+    }
+    
+    // Обработчик закрытия модального окна контактов лидера
+    document.getElementById('btnCloseLeaderContact')?.addEventListener('click', closeLeaderContactModal);
+    
+    // Закрытие по клику на фон
+    document.getElementById('leaderContactModal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'leaderContactModal') {
+        closeLeaderContactModal();
+      }
+    });
+
+  // === ОБРАБОТКА АВАТАРА ГРУППЫ ===
+    async function processAvatarFile(file) {
+        console.log('=== processAvatarFile called ===');
+        console.log('File name:', file.name);
+        console.log('File type:', file.type);
+        console.log('File size:', file.size);
+
+        // Проверяем HEIC ДО проверки MIME типа
+        const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
         
-        if (!newName || !newDesc) {
-            showToast('❌ Заполните название и описание группы');
+        if (isHeic) {
+            console.log('✅ HEIC file detected, will convert first');
+            showToast('⏳ Конвертация HEIC в JPEG...');
+            
+            const jpegFile = await convertHeicToJpeg(file);
+            if (!jpegFile) {
+                showToast('❌ Ошибка конвертации HEIC');
+                return;
+            }
+            file = jpegFile;
+            console.log('✅ HEIC converted to:', file.name, 'type:', file.type, 'size:', file.size);
+        } else {
+            // Проверяем MIME тип только для НЕ-HEIC файлов
+            if (!file.type.startsWith('image/')) {
+                showToast('❌ Пожалуйста, выберите файл изображения');
+                console.error('Invalid file type:', file.type, 'for file:', file.name);
+                return;
+            }
+            console.log('✅ Valid image file:', file.type);
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            console.log('File read successfully, opening cropper');
+            openCropperModal(event.target.result, '/api/upload_group_avatar.php');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // === ЗАГРУЗКА ФОТО ГРУППЫ ===
+    let selectedPhotoFiles = [];
+
+    // Открытие модального окна загрузки фото
+    function openUploadPhotosModal() {
+        selectedPhotoFiles = [];
+        document.getElementById('photoFileInput').value = '';
+        document.getElementById('photoPreviewArea').innerHTML = 'Нажмите для выбора фото';
+        document.getElementById('photoPreviewArea').style.display = 'block';
+        document.getElementById('selectedPhotosPreview').style.display = 'none';
+        document.getElementById('selectedPhotosPreview').innerHTML = '';
+        document.getElementById('uploadPhotoStatus').style.display = 'none';
+        document.getElementById('uploadPhotosModal').style.display = 'flex';
+    }
+
+    // Закрытие модального окна загрузки фото
+    function closeUploadPhotosModal() {
+        document.getElementById('uploadPhotosModal').style.display = 'none';
+        selectedPhotoFiles = [];
+    }
+
+    // Конвертация HEIC в JPEG
+    async function convertHeicToJpeg(file) {
+        console.log('=== convertHeicToJpeg called ===');
+        console.log('File:', file.name, 'size:', file.size, 'type:', file.type);
+        console.log('window.heic2any exists:', typeof window.heic2any !== 'undefined');
+        console.log('window.heic2anyLoaded:', window.heic2anyLoaded);
+        console.log('window.heic2anyError:', window.heic2anyError);
+        
+        // Проверяем доступность библиотеки
+        if (typeof window.heic2any !== 'function') {
+            console.error('❌ heic2any is NOT a function!');
+            console.error('   typeof window.heic2any:', typeof window.heic2any);
+            console.error('   window.heic2anyLoaded:', window.heic2anyLoaded);
+            console.error('   window.heic2anyError:', window.heic2anyError);
+            
+            // Пытаемся вызвать проверку
+            if (typeof window.checkHeic2any === 'function') {
+                window.checkHeic2any();
+            }
+            
+            showToast('⚠️ Библиотека конвертации HEIC не загружена');
+            return null;
+        }
+        
+        console.log('✅ heic2any is available, converting...');
+        console.log('   Library version:', typeof window.heic2any);
+        
+        try {
+            console.log('   Starting conversion...');
+            const blob = await heic2any({
+                blob: file,
+                toType: 'image/jpeg',
+                quality: 0.8
+            });
+            
+            console.log('✅ HEIC converted successfully!');
+            console.log('   Original:', file.name, file.size, 'bytes');
+            console.log('   Converted blob type:', blob.type);
+            console.log('   Converted blob size:', blob.size, 'bytes');
+            
+            const jpegFile = new File(
+                [blob],
+                file.name.replace(/\.(heic|heif)$/i, '.jpg'),
+                { type: 'image/jpeg' }
+            );
+            console.log('✅ File created:', jpegFile.name, jpegFile.size, 'bytes');
+            return jpegFile;
+        } catch (err) {
+            console.error('❌ HEIC conversion failed!');
+            console.error('   Error:', err);
+            console.error('   Error name:', err.name);
+            console.error('   Error message:', err.message);
+            console.error('   Error stack:', err.stack);
+            showToast('⚠️ Ошибка конвертации HEIC: ' + err.message);
+            return null;
+        }
+    }
+
+    // Обработка выбора фото
+    document.getElementById('photoFileInput')?.addEventListener('change', async function(e) {
+        console.log('=== photoFileInput change event ===');
+        const files = Array.from(e.target.files);
+        console.log('Selected files:', files.length, files.map(f => f.name));
+        
+        if (files.length === 0) return;
+
+        if (files.length > 10) {
+            showToast('⚠️ Можно выбрать максимум 10 фото');
+            this.value = '';
+            return;
+        }
+
+        // Проверяем размер файлов (макс 5MB каждый)
+        const maxFileSize = 5 * 1024 * 1024; // 5MB
+        const oversizedFiles = files.filter(f => f.size > maxFileSize);
+        if (oversizedFiles.length > 0) {
+            showToast('⚠️ Некоторые файлы слишком большие (макс. 5MB)');
+            console.warn('Oversized files:', oversizedFiles.map(f => f.name));
+        }
+
+        // Показываем статус конвертации
+        const previewArea = document.getElementById('photoPreviewArea');
+        const hasHeic = files.some(f => f.name.toLowerCase().endsWith('.heic') || f.name.toLowerCase().endsWith('.heif'));
+        
+        console.log('Has HEIC files:', hasHeic);
+        
+        // Проверяем доступность heic2any перед началом конвертации
+        if (hasHeic && typeof window.heic2any !== 'function') {
+            console.error('❌ HEIC files selected but heic2any not available!');
+            console.error('   window.heic2anyLoaded:', window.heic2anyLoaded);
+            console.error('   window.heic2anyError:', window.heic2anyError);
+            
+            // Ждём 2 секунды и проверяем снова
+            showToast('⏳ Ожидание загрузки библиотеки конвертации...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            if (typeof window.heic2any !== 'function') {
+                console.error('❌ heic2any still not available after wait');
+                showToast('⚠️ HEIC не поддерживается. Пожалуйста, конвертируйте фото заранее');
+                previewArea.innerHTML = '❌ HEIC не поддерживается<br><small>Конвертируйте фото в JPEG заранее</small>';
+                previewArea.style.color = '#ff3b30';
+                this.value = '';
+                return;
+            } else {
+                console.log('✅ heic2any became available after wait!');
+            }
+        }
+        
+        if (hasHeic) {
+            previewArea.innerHTML = '⏳ Конвертация HEIC в JPEG...';
+            previewArea.style.color = '#4a90e2';
+        }
+
+        try {
+            // Конвертируем HEIC файлы в JPEG
+            const processedFiles = [];
+            for (const file of files) {
+                const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+                
+                if (isHeic) {
+                    previewArea.innerHTML = '⏳ Конвертация ' + file.name + '...';
+                    console.log('   Converting HEIC file:', file.name);
+                    
+                    const jpegFile = await convertHeicToJpeg(file);
+                    if (jpegFile) {
+                        processedFiles.push(jpegFile);
+                    }
+                } else {
+                    console.log('Non-HEIC file:', file.name, 'size:', file.size);
+                    processedFiles.push(file);
+                }
+            }
+
+            if (processedFiles.length === 0) {
+                showToast('⚠️ Нет файлов для загрузки');
+                previewArea.innerHTML = 'Нет файлов';
+                previewArea.style.color = '#ff3b30';
+                return;
+            }
+
+            selectedPhotoFiles = processedFiles;
+            console.log('Processed files ready for upload:', selectedPhotoFiles.length, selectedPhotoFiles.map(f => f.name));
+            showPhotoPreviews(processedFiles);
+            
+            if (hasHeic && processedFiles.length > 0) {
+                previewArea.innerHTML = '✅ Конвертация завершена! (' + processedFiles.length + ' фото)';
+                previewArea.style.color = '#4caf50';
+                setTimeout(() => {
+                    previewArea.style.color = '#888';
+                }, 3000);
+            }
+        } catch (err) {
+            console.error('Error processing files:', err);
+            showToast('⚠️ Ошибка обработки файлов');
+            previewArea.innerHTML = 'Ошибка обработки';
+            previewArea.style.color = '#ff3b30';
+        }
+    });
+
+    // Показ превью выбранных фото
+    function showPhotoPreviews(files) {
+        const previewArea = document.getElementById('photoPreviewArea');
+        const previewGrid = document.getElementById('photosPreviewGrid');
+        const selectedPhotosDiv = document.getElementById('selectedPhotosPreview');
+
+        if (previewArea) previewArea.style.display = 'none';
+        if (selectedPhotosDiv) selectedPhotosDiv.style.display = 'block';
+        if (!previewGrid) return;
+
+        let html = '';
+        files.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                html += `<div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden;">
+                    <img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">
+                    <div style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px;">${index + 1}</div>
+                </div>`;
+                previewGrid.innerHTML = html;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Загрузка фото на сервер
+    document.getElementById('btnExecuteUploadPhotos')?.addEventListener('click', async () => {
+        if (selectedPhotoFiles.length === 0) {
+            showToast('⚠️ Выберите фото для загрузки');
+            return;
+        }
+
+        const button = document.getElementById('btnExecuteUploadPhotos');
+        const statusDiv = document.getElementById('uploadPhotoStatus');
+        button.disabled = true;
+        button.textContent = 'Загрузка...';
+
+        if (statusDiv) {
+            statusDiv.style.display = 'block';
+            statusDiv.style.background = '#f0f4ff';
+            statusDiv.textContent = `Загрузка ${selectedPhotoFiles.length} фото...`;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('group_id', currentGroupId);
+            // Отправляем файлы с индексами
+            selectedPhotoFiles.forEach((file, index) => {
+                console.log(`File ${index}:`, file.name, file.size, file.type);
+                formData.append(`photos[${index}]`, file);
+            });
+            
+            // Debug: проверяем что в formData
+            console.log('FormData entries:');
+            for (let pair of formData.entries()) {
+                console.log(pair[0], pair[1] instanceof File ? pair[1].name : pair[1]);
+            }
+
+            const response = await fetch('/api/upload_group_photos.php', {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+                // Не указываем headers Content-Type — браузер установит автоматически с boundary
+            });
+
+            // Проверяем статус ответа
+            if (!response.ok) {
+                // Получаем текст ошибки
+                const errorText = await response.text();
+                console.error('Upload error response:', errorText);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}\n${errorText.substring(0, 200)}`);
+            }
+
+            // Получаем текст ответа и парсим JSON
+            const responseText = await response.text();
+            if (!responseText) {
+                throw new Error('Пустой ответ от сервера');
+            }
+            
+            const result = JSON.parse(responseText);
+
+            if (result.success) {
+                if (statusDiv) {
+                    statusDiv.style.background = '#e8f5e9';
+                    statusDiv.textContent = `✅ Загружено ${result.upload} фото`;
+                }
+                showToast(`✅ Загружено ${result.upload} фото`);
+                
+                // Закрываем модалку через 1 секунду
+                setTimeout(() => {
+                    closeUploadPhotosModal();
+                    loadGroup(); // Перезагружаем группу чтобы показать новые фото
+                }, 1000);
+            } else {
+                if (statusDiv) {
+                    statusDiv.style.background = '#ffebee';
+                    statusDiv.textContent = '❌ Ошибка: ' + result.error;
+                }
+                showToast('❌ Ошибка: ' + (result.error || 'Не удалось загрузить'));
+            }
+        } catch (err) {
+            console.error(err);
+            if (statusDiv) {
+                statusDiv.style.background = '#ffebee';
+                statusDiv.textContent = '❌ Ошибка сети';
+            }
+            showToast('❌ Ошибка сети при загрузке');
+        } finally {
+            button.disabled = false;
+            button.textContent = 'Загрузить';
+        }
+    });
+
+    // Обработчик кнопки отмены загрузки фото
+    document.getElementById('btnCancelUploadPhotos')?.addEventListener('click', () => {
+        closeUploadPhotosModal();
+    });
+
+    // Обработчик кнопки "Загрузить фото" в меню настроек
+    document.getElementById('btnUploadPhotosMenu')?.addEventListener('click', () => {
+        openUploadPhotosModal();
+        document.getElementById('settingsMenu').style.display = 'none';
+    });
+
+    // === УДАЛЕНИЕ ФОТО ГРУППЫ ===
+    let pendingPhotoIdToDelete = null;
+    let pendingGroupIdForPhotoDelete = null;
+    let currentPhotoIndex = 0; // Текущий индекс фото в карусели
+
+    // Функция удаления фото из счётчика (когда фото выбрано в карусели)
+    window.deletePhotoFromCounter = function() {
+        // Получаем ID текущего фото из swiper-slide
+        const swiperWrapper = document.querySelector('.swiper-wrapper');
+        if (!swiperWrapper) {
+            showToast('⚠️ Нет фото для удаления');
             return;
         }
         
-        if (editBtn) {
-            editBtn.disabled = true;
-            editBtn.textContent = 'Сохранение...';
+        const currentSlide = swiperWrapper.querySelector('.swiper-slide-active');
+        if (!currentSlide) {
+            showToast('⚠️ Не удалось найти текущее фото');
+            return;
         }
         
+        const photoId = parseInt(currentSlide.dataset.photoId);
+        if (!photoId || photoId <= 0) {
+            showToast('⚠️ Не найден ID фото');
+            return;
+        }
+        
+        // Вызываем удаление с правильными ID
+        deletePhoto(photoId, currentGroupId);
+    };
+
+    // Функция вызова подтверждения удаления фото (для обратной совместимости)
+    window.deletePhoto = function(photoId, groupId) {
+        pendingPhotoIdToDelete = photoId;
+        pendingGroupIdForPhotoDelete = groupId;
+        
+        const modal = document.getElementById('customPhotoDeleteModal');
+        if (modal) modal.style.display = 'flex';
+    };
+
+    // Обработчик кнопки "Отмена" в модалке удаления фото
+    document.getElementById('btnCancelPhotoDelete')?.addEventListener('click', () => {
+        const modal = document.getElementById('customPhotoDeleteModal');
+        if (modal) modal.style.display = 'none';
+        pendingPhotoIdToDelete = null;
+        pendingGroupIdForPhotoDelete = null;
+    });
+
+    // Обработчик кнопки "Удалить" в модалке (Сам запрос на бэкенд)
+    document.getElementById('btnConfirmPhotoDelete')?.addEventListener('click', async () => {
+        if (!pendingPhotoIdToDelete || !pendingGroupIdForPhotoDelete) return;
+        
+        const photoIdToSend = pendingPhotoIdToDelete;
+        const groupIdToSend = pendingGroupIdForPhotoDelete;
+        const modal = document.getElementById('customPhotoDeleteModal');
+        if (modal) modal.style.display = 'none';
+        
         try {
-            const response = await fetch('/api/update_group_info.php', {
+            const response = await fetch('/api/delete_group_photo.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    group_id: currentGroupId,
-                    name: newName,
-                    description: newDesc
+                credentials: 'include',
+                body: JSON.stringify({ 
+                    photo_id: photoIdToSend,
+                    group_id: groupIdToSend 
                 })
             });
+            
             const rawText = await response.text();
             const jsonIdx = rawText.indexOf('{');
             if (jsonIdx === -1) throw new Error('Не JSON');
             const result = JSON.parse(rawText.substring(jsonIdx));
+            
             if (result.success) {
-                showToast('✅ Данные группы обновлены!');
-                loadGroup(); // Перезагружаем карточку, чтобы отобразить обновленный текст
+                showToast('🗑️ Фото успешно удалено');
+                loadGroup(); // Перезагружаем группу чтобы обновить список фото
             } else {
-                showToast('❌ Ошибка: ' + (result.error || 'Не удалось сохранить'));
-                if (editBtn) {
-                    editBtn.disabled = false;
-                    editBtn.textContent = '💾 Сохранить инфо';
-                }
+                showToast('❌ Ошибка: ' + (result.error || 'не удалось удалить'));
             }
         } catch (err) {
             console.error(err);
-            showToast('❌ Ошибка соединения с сервером');
-            if (editBtn) {
-                editBtn.disabled = false;
-                editBtn.textContent = '💾 Сохранить инфо';
-            }
+            showToast('❌ Не удалось удалить фото');
+        } finally {
+            pendingPhotoIdToDelete = null;
+            pendingGroupIdForPhotoDelete = null;
         }
-    }  
+    });
+
+    function updateHeaderButtons(canManage, hasAccess) {
+        const filters = document.getElementById('groupFilters');
+        
+        if (canManage || hasAccess) {
+            filters.style.display = 'flex';
+        } else {
+            filters.style.display = 'none';
+        }
+    }
   
   // === ЗАГРУЗКА ГРУППЫ ===
     // Функция раскрытия списка участников с разворотом стрелочки
@@ -1814,6 +2839,11 @@
           const group = data.group;
           currentGroupName = group.name;
           currentGroupDesc = group.description;
+          currentGroupGroupDesc = group.group_description || '';
+          currentGroupAddress = group.address || '';
+          currentGroupCity = group.city || '';
+          currentGroupTime = group.time || '';
+          currentGroupDay = group.day || '';
           const isGuest = !data.current_user_id || data.current_user_id === 0;
           const events = data.events || [];
           const isLeader = data.is_leader; // ← ДОЛЖНО ПРИХОДИТЬ ИЗ API!
@@ -1824,6 +2854,8 @@
           const isObserver = data.user_role === 'observer';
 
           const leadersArray = data.leaders || [];
+          // Сохраняем данные о лидерах для модального окна
+          currentLeadersData = leadersArray;
           const leadersNamesText = leadersArray.length > 0
               ? leadersArray.map(l => `${escapeHtml(l.first_name)} ${escapeHtml(l.last_name || '')}`).join(', ')
               : 'Не назначен';
@@ -1833,114 +2865,69 @@
           // Бэкенд возвращает null для несуществующих аватаров
           let groupAvatarHtml = '';
           if (group.group_avatar_url) {
-              groupAvatarHtml = `<img id="groupAvatarPreview" src="${group.group_avatar_url}" alt="Аватар группы" style="width: 120px; height: 120px; border-radius: 16px; object-fit: cover; display: block; border: 2px solid var(--color-primary, #4A90E2);">`;
+              groupAvatarHtml = `<img id="groupAvatarPreview" src="${group.group_avatar_url}" alt="Аватар группы" style="width: 100%; max-width: 500px; height: auto; max-height: 350px; border-radius: 16px; object-fit: contain; display: block; margin: 0 auto; border: 2px solid var(--color-primary, #4A90E2);">`;
           } else {
-              groupAvatarHtml = `<div id="groupAvatarPreview" style="width: 120px; height: 120px; border-radius: 16px; background: #f0f0f2; display: flex; align-items: center; justify-content: center; font-size: 50px; border: 2px solid var(--color-primary, #4A90E2); user-select: none;">🕉️</div>`;
+              groupAvatarHtml = `<div id="groupAvatarPreview" style="width: 100%; max-width: 500px; height: auto; max-height: 350px; border-radius: 16px; background: #f0f0f2; display: flex; align-items: center; justify-content: center; font-size: 80px; border: 2px solid var(--color-primary, #4A90E2); margin: 0 auto; user-select: none;">🕉️</div>`;
           }
 
           let html = `
         <div class="card" style="text-align: center;">
-        <div class="group-avatar-container" style="position: relative; display: inline-block; margin-bottom: 15px; width: 120px; height: 120px;">
+        <div class="group-avatar-container" style="position: relative; display: inline-block; margin-bottom: 15px;">
         ${groupAvatarHtml}
+        </div>
 
-        ${canManageEvents ? `
-        <label for="groupAvatarFile" style="position: absolute; bottom: -5px; right: -5px; background: #fff; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer; z-index: 10;">
-        📷
-        </label>
-        <input type="file" id="groupAvatarFile" accept="image/*" style="display: none;">
+        <!-- Контейнер для названия (скрыт, только в шапке) -->
+        <div id="groupTitleContainer" style="display: none;"></div>
+
+        <div class="card" style="max-width: 500px; margin: 0 auto;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px;">
+                <p style="margin: 0; text-align: left;"><strong>Ведущие:</strong> ${leadersNamesText}</p>
+                ${leadersArray.length > 0 ? `<button onclick="openLeaderContactModal()" style="background: #4a90e2; color: #fff; border: none; border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;">📞 Связаться с лидером</button>` : ''}
+            </div>
+            ${group.address ? `<p style="margin: 4px 0; text-align: left;"><strong>🏠 Адрес:</strong> ${escapeHtml(group.address)}</p>` : ''}
+            ${group.day ? `<p style="margin: 4px 0; text-align: left;"><strong>📅 День проведения:</strong> ${escapeHtml(group.day)}</p>` : ''}
+            ${group.time ? `<p style="margin: 4px 0; text-align: left;"><strong>🕐 Время проведения:</strong> ${escapeHtml(group.time)}</p>` : ''}
+        </div>
+
+        ${group.group_description ? `
+        <div class="card" style="margin-top: 12px; max-width: 500px; margin-left: auto; margin-right: auto;">
+            <p style="white-space: pre-wrap; margin: 0; text-align: left;">${escapeHtml(group.group_description)}</p>
+        </div>
         ` : ''}
-        </div>
-
-        <!-- Контейнер для названия (текст или инпут) -->
-        <div id="groupTitleContainer">
-        <h2 class="group-title" style="text-align: left; margin-top: 10px;">${escapeHtml(group.name)}</h2>
-        </div>
-
-        <p style="text-align: left;"><strong>Лидеры:</strong> ${leadersNamesText}</p>
-        <p style="text-align: left;"><strong>📍</strong> ${group.is_online ? 'Онлайн' : escapeHtml(group.city)}</p>
-        <p style="text-align: left;"><strong>👥 Участников:</strong> ${group.member_count}</p>
-
-        ${canManageEvents ? `
-        <button class="btn btn-small btn-ghost" id="btnToggleEditGroup" onclick="initEditGroupFields()" style="margin-top: 10px; width: 100%;">✏️ Редактировать инфо</button>
-        ` : ''}
-        </div>
-
-        <div class="card">
-        <h3>Описание</h3>
-        <!-- Контейнер для описания (текст или textarea) -->
-        <div id="groupDescContainer">
-        <p>${escapeHtml(group.description)}</p>
-        </div>
-        </div>
-        `;
-
-          // [НОВОЕ] Формируем блок участников группы
-          const members = data.members || [];
-
-          html += `
-        <div class="card members-accordion" id="membersAccordion" style="padding: 12px; margin-top: 12px;">
-        <div class="members-header" onclick="toggleMembers()" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; padding: 4px 0;">
-        <h3 style="margin: 0; font-size: 16px;">👥 Участники группы (${members.length})</h3>
-        <span class="members-arrow" id="accordionArrow" style="display: inline-block; transition: transform 0.2s ease; font-size: 14px; color: var(--color-muted, #888);">▼</span>
-        </div>
-        <div class="members-list-wrapper" id="membersListWrapper" style="display: none; margin-top: 15px; border-top: 1px solid #f0f0f2; padding-top: 10px;">
-        `;
-
-          if (members.length === 0) {
-              html += '<p style="color:var(--color-muted); text-align:center; padding: 10px 0;">В группе пока нет участников</p>';
-          } else {
-              members.forEach(m => {
-                  let roleBadge = '';
-                  if (m.role === 'leader') roleBadge = '<span class="member-role-badge">Лидер</span>';
-                  if (m.role === 'admin') roleBadge = '<span class="member-role-badge">Админ</span>';
-                  if (m.role === 'observer') roleBadge = '<span class="member-role-badge" style="background: #f0f0f2; color: #888;">👁️ Наблюдатель</span>';
-
-                  // Бэкенд возвращает null для несуществующих аватаров
-                  let avatarHtml = '';
-                  if (m.avatar_url) {
-                      avatarHtml = `<img src="${m.avatar_url}" alt="Фото" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #eee;">`;
-                  } else {
-                      avatarHtml = `<div style="width: 36px; height: 36px; border-radius: 50%; background: #f0f0f2; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; user-select: none;">👤</div>`;
-                  }
-
-                  // Настраиваем клик на имя
-                  const isMeInList = parseInt(m.id) === parseInt(data.current_user_id || 0);
-
-                  // [ДОБАВЛЕНО] Наблюдатели не могут писать в ЛС
-                  const nameClickAttr = (isMeInList || isObserver) ? '' : `onclick="openPersonalChat(${m.id}, '${escapeHtml(m.first_name)} ${escapeHtml(m.last_name || '')}')"`;
-                  const nameCursor = (isMeInList || isObserver) ? 'default' : 'pointer';
-
-                  // Формируем индикатор непрочитанных личных сообщений
-                  let unreadBadgeHtml = '';
-                  const unreadCount = parseInt(m.unread_count || 0);
-                  if (unreadCount > 0 && !isObserver) {
-                      unreadBadgeHtml = `
-                        <span style="background: #ff3b30; color: #fff; font-size: 11px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; margin-left: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); flex-shrink: 0; animation: pulseUnread 2s infinite;">
-                            ${unreadCount}
-                        </span>
-                    `;
-                  }
-
-                  // Собираем строчку участника
-                  html += `
-                <div class="member-item" style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f8f8fa; width: 100%;">
-                    ${avatarHtml}
-                    <div style="display: flex; align-items: center; justify-content: space-between; flex: 1; min-width: 0;">
-                        <span class="member-name" ${nameClickAttr} style="cursor:${nameCursor}; color:var(--color-primary, #4A90E2); display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; font-size: 14px; font-weight: 600;">
-                            ${escapeHtml(m.first_name)} ${escapeHtml(m.last_name || '')}
-                            ${unreadBadgeHtml}
-                        </span>
-                        ${roleBadge}
-                    </div>
+        
+        <div class="card" style="margin-top: 12px; position: relative; max-width: 500px; margin-left: auto; margin-right: auto;">
+            <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #4a90e2;">📸 Фотографии группы</h3>
+            ${canManageEvents ? `
+            <div style="position: absolute; top: 8px; right: 15px; display: flex; gap: 8px; align-items: center; z-index: 20;">
+                <div id="photoCounter" class="photo-counter" style="display: none; position: static; background: rgba(0,0,0,0.6); color: #fff; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: 600;">
+                    0/0
                 </div>
-                `;
-              });
-          }
-
-          html += `
+                <button id="btnDeletePhoto" onclick="deletePhotoFromCounter()" style="
+                    background: rgba(255, 59, 48, 0.95);
+                    color: white;
+                    border: 2px solid white;
+                    border-radius: 50%;
+                    width: 36px;
+                    height: 36px;
+                    font-size: 20px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+                    transition: all 0.2s ease;
+                " title="Удалить фото" onmouseover="this.style.background='rgba(255, 59, 48, 1)'; this.style.transform='scale(1.1)';" onmouseout="this.style.background='rgba(255, 59, 48, 0.95)'; this.style.transform='scale(1)';">🗑</button>
+            </div>
+            ` : ''}
+            <div id="groupPhotosContainer" class="swiper">
+                <div class="swiper-wrapper"></div>
+                <div class="swiper-pagination"></div>
+            </div>
         </div>
         </div>
         `;
+
+
 
           if (events.length > 0) {
               html += '<div class="card events-card"><h3>Ближайшие события</h3><ul class="events-list">';
@@ -1987,13 +2974,16 @@
           }
 
           // Резервный сквозной обход: если пользователь железно найден в списке одобренных участников — даем доступ!
-          if (!hasAccessToChat && !isObserver && data.current_user_id && members && members.length > 0) {
-              hasAccessToChat = members.some(m => {
+          if (!hasAccessToChat && !isObserver && data.current_user_id && data.members && data.members.length > 0) {
+              hasAccessToChat = data.members.some(m => {
                   const memberId = parseInt(m.id || m.user_id || 0);
                   const currentId = parseInt(data.current_user_id || 0);
                   return memberId === currentId && memberId > 0;
               });
           }
+
+          // Показать/скрыть кнопки в шапке
+          updateHeaderButtons(canManageEvents, hasAccessToChat && !isObserver);
 
           // Формируем вывод кнопок на основе вычисленного статуса
           let actionsHtml = '';
@@ -2015,9 +3005,7 @@
                 </p>
             `;
           } else if (hasAccessToChat) {
-              actionsHtml = `
-                <button class="btn btn-block btn-primary" onclick="openGroupChat()" style="margin-bottom: 10px; background: #4a90e2; font-weight: 600;">💬 Открыть чат группы</button>
-            `;
+              // Чат уже перенесен вверх
           } else if (data.user_status && data.user_status.toString() === 'pending') {
               actionsHtml = `
                 <button class="btn btn-block btn-ghost" disabled>⏳ Заявка на рассмотрении</button>
@@ -2029,33 +3017,164 @@
           }
 
           html += `
-        <div class="card" id="group-actions">
+        <div class="card" id="group-actions" style="${actionsHtml ? '' : 'display: none;'}">
             ${actionsHtml}
         </div>
         `;
 
           document.getElementById('groupDetail').innerHTML = html;
 
-          // [НОВОЕ] Если список участников был открыт до обновления — возвращаем его в открытое состояние
-          if (isMembersOpenBefore) {
-              const listWrapperAfter = document.getElementById('membersListWrapper');
-              const arrowAfter = document.getElementById('accordionArrow');
-              if (listWrapperAfter && arrowAfter) {
-                  listWrapperAfter.style.display = 'block';
-                  arrowAfter.style.transform = 'rotate(180deg)';
+          // Отображение фото группы
+          if (data.photos && data.photos.length > 0) {
+              const photosContainer = document.getElementById('groupPhotosContainer');
+              const photoCounter = document.getElementById('photoCounter');
+              
+              if (photosContainer) {
+                  photosContainer.style.display = 'block';
+                  photosContainer.style.visibility = 'visible';
+                  photosContainer.style.opacity = '1';
+                  photosContainer.style.height = 'auto';
+                  
+                  const swiperWrapper = photosContainer.querySelector('.swiper-wrapper');
+                  let photosHtml = '';
+                  data.photos.forEach((photo, index) => {
+                      if (photo.photo_url) {
+                          let photoSrc = photo.photo_url;
+                          if (!photoSrc.startsWith('/')) {
+                              photoSrc = '/' + photoSrc;
+                          }
+                          const fullUrl = photoSrc.startsWith('/') ? window.location.origin + photoSrc : photoSrc;
+                          
+                          photosHtml += `
+                              <div class="swiper-slide" data-photo-id="${photo.id}" style="position: relative;">
+                                  <img src="${fullUrl}" alt="Фото ${index + 1}" 
+                                       onerror="console.error('Image failed to load:', this.src); this.parentElement.style.background='#f0f0f0';" 
+                                       onload="">
+                              </div>
+                          `;
+                      }
+                  });
+                  
+                  swiperWrapper.innerHTML = photosHtml;
+                  
+                  // Добавляем пагинацию
+                  const paginationDiv = photosContainer.querySelector('.swiper-pagination');
+                  
+                  // Инициализируем Swiper
+                  if (typeof Swiper === 'undefined') {
+                      console.error('Swiper is not available!');
+                      return;
+                  }
+                  
+                  const swiper = new Swiper('.swiper', {
+                      slidesPerView: 1,
+                      spaceBetween: 10,
+                      pagination: {
+                          el: '.swiper-pagination',
+                          clickable: true,
+                          formatFractionRatio: (current, total) => `${current}/${total}`
+                      },
+                      on: {
+                          slideChange: function() {
+                              if (photoCounter && canManageEvents) {
+                                  photoCounter.textContent = `${this.realIndex + 1}/${this.slides.length}`;
+                              }
+                              currentPhotoIndex = this.realIndex;
+                          }
+                      }
+                  });
+                  
+                  // Показываем счётчик только для лидеров/админов
+                  if (photoCounter && canManageEvents) {
+                      photoCounter.style.display = 'block';
+                      photoCounter.textContent = `1/${swiper.slides.length}`;
+                  }
               }
+          }
+
+          // Навешиваем обработчики на кнопки
+          const applyButton = document.getElementById('btnApply');
+          if (applyButton) {
+              applyButton.onclick = function() {
+                  submitApplication(currentGroupId);
+              };
+          }
+          
+          // Обработчик для кнопки "Загрузить аватар" в меню настроек
+          const uploadAvatarBtn = document.getElementById('btnUploadAvatarMenu');
+          if (uploadAvatarBtn) {
+              uploadAvatarBtn.onclick = function(e) {
+                  console.log('=== Upload Avatar Button Clicked ===');
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('canManageEvents:', canManageEvents);
+                  if (canManageEvents) {
+                      // Создаём временный input для открытия диалога выбора файла
+                      const tempInput = document.createElement('input');
+                      tempInput.type = 'file';
+                      tempInput.accept = 'image/*';
+                      tempInput.style.display = 'none';
+                      document.body.appendChild(tempInput);
+                      
+                      tempInput.onchange = function(event) {
+                          const file = event.target.files[0];
+                          if (file) {
+                              console.log('Selected file:', file.name, file.type, file.size);
+                              // Вызываем ту же функцию, что и при загрузке аватара
+                              processAvatarFile(file);
+                          }
+                      };
+                      
+                      tempInput.click();
+                      
+                      // Удаляем временный input после выбора
+                      setTimeout(() => {
+                          document.body.removeChild(tempInput);
+                      }, 1000);
+                  } else {
+                      showToast('⚠️ Только лидер или администратор может загрузить аватар');
+                  }
+                  document.getElementById('settingsMenu').style.display = 'none';
+              };
+              console.log('✅ Upload avatar button handler attached');
+          } else {
+              console.error('❌ Upload avatar button not found!');
           }
 
           // Логика мгновенного превью и автоматической отправки файла на сервер (только для лидеров)
           if (canManageEvents) {
-              document.getElementById('groupAvatarFile')?.addEventListener('change', function(e) {
+              document.getElementById('groupAvatarFile')?.addEventListener('change', async function(e) {
                   const files = e.target.files;
                   if (files && files.length > 0) {
-                      const file = files[0];
+                      let file = files[0];
+                      
+                      console.log('=== Avatar upload ===');
+                      console.log('File name:', file.name);
+                      console.log('File type:', file.type);
+                      console.log('File size:', file.size);
 
-                      if (!file.type.startsWith('image/')) {
-                          showToast('❌ Пожалуйста, выберите файл изображения');
-                          return;
+                      // Проверяем HEIC ДО проверки MIME типа
+                      const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+                      
+                      if (isHeic) {
+                          console.log('✅ HEIC file detected, will convert first');
+                          showToast('⏳ Конвертация HEIC в JPEG...');
+                          
+                          const jpegFile = await convertHeicToJpeg(file);
+                          if (!jpegFile) {
+                              showToast('❌ Ошибка конвертации HEIC');
+                              return;
+                          }
+                          file = jpegFile;
+                          console.log('✅ HEIC converted to:', file.name, 'type:', file.type, 'size:', file.size);
+                      } else {
+                          // Проверяем MIME тип только для НЕ-HEIC файлов
+                          if (!file.type.startsWith('image/')) {
+                              showToast('❌ Пожалуйста, выберите файл изображения');
+                              console.error('Invalid file type:', file.type, 'for file:', file.name);
+                              return;
+                          }
+                          console.log('✅ Valid image file:', file.type);
                       }
 
                       const reader = new FileReader();
@@ -2067,46 +3186,31 @@
               });
           }
 
-          // Кнопка "Создать событие" для лидера
-          if (canManageEvents) {
-              const actions = document.getElementById('group-actions');
-              const createBtn = document.createElement('button');
-              createBtn.className = 'btn btn-block';
-              createBtn.textContent = '➕ Создать событие';
-              createBtn.onclick = () => {
-                  document.getElementById('eventModal').style.display = 'flex';
-
-                  const now = new Date();
-                  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-
-                  const year = tomorrow.getFullYear();
-                  const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
-                  const day = String(tomorrow.getDate()).padStart(2, '0');
-                  const hours = String(tomorrow.getHours()).padStart(2, '0');
-                  const minutes = String(tomorrow.getMinutes()).padStart(2, '0');
-
-                  const localISO = `${year}-${month}-${day}T${hours}:${minutes}`;
-                  document.getElementById('eventDateTime').value = localISO;
-              };
-              actions.insertBefore(createBtn, actions.firstChild);
-          }
-
-          const applyButton = document.getElementById('btnApply');
-          if (applyButton) {
-              applyButton.onclick = function() {
-                  submitApplication(currentGroupId);
-              };
-          }
-
       } catch (error) {
           console.error('Ошибка:', error);
           document.getElementById('groupDetail').innerHTML = '<p class="error-state">Не удалось загрузить группу</p>';
       }
   }
 
-  // Обработчики модального окна
-  document.getElementById('saveEvent')?.addEventListener('click', saveEvent);
-  document.getElementById('cancelEvent')?.addEventListener('click', closeEventModal);
+  // Обработчики модального окна редактирования группы
+  document.getElementById('btnCancelGroupEdit')?.addEventListener('click', closeEditGroupModal);
+  document.getElementById('btnSaveGroupEdit')?.addEventListener('click', saveGroupTextData);
+  
+  // Обработчики модального окна создания/редактирования события
+  document.getElementById('btnCancelCreateEvent')?.addEventListener('click', () => {
+      closeCreateEventModal();
+      // Восстанавливаем заголовок и текст кнопки для нового события
+      document.querySelector('#createEventModal h3').textContent = '➕ Создать событие';
+      document.getElementById('btnSaveCreateEvent').textContent = 'Создать';
+  });
+  document.getElementById('btnSaveCreateEvent')?.addEventListener('click', saveNewEvent);
+  
+  // Закрытие модального окна редактирования группы по клику на фон
+  document.getElementById('editGroupModal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'editGroupModal') {
+          closeEditGroupModal();
+      }
+  });
 
   // Инициализация
   // 🔥 ИСПРАВЛЕНО: Принудительно закрываем чёрный кроппер при любой загрузке страницы!
@@ -2150,10 +3254,30 @@
 	// Свайп и контекстное меню инициализируются через делегирование (above)
 
 	// === СКРОЛЛ ВВЕРХ — ПОДГРУЗКА СТАРЫХ СООБЩЕНИЙ ===
+
+	// Загружаем Swiper.js синхронно
+	const swiperScript = document.createElement('script');
+	swiperScript.src = 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js';
+	swiperScript.async = false;
+	document.head.appendChild(swiperScript);
 	let isScrollUpLoading = false;
 	let noMoreMessages = false; // Флаг: больше старых сообщений нет
 	
 	document.addEventListener('DOMContentLoaded', () => {
+		// Проверяем загрузку heic2any
+		setTimeout(() => {
+			console.log('=== HEIC2ANY CHECK ===');
+			console.log('heic2anyLoaded:', window.heic2anyLoaded);
+			console.log('heic2anyReady:', window.heic2anyReady);
+			console.log('typeof heic2any:', typeof window.heic2any);
+			if (!window.heic2anyLoaded || !window.heic2anyReady) {
+				console.error('❌ heic2any is NOT ready!');
+				showToast('⚠️ HEIC конвертация недоступна (проверьте интернет)');
+			} else {
+				console.log('✅ heic2any is ready!');
+			}
+		}, 2000);
+		
 		const chatContainer = document.getElementById('chatHistoryContainer');
 		if (chatContainer) {
 			chatContainer.addEventListener('scroll', () => {
@@ -2183,42 +3307,7 @@
 		}
 	});
   
-      // [НОВОЕ] Функция динамического добавления строки будильника в форму
-    function addNotificationTimeRow(value = '') {
-        const container = document.getElementById('notificationInputsContainer');
-        if (!container) return;
-    
-        // Ограничим лидера до 10 будильников, чтобы не перегружать интерфейс
-        if (container.children.length >= 10) {
-            showToast('⚠ Максимум 10 напоминаний для одного события');
-            return;
-        }
-    
-        // Создаем обертку для одной строчки
-        const row = document.createElement('div');
-        row.className = 'notify-time-row';
-        row.style.cssText = 'display: flex; align-items: center; gap: 10px; width: 100%;';
-    
-        // Инпут выбора даты и времени будильника
-        row.innerHTML = `
-            <input type="datetime-local" class="input-field notify-datetime-input" value="${value}" required style="margin: 0; flex: 1;">
-            <button type="button" class="btn btn-danger" onclick="removeNotificationTimeRow(this)" style="margin: 0; padding: 0 10px; height: 38px; width: 38px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: #ff3b30; border: none; border-radius: 6px; color: #fff; cursor: pointer;">
-                ❌
-            </button>
-        `;
-    
-        container.appendChild(row);
-    }
-    
-    // [НОВОЕ] Функция удаления конкретной строки будильника
-    function removeNotificationTimeRow(button) {
-        const row = button.parentElement;
-        if (row) {
-            row.remove();
-        }
-    }
-
-    // === POLLING НОВЫХ СООБЩЕНИЙ ===
+      // === POLLING НОВЫХ СООБЩЕНИЙ ===
     let chatPollingInterval = null;
     let lastCheckedMessageId = 0;
     let myAvatarUrl = '';
@@ -2471,7 +3560,8 @@ function navigateToOriginalMessage(originalMessageId, clickedElement) {
 </div>
 
 
-<!-- Web Push Notifications -->
+<!-- Auth & Web Push Notifications -->
+<script src="/android.js"></script>
 <script src="/web-push-suppression.js"></script>
 <script src="/web-push.js"></script>
 

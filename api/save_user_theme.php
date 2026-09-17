@@ -1,16 +1,12 @@
 <?php
 // save_user_theme.php
-header('Content-Type: application/json; charset=utf8mb4');
+header('Content-Type: application/json; charset=utf-8');
 
-// [АРХИТЕКТУРА] db.php подключен на самом верху. Сессия гарантированно инициализирована
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
-// Теперь проверка авторизации отработает корректно
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Требуется вход'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+// Проверяем авторизацию (сессия ИЛИ токен)
+$user_id = requireAuth($pdo);
 
 try {
     $input = json_decode(file_get_contents('php://input'), true);
@@ -29,8 +25,6 @@ try {
         }
     }
 
-    $user_id = (int)$_SESSION['user_id'];
-
     // Проверяем, что пользователь существует
     $stmt = $pdo->prepare("SELECT id FROM users WHERE id = ?");
     $stmt->execute([$user_id]);
@@ -38,7 +32,7 @@ try {
         throw new Exception('Пользователь не найден');
     }
 
-    // [ИСПРАВЛЕНО] Убран устаревший синтаксис VALUES(), запрос переписан на безопасные именованные параметры
+    // Обновляем тему
     $stmt = $pdo->prepare("
         INSERT INTO user_themes (user_id, background_type, background_value)
         VALUES (:user_id, :background_type, :background_value)
@@ -47,7 +41,7 @@ try {
             background_value = :update_value,
             updated_at = NOW()
     ");
-    
+
     $stmt->execute([
         'user_id'          => $user_id,
         'background_type'  => $type,

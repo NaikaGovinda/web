@@ -10,68 +10,108 @@ function getAuthToken() {
 }
 
 /**
- * Добавляет auth_token ко всем fetch запросам (через прокси)
- * Это глобальная настройка — все fetch в коде будут использовать токен
+ * Список внешних доменов, к которым НЕ добавляем токен
+ * (VK ID, Google, карты, CDN — они не должны получать наш токен)
+ */
+const EXTERNAL_DOMAINS = [
+    'id.vk.ru',
+    'id.vk.com',
+    'vk.com',
+    'googleapis.com',
+    'nominatim.openstreetmap.org',
+    'photon.komoot.io',
+    'unpkg.com',
+    'tile.openstreetmap.org',
+    'leafletjs.com'
+];
+
+/**
+ * Добавляет auth_token ко всем fetch запросам
  */
 (function injectAuthToken() {
     const originalFetch = window.fetch;
-    
+
     window.fetch = function(...args) {
-        let [url, options] = args;
-        const token = getAuthToken();
-        
-        if (token) {
-            // Добавляем токен к заголовкам
-            options = options || {};
-            options.headers = options.headers || {};
-            
-            // Если ещё нет Authorization, добавляем наш токен
-            if (!options.headers['X-Auth-Token']) {
-                options.headers['X-Auth-Token'] = token;
+        let url = args[0];
+        let options = args[1] || {};
+
+        // Исключаем запросы к внешним доменам
+        const urlString = typeof url === 'string' ? url : '';
+        for (let i = 0; i < EXTERNAL_DOMAINS.length; i++) {
+            if (urlString.includes(EXTERNAL_DOMAINS[i])) {
+                return originalFetch.apply(window, args);
             }
-            
-            // Обновляем args, чтобы fetch получил изменённые options
-            args[1] = options;
         }
-        
+
+        const token = getAuthToken();
+
+        if (token) {
+            const isFormData = options.body instanceof FormData;
+
+            if (isFormData) {
+                // Для FormData добавляем токен в URL (query parameter)
+                if (typeof url === 'string' && !url.includes('?')) {
+                    url = url + '?auth_token=' + encodeURIComponent(token);
+                    args[0] = url;
+                } else if (typeof url === 'string') {
+                    url = url + '&auth_token=' + encodeURIComponent(token);
+                    args[0] = url;
+                }
+            } else {
+                // Для обычных запросов добавляем токен в заголовки
+                if (options.headers instanceof Headers) {
+                    if (!options.headers.has('X-Auth-Token')) {
+                        options.headers.set('X-Auth-Token', token);
+                    }
+                } else if (options.headers && typeof options.headers === 'object') {
+                    if (!options.headers['X-Auth-Token']) {
+                        options.headers['X-Auth-Token'] = token;
+                    }
+                } else {
+                    options.headers = { 'X-Auth-Token': token };
+                }
+                args[1] = options;
+            }
+        }
+
         return originalFetch.apply(window, args);
     };
 })();
 
 /**
  * Получает внутренний user_id для отправки в Android-приложение
- * Использует /api/get_user_id.php, который проверяет сессию.
- * @returns {Promise<string|null>}
  */
 async function getUserIdForAndroid() {
-  try {
-    const res = await fetch('/api/get_user_id.php', {
-      method: 'GET',
-      credentials: 'include' // ← важно: передаёт куки сессии (PHPSESSID)
-    });
+    try {
+        const res = await fetch('/api/get_user_id.php', {
+            method: 'GET',
+            credentials: 'include'
+        });
 
-    if (!res.ok) {
-      return null;
+        if (!res.ok) return null;
+
+        const data = await res.json();
+
+        if (data.success && typeof data.user_id === 'number') {
+            return String(data.user_id);
+        }
+        return null;
+    } catch (e) {
+        return null;
     }
-
-    const data = await res.json();
-
-    if (data.success && typeof data.user_id === 'number') {
-      return String(data.user_id);
-    } else {
-      return null;
-    }
-  } catch (e) {
-    return null;
-  }
 }
 
 /**
- * Отправляет user_id в Android-приложение (с автоповтором, если мост еще не готов)
+ * Отправляет user_id в Android-приложение (с таймаутом 2 секунды)
  */
 async function sendUserIdToAndroid() {
+    var waited = 0;
+    while ((!window.Android || typeof window.Android.setUser !== 'function') && waited < 2000) {
+        await new Promise(function(resolve) { setTimeout(resolve, 100); });
+        waited += 100;
+    }
+
     if (!window.Android || typeof window.Android.setUser !== 'function') {
-        setTimeout(sendUserIdToAndroid, 500);
         return;
     }
 
@@ -80,76 +120,82 @@ async function sendUserIdToAndroid() {
     if (userId) {
         try {
             window.Android.setUser(userId);
-        } catch (e) {
-            // silently fail
-        }
+        } catch (e) {}
     }
 }
 
-// 🔥 ИСПРАВЛЕНО: Надежный цикличный запуск при старте любой страницы
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', sendUserIdToAndroid);
 } else {
     sendUserIdToAndroid();
 }
 
-// Автоматический вызов при загрузке (если Android-мост доступен)
 if (typeof window.Android === 'object' && window.Android !== null) {
-  sendUserIdToAndroid().catch(console.error);
+    sendUserIdToAndroid().catch(console.error);
 }
 
+ensureAuthToken().catch(console.error);
+
 /**
- * 🔥 ДОБАВЛЕНО ДЛЯ ГАЛЕРЕИ:
- * Эту функцию автоматически вызывает Android-приложение (MainActivity.kt)
- * после того, как пользователь успешно выбрал фотографию в системной галерее.
- * 
- * @param {string} imageUri - Внутренний локальный путь к изображению в Android
+ * Вызывается Android-приложением после выбора фото
  */
 function receiveImageFromAndroid(imageUri) {
-    // Проверяем, загружен ли наш кастомный кроппер на странице
     if (typeof openCropperModal === 'function') {
-        
-        // Вызываем функцию открытия кроппера из /assets/custom-cropper.js
-        // В качестве API-урла передаем стандартный адрес обновления профиля
         openCropperModal(imageUri, '/api/update_profile.php');
-        
     } else {
         console.error("Критическая ошибка: Функция openCropperModal не найдена.");
     }
 }
 
 /**
- * 🔥 ДОБАВЛЕНО ДЛЯ УВЕДОМЛЕНИЙ ЧАТА:
- * Информирует Android-приложение о том, в каком чате сейчас находится пользователь.
- * @param {string|null} groupId - ID текущей группы или null, если чат закрыт
+ * Информирует Android о текущем чате
  */
 function updateActiveChatContextInAndroid(groupId) {
     if (typeof window.Android === 'object' && window.Android !== null && typeof window.Android.setActiveChat === 'function') {
         try {
             window.Android.setActiveChat(groupId ? String(groupId) : "");
-        } catch (e) {
-            // silently fail
-        }
+        } catch (e) {}
     }
 }
 
-/**
- * Перехватчик для глобального отслеживания изменения хэша или параметров URL
- */
 function auditCurrentPageContext() {
     const urlParams = new URLSearchParams(window.location.search);
     const groupId = urlParams.get('id');
-    
-    // Если мы на странице group.html и открыт чат
+
     if (window.location.pathname.includes('group.html') && (urlParams.has('open_chat') || urlParams.has('open_private_chat'))) {
         updateActiveChatContextInAndroid(groupId);
     } else {
-        // Если ушли из чата — сбрасываем контекст в Android
         updateActiveChatContextInAndroid(null);
     }
 }
 
-// Запускаем проверку при инициализации скрипта
 document.addEventListener('DOMContentLoaded', auditCurrentPageContext);
 
+/**
+ * Автоматически получает и сохраняет auth_token после входа
+ */
+async function ensureAuthToken() {
+    if (getAuthToken()) return;
 
+    try {
+        const res = await fetch('/api/check_auth.php', {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        if (data.is_authenticated && data.auth_token) {
+            localStorage.setItem('auth_token', data.auth_token);
+            localStorage.setItem('user_id', String(data.user_id));
+
+            if (typeof sendUserIdToAndroid === 'function') {
+                sendUserIdToAndroid();
+            }
+        }
+    } catch (e) {
+        console.warn('[AUTH] Не удалось получить auth_token:', e);
+    }
+}

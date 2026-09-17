@@ -1,22 +1,16 @@
 <?php
-// get_profile.php
-header('Content-Type: application/json; charset=utf8mb4');
+header('Content-Type: application/json; charset=utf-8');
 
 $pdo = require __DIR__ . '/db.php';
 $config = require __DIR__ . '/config.php';
+require_once __DIR__ . '/auth_helper.php';
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Требуется вход'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-$user_id = (int)$_SESSION['user_id'];
+$user_id = requireAuth($pdo);
 
 try {
-    // [ИСПРАВЛЕНО] Добавлено поле role в SELECT
+    // [БЕЗОПАСНОСТЬ] Убран email из SELECT — это конфиденциальные данные
     $stmt = $pdo->prepare("
-        SELECT id, email, first_name, last_name, avatar_url, phone, city, is_admin, role
+        SELECT id, first_name, last_name, avatar_url, phone, city, is_admin, role
         FROM users
         WHERE id = ?
     ");
@@ -38,7 +32,7 @@ try {
             $user_info['avatar_url'] = null;
         }
     }
-    
+
     $user_info['id'] = (int)$user_info['id'];
     $user_info['is_admin'] = (int)$user_info['is_admin'];
 

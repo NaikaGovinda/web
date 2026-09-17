@@ -3,16 +3,12 @@
 header('Content-Type: application/json; charset=utf8mb4');
 
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 require_once __DIR__ . '/send_fcm.php'; 
 
-if (!isset($_SESSION['user_id'])) {
-	http_response_code(403);
-	echo json_encode(['success' => false, 'error' => 'Требуется вход']);
-	exit;
-}
+$user_id = requireAuth($pdo);
 
 try {
-    
 
     $input = json_decode(file_get_contents('php://input'), true);
     $group_id = (int)($input['group_id'] ?? 0);
@@ -28,7 +24,6 @@ try {
     }
 
     // Проверяем, что пользователь — лидер группы ИЛИ админ
-    $user_id = $_SESSION['user_id'];
     $stmt = $pdo->prepare("
         SELECT g.id, g.name 
         FROM `groups` g

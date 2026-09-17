@@ -1,5 +1,9 @@
 <?php
 // register.php
+// [БЕЗОПАСНОСТЬ] Поддерживает два режима:
+// 1. JSON API (для старого register.html) - возвращает JSON
+// 2. Стандартная форма (для secure/register.html) - использует сессию и редирект
+
 header('Content-Type: application/json; charset=utf8mb4');
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type");
@@ -10,6 +14,10 @@ require_once __DIR__ . '/email_helper.php';
 
 // Удаляем коды, которым больше 24 часов, чтобы не захламлять базу
 $pdo->exec("DELETE FROM email_verification_codes WHERE created_at < NOW() - INTERVAL 24 HOUR");
+
+// Определяем тип запроса
+$isJsonRequest = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+$isJsonContentType = isset($_SERVER['CONTENT_TYPE']) && strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false;
 
 // Получаем данные из любого источника (POST или JSON)
 $inputJSON = json_decode(file_get_contents('php://input'), true);
@@ -22,20 +30,32 @@ $password = $_POST['password'] ?? $inputJSON['password'] ?? '';
 
 // Валидация
 if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Неверный формат email: ' . $email], JSON_UNESCAPED_UNICODE);
+    if ($isJsonRequest || $isJsonContentType) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Неверный формат email: ' . $email], JSON_UNESCAPED_UNICODE);
+    } else {
+        header('Location: ../secure/register.html?error=' . urlencode('Неверный формат email'));
+    }
     exit;
 }
 
 if (strlen($password) < 6) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Пароль должен быть не менее 6 символов'], JSON_UNESCAPED_UNICODE);
+    if ($isJsonRequest || $isJsonContentType) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Пароль должен быть не менее 6 символов'], JSON_UNESCAPED_UNICODE);
+    } else {
+        header('Location: ../secure/register.html?error=' . urlencode('Пароль должен быть не менее 6 символов'));
+    }
     exit;
 }
 
 if (empty($first_name)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Имя обязательно'], JSON_UNESCAPED_UNICODE);
+    if ($isJsonRequest || $isJsonContentType) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Имя обязательно'], JSON_UNESCAPED_UNICODE);
+    } else {
+        header('Location: ../secure/register.html?error=' . urlencode('Имя обязательно'));
+    }
     exit;
 }
 
@@ -77,7 +97,14 @@ try {
             session_regenerate_id(true);
         }
         
-        echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
+        // Для JSON API возвращаем успех
+        if ($isJsonRequest || $isJsonContentType) {
+            echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
+        } else {
+            // Для стандартной формы - редирект на страницу подтверждения
+            header('Location: ../verify_email.html');
+            exit;
+        }
     } else {
         throw new Exception('Ошибка при отправке письма через sendVerificationEmail');
     }
@@ -85,6 +112,11 @@ try {
 } catch (Exception $e) {
     // В production режиме логируем ошибки на сервере
     error_log("Register error: " . $e->getMessage());
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Ошибка сервера. Попробуйте позже.'], JSON_UNESCAPED_UNICODE);
+    if ($isJsonRequest || $isJsonContentType) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Ошибка сервера. Попробуйте позже.'], JSON_UNESCAPED_UNICODE);
+    } else {
+        header('Location: ../secure/register.html?error=' . urlencode('Ошибка сервера'));
+        exit;
+    }
 }

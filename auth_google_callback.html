@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Вход через Google</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <h1 class="org-name">Вход через Google</h1>
+    </header>
+
+    <main class="content">
+      <div class="auth-card">
+        <h2>Входим...</h2>
+        <p class="auth-subtitle" id="statusText">Пожалуйста, подождите</p>
+        <div id="errorMessage" class="auth-error" style="display: none;"></div>
+      </div>
+    </main>
+  </div>
+
+<script>
+(async function() {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const error = params.get('error');
+    const statusText = document.getElementById('statusText');
+    const errorMessage = document.getElementById('errorMessage');
+
+    if (error) {
+        showError('Ошибка авторизации: ' + (params.get('error_description') || error));
+        return;
+    }
+
+    if (!code) {
+        showError('Код авторизации не получен');
+        return;
+    }
+
+    try {
+        statusText.textContent = 'Проверяем данные...';
+        
+        // Получаем токен Google
+        const tokenResponse = await fetch('/api/auth_google_token.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: code })
+        });
+
+        const cleanRawText = await tokenResponse.text();
+        const jsonIdx = cleanRawText.indexOf('{');
+        if (jsonIdx === -1) throw new Error("JSON не найден");
+        const tokenData = JSON.parse(cleanRawText.substring(jsonIdx));
+
+        if (!tokenData.success) {
+            throw new Error(tokenData.error || 'Не удалось получить токен');
+        }
+
+        statusText.textContent = 'Входим в систему...';
+
+        // Входим в систему
+        const loginResponse = await fetch('/api/auth_google_login.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                access_token: tokenData.access_token,
+                email: tokenData.email || ''
+            })
+        });
+
+        const loginRawText = await loginResponse.text();
+        const loginJsonIdx = loginRawText.indexOf('{');
+        if (loginJsonIdx === -1) throw new Error("JSON не найден");
+        const loginData = JSON.parse(loginRawText.substring(loginJsonIdx));
+
+        if (loginData.success) {
+            statusText.textContent = 'Успешный вход!';
+            localStorage.setItem('auth_token', loginData.token || '');
+            localStorage.setItem('user_id', loginData.user_id);
+            
+            // Уведомляем Android и ждём завершения перед перенаправлением
+            if (typeof sendUserIdToAndroid === 'function') {
+                await sendUserIdToAndroid();
+            }
+            
+            window.location.href = '/profile.html';
+        } else {
+            throw new Error(loginData.error || 'Ошибка входа');
+        }
+
+    } catch (err) {
+        console.error(err);
+        showError('❌ ' + err.message);
+    }
+})();
+
+function showError(message) {
+    const statusText = document.getElementById('statusText');
+    const errorMessage = document.getElementById('errorMessage');
+    statusText.style.display = 'none';
+    errorMessage.textContent = message;
+    errorMessage.style.display = 'block';
+    
+    // Добавляем кнопку "Назад"
+    const backBtn = document.createElement('button');
+    backBtn.className = 'btn btn-primary';
+    backBtn.textContent = 'Вернуться ко входу';
+    backBtn.onclick = () => window.location.href = '/login.html';
+    errorMessage.appendChild(document.createElement('br'));
+    errorMessage.appendChild(backBtn);
+}
+</script>
+<script src="/android.js"></script>
+</body>
+</html>

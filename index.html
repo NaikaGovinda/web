@@ -120,8 +120,8 @@
         // Полностью скрываем контейнер с кнопкой
         container.style.display = 'none';
       } else {
-        // Показываем кнопку входа
-        container.innerHTML = '<a href="/login.html" class="btn btn-primary">Войти или зарегистрироваться</a>';
+        // [БЕЗОПАСНОСТЬ] Показываем кнопку входа, ведущую на безопасную форму
+        container.innerHTML = '<a href="/secure/login.html" class="btn btn-primary">Войти или зарегистрироваться</a>';
       }
     } catch (error) {
       // При ошибке — показываем кнопку входа

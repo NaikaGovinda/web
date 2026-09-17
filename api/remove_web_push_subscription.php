@@ -8,14 +8,10 @@ header('Content-Type: application/json');
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 
-// Session auth
-session_start();
+$pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-    exit;
-}
+$user_id = requireAuth($pdo);
 
 // Read JSON input
 $input = json_decode(file_get_contents('php://input'), true);

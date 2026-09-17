@@ -9,19 +9,13 @@ set_exception_handler(function($e) {
     exit;
 });
 
-header('Content-Type: application/json; charset=utf8mb4');
+header('Content-Type: application/json; charset=utf-8');
 
-// [АРХИТЕКТУРА] db.php подключен на самом верху, ручной вызов session_start() удален
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
-// 1. Проверяем авторизацию пользователя по сессии с корректным HTTP-кодом
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Требуется авторизация'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-$userId = (int)$_SESSION['user_id'];
+// Проверяем авторизацию (сессия ИЛИ токен)
+$userId = requireAuth($pdo);
 
 // 2. Получаем JSON-данные из запроса
 $input = file_get_contents('php://input');
@@ -47,12 +41,12 @@ $isForwarded = isset($data['is_forwarded']) && $data['is_forwarded'] === true;
 $forwardSenderId = isset($data['forward_sender_id']) && $data['forward_sender_id'] !== null && $data['forward_sender_id'] !== 'null' ? (int)$data['forward_sender_id'] : null;
 $originalMessageId = isset($data['original_message_id']) && $data['original_message_id'] !== null && $data['original_message_id'] !== 'null' && (int)$data['original_message_id'] > 0 ? (int)$data['original_message_id'] : null;
 
-// Если пересылаем СВОЁ сообщение — не помечаем как forwarded (можно редактировать)
+// Если пересылаем СВОЁ сообщение — не помечаем как forwarded
 if ($isForwarded && $forwardSenderId === $userId) {
     $isForwarded = false;
 }
 
-// [ОПТИМИЗАЦИЯ] Разрешаем отправку с recipient_id без group_id (для ЛС)
+// Разрешаем отправку с recipient_id без group_id (для ЛС)
 if (($groupId <= 0 && $recipientId === null) || empty($messageText)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Не указан ID группы или собеседник, или сообщение пустое'], JSON_UNESCAPED_UNICODE);
@@ -68,13 +62,12 @@ if ($recipientId !== null && $recipientId === $userId) {
 
 try {
     // =========================================================================
-    // 4. ПРОВЕРКА ДОСТУПА ОТПРАВИТЕЛЯ: состоит ли автор в группе (или лидер/админ)
+    // 4. ПРОВЕРКА ДОСТУПА ОТПРАВИТЕЛЯ
     // =========================================================================
-    // [ИСПРАВЛЕНО] Проверка админа полностью переписана на числовой флаг is_admin === 1 по техпаспорту
     $userStmt = $pdo->prepare("SELECT role, is_admin FROM users WHERE id = ?");
     $userStmt->execute([$userId]);
     $userRow = $userStmt->fetch();
-    
+
     $isAdmin = ($userRow && (int)$userRow['is_admin'] === 1);
     $isObserver = ($userRow && $userRow['role'] === 'observer');
 
@@ -83,7 +76,7 @@ try {
         echo json_encode(['success' => false, 'error' => 'Наблюдатели не могут отправлять сообщения'], JSON_UNESCAPED_UNICODE);
         exit;
     }
-    
+
     // Для ЛС проверка доступа к группе не нужна
     if ($recipientId !== null) {
         $hasAccess = true;
@@ -93,14 +86,12 @@ try {
         if ($isAdmin) {
             $hasAccess = true;
         } else {
-            // Проверяем, одобрен ли пользователь в этой группе
             $memberCheck = $pdo->prepare("SELECT COUNT(*) FROM applications WHERE group_id = ? AND user_id = ? AND status = 'approved'");
             $memberCheck->execute([$groupId, $userId]);
             if ((int)$memberCheck->fetchColumn() > 0) {
                 $hasAccess = true;
             }
-            
-            // [АРХИТЕКТУРА] Проверяем, является ли пользователь лидером в таблице group_leaders
+
             if (!$hasAccess) {
                 $leaderCheck = $pdo->prepare("SELECT COUNT(*) FROM group_leaders WHERE group_id = ? AND user_id = ?");
                 $leaderCheck->execute([$groupId, $userId]);
@@ -109,200 +100,170 @@ try {
                 }
             }
         }
-        
+
         if (!$hasAccess) {
             http_response_code(403);
             echo json_encode(['success' => false, 'error' => 'Вы не являетесь участником этой группы'], JSON_UNESCAPED_UNICODE);
             exit;
         }
     }
-    
+
     // =========================================================================
-    // 5. ПРОВЕРКА ДОСТУПА ПОЛУЧАТЕЛЯ (если это ЛС) - СКВОЗНОЙ ВАРИАНТ
+    // 5. ПРОВЕРКА ДОСТУПА ПОЛУЧАТЕЛЯ (если это ЛС)
     // =========================================================================
     if ($recipientId !== null) {
-        // [ИСПРАВЛЕНО] Валидация получателя ЛС также синхронизирована с системным полем is_admin
         $recipientStmt = $pdo->prepare("SELECT is_admin FROM users WHERE id = ?");
         $recipientStmt->execute([$recipientId]);
         $recipientRow = $recipientStmt->fetch();
-        
+
         if (!$recipientRow) {
             http_response_code(404);
             echo json_encode(['success' => false, 'error' => 'Получатель не найден в системе'], JSON_UNESCAPED_UNICODE);
             exit;
         }
     }
-    
+
     // 6. Вставляем сообщение в базу данных
-    // Проверяем, существуют ли нужные колонки
     $hasReplyTo = false;
     try {
         $colCheck = $pdo->query("SHOW COLUMNS FROM group_messages LIKE 'reply_to_id'");
         $hasReplyTo = ($colCheck && $colCheck->rowCount() > 0);
-    } catch (\Exception $e) {
-        $hasReplyTo = false;
-    }
-    
+    } catch (\Exception $e) { $hasReplyTo = false; }
+
     $hasIsForwarded = false;
     try {
         $colCheck = $pdo->query("SHOW COLUMNS FROM group_messages LIKE 'is_forwarded'");
         $hasIsForwarded = ($colCheck && $colCheck->rowCount() > 0);
-    } catch (\Exception $e) {
-        $hasIsForwarded = false;
-    }
-    
+    } catch (\Exception $e) { $hasIsForwarded = false; }
+
     $hasForwardSenderId = false;
     try {
         $colCheck = $pdo->query("SHOW COLUMNS FROM group_messages LIKE 'forward_sender_id'");
         $hasForwardSenderId = ($colCheck && $colCheck->rowCount() > 0);
-    } catch (\Exception $e) {
-        $hasForwardSenderId = false;
-    }
-    
+    } catch (\Exception $e) { $hasForwardSenderId = false; }
+
     $hasOriginalMessageId = false;
     try {
         $colCheck = $pdo->query("SHOW COLUMNS FROM group_messages LIKE 'original_message_id'");
         $hasOriginalMessageId = ($colCheck && $colCheck->rowCount() > 0);
-    } catch (\Exception $e) {
-        $hasOriginalMessageId = false;
-    }
-    
-    // Build INSERT dynamically based on available columns
+    } catch (\Exception $e) { $hasOriginalMessageId = false; }
+
     $fields = ['group_id', 'sender_id', 'recipient_id', 'message_text'];
     $placeholders = ['?', '?', '?', '?'];
     $values = [$groupId, $userId, $recipientId, $messageText];
-    
+
     if ($hasReplyTo) {
         $fields[] = 'reply_to_id';
         $placeholders[] = '?';
         $values[] = $replyToId;
     }
-    
+
     if ($hasIsForwarded) {
         $fields[] = 'is_forwarded';
         $placeholders[] = '?';
         $values[] = $isForwarded ? 1 : 0;
     }
-    
+
     if ($hasForwardSenderId) {
         $fields[] = 'forward_sender_id';
         $placeholders[] = '?';
         $values[] = $forwardSenderId;
     }
-    
+
     if ($hasOriginalMessageId) {
         $fields[] = 'original_message_id';
         $placeholders[] = '?';
         $values[] = $originalMessageId;
     }
-    
+
     $sql = "INSERT INTO group_messages (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";
     $stmt = $pdo->prepare($sql);
     $stmt->execute($values);
-    
-    // Логирование для отладки reply_to_id
-    error_log('[send_message] INSERT: group_id=' . $groupId . ' sender=' . $userId . ' recipient=' . $recipientId . ' reply_to_id=' . ($replyToId ?? 'NULL') . ' sql=' . $sql);
-    
+
     // ==========================================================
     // 7. ОТПРАВКА PUSH-УВЕДОМЛЕНИЙ О НОВЫХ СООБЩЕНИЯХ
     // ==========================================================
     try {
         require_once __DIR__ . '/send_fcm.php';
-        
-        // Получаем имя отправителя для красивого вывода в шторке мобильного телефона
+
         $stmtSender = $pdo->prepare("SELECT first_name FROM users WHERE id = ?");
         $stmtSender->execute([$userId]);
         $senderName = $stmtSender->fetchColumn() ?: "Участник";
-        
+
         $recipientIds = [];
         $pushTitle = "";
         $pushBody = "{$senderName}: {$messageText}";
-        
+
         if ($recipientId !== null) {
-            // Если это личное сообщение (ЛС)
             $recipientIds[] = $recipientId;
             $pushTitle = "Личное сообщение 💬";
         } else {
-            // Если сообщение в общий чат группы — находим всех подтвержденных участников, кроме себя
             $stmtMembers = $pdo->prepare("SELECT user_id FROM applications WHERE group_id = ? AND status = 'approved' AND user_id != ?");
             $stmtMembers->execute([$groupId, $userId]);
             $memberIds = $stmtMembers->fetchAll(PDO::FETCH_COLUMN);
-            
-            // Находим лидеров группы, кроме себя
+
             $stmtLeaders = $pdo->prepare("SELECT user_id FROM group_leaders WHERE group_id = ? AND user_id != ?");
             $stmtLeaders->execute([$groupId, $userId]);
             $leaderIds = $stmtLeaders->fetchAll(PDO::FETCH_COLUMN);
-            
+
             $recipientIds = array_unique(array_merge($memberIds, $leaderIds));
             $pushTitle = "Сообщение в чате группы 👥";
         }
-        
+
         if (!empty($recipientIds)) {
-			$placeholders = implode(',', array_fill(0, count($recipientIds), '?'));
-			
-			// [ТОЧЕЧНО] Выбираем user_id вместе с токеном, чтобы знать, кому он принадлежит
-			$stmtTokens = $pdo->prepare("SELECT user_id, token FROM user_fcm_tokens WHERE user_id IN ($placeholders)");
-			$stmtTokens->execute($recipientIds);
-			$tokenRows = $stmtTokens->fetchAll(PDO::FETCH_ASSOC);
+            $placeholders = implode(',', array_fill(0, count($recipientIds), '?'));
 
-			// [БРОНЕБОЙНЫЙ ВАРИАНТ]: Сервер проверяет онлайн получателя напрямую по таблице СУБД
-			$tokens = [];
-			foreach ($tokenRows as $row) {
-				$currentRecipientId = (int)$row['user_id'];
+            $stmtTokens = $pdo->prepare("SELECT user_id, token FROM user_fcm_tokens WHERE user_id IN ($placeholders)");
+            $stmtTokens->execute($recipientIds);
+            $tokenRows = $stmtTokens->fetchAll(PDO::FETCH_ASSOC);
 
-				// Запрашиваем из базы, где сейчас сидит этот получатель
-				$stmtCheckOnline = $pdo->prepare("SELECT active_context FROM user_chat_online WHERE user_id = ? AND updated_at >= NOW() - INTERVAL 10 SECOND");
-				$stmtCheckOnline->execute([$currentRecipientId]);
-				$currentOnlineContext = $stmtCheckOnline->fetchColumn();
+            $tokens = [];
+            foreach ($tokenRows as $row) {
+                $currentRecipientId = (int)$row['user_id'];
 
-				// 1. ПРОВЕРКА ДЛЯ ЛИЧНЫХ СООБЩЕНИЙ (ЛС)
-				if ($recipientId !== null) {
-					// Мы проверяем, что у Получателя ($currentRecipientId) сейчас открыт чат с НАМИ ($userId).
-					// Когда Получатель сидит в чате с нами, его get_messages.php пишет в базу маркер: "private_" + наш ID ($userId)
-					$expectedMarker = "private_" . $userId; 
-					
-					if ($currentOnlineContext === $expectedMarker) {
-						continue; // Друг читает ваше ЛС прямо сейчас! Полная тишина в шторке.
-					}
-				} 
-				// 2. ПРОВЕРКА ДЛЯ ОБЩЕГО ЧАТА ГРУППЫ
-				else {
-					$expectedMarker = "group_" . $groupId;
-					if ($currentOnlineContext === $expectedMarker) {
-						continue; // Получатель сидит в общем чате этой группы. Пропускаем пуш.
-					}
-				}
+                $stmtCheckOnline = $pdo->prepare("SELECT active_context FROM user_chat_online WHERE user_id = ? AND updated_at >= NOW() - INTERVAL 10 SECOND");
+                $stmtCheckOnline->execute([$currentRecipientId]);
+                $currentOnlineContext = $stmtCheckOnline->fetchColumn();
 
-				$tokens[] = $row['token'];
-			}
+                if ($recipientId !== null) {
+                    $expectedMarker = "private_" . $userId;
+                    if ($currentOnlineContext === $expectedMarker) {
+                        continue;
+                    }
+                } else {
+                    $expectedMarker = "group_" . $groupId;
+                    if ($currentOnlineContext === $expectedMarker) {
+                        continue;
+                    }
+                }
 
-			if (!empty($tokens)) {
-                // [ИСПРАВЛЕНО ШАГ 1]: Умное разделение типов роутинга для Общих чатов и ЛС
-				$pushData = [
-					'action' => ($recipientId !== null) ? 'new_private_chat_message' : 'new_group_chat_message',
-					'group_id' => (string)$groupId,
-					'sender_id' => (string)$userId, // Передаем ID того, кто написал (нужно для ЛС)
-					'sender_name' => $senderName,
-					'title' => $pushTitle,
-					'body' => $pushBody
-				];
-                
-                // Триггерим асинхронную Keep-Alive отправку через наш send_fcm.php
+                $tokens[] = $row['token'];
+            }
+
+            if (!empty($tokens)) {
+                $pushData = [
+                    'action' => ($recipientId !== null) ? 'new_private_chat_message' : 'new_group_chat_message',
+                    'group_id' => (string)$groupId,
+                    'sender_id' => (string)$userId,
+                    'sender_name' => $senderName,
+                    'title' => $pushTitle,
+                    'body' => $pushBody
+                ];
+
                 sendFcmMessages($tokens, $pushTitle, $pushBody, $pushData);
             }
         }
     } catch (Exception $fcmEx) {
         file_put_contents(__DIR__ . '/fcm_debug.log', "[" . date('Y-m-d H:i:s') . "] Message push error: " . $fcmEx->getMessage() . "\n", FILE_APPEND);
     }
-    
+
     // ==========================================================
     // 8. ОТПРАВКА WEB PUSH УВЕДОМЛЕНИЙ
     // ==========================================================
     try {
         require_once __DIR__ . '/send_web_push.php';
-        
+
         if ($recipientId !== null) {
-            // Личное сообщение
             foreach ([$recipientId] as $webPushRecipientId) {
                 sendWebPushToUser($pdo, $webPushRecipientId, $pushTitle, $pushBody, [
                     'action' => 'new_private_chat_message',
@@ -314,17 +275,16 @@ try {
                 ]);
             }
         } else {
-            // Сообщение в общий чат
             $stmtWebMembers = $pdo->prepare("SELECT user_id FROM applications WHERE group_id = ? AND status = 'approved' AND user_id != ?");
             $stmtWebMembers->execute([$groupId, $userId]);
             $webMemberIds = $stmtWebMembers->fetchAll(PDO::FETCH_COLUMN);
-            
+
             $stmtWebLeaders = $pdo->prepare("SELECT user_id FROM group_leaders WHERE group_id = ? AND user_id != ?");
             $stmtWebLeaders->execute([$groupId, $userId]);
             $webLeaderIds = $stmtWebLeaders->fetchAll(PDO::FETCH_COLUMN);
-            
+
             $webRecipientIds = array_unique(array_merge($webMemberIds, $webLeaderIds));
-            
+
             foreach ($webRecipientIds as $webPushRecipientId) {
                 sendWebPushToUser($pdo, $webPushRecipientId, $pushTitle, $pushBody, [
                     'action' => 'new_group_chat_message',
@@ -339,20 +299,17 @@ try {
     } catch (Exception $webPushEx) {
         error_log("Web push error in send_message: " . $webPushEx->getMessage());
     }
-    
+
     // ==========================================================
     // 9. СОХРАНЕНИЕ УВЕДОМЛЕНИЙ В БАЗЕ ДАННЫХ
     // ==========================================================
     try {
-        // Готовим stmt ДО условного оператора
         $notifStmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, group_id, target_page, target_params, `read`) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
-        
+
         if ($recipientId !== null) {
-            // Личное сообщение — уведомляем получателя
-            // ВАЖНО: open_private_chat должен быть ID ОТПРАВИТЕЛЯ ($userId), чтобы получатель мог открыть чат с отправителем
             $targetParams = json_encode(['id' => $groupId, 'open_private_chat' => $userId, 'open_private_name' => urlencode($senderName)], JSON_UNESCAPED_UNICODE);
             $notifStmt->execute([
-                $recipientId,  // <-- Уведомление ДЛЯ получателя
+                $recipientId,
                 'chat_message',
                 'Личное сообщение 💬',
                 "{$senderName}: {$messageText}",
@@ -360,15 +317,11 @@ try {
                 'group.html',
                 $targetParams
             ]);
-            
-            // Логирование для отладки ЛС
-            error_log('[send_message] Private chat: sender=' . $userId . ' (' . $senderName . ') -> recipient=' . $recipientId . ', group_id=' . $groupId);
         } else {
-            // Сообщение в общий чат — уведомляем всех участников группы, кроме отправителя
             $stmtNotifMembers = $pdo->prepare("SELECT user_id FROM applications WHERE group_id = ? AND status = 'approved' AND user_id != ?");
             $stmtNotifMembers->execute([$groupId, $userId]);
             $memberIds = $stmtNotifMembers->fetchAll(PDO::FETCH_COLUMN);
-            
+
             foreach ($memberIds as $memberId) {
                 try {
                     $targetParams = json_encode(['id' => $groupId, 'open_chat' => 1], JSON_UNESCAPED_UNICODE);
@@ -381,19 +334,13 @@ try {
                         'group.html',
                         $targetParams
                     ]);
-                } catch (Exception $innerEx) {
-                    // Таблица notifications может ещё не существовать
-                }
+                } catch (Exception $innerEx) {}
             }
-            
-            // Логирование для групповых сообщений
-            error_log('[send_message] Group chat: group_id=' . $groupId . ', sender=' . $userId . ' (' . $senderName . '), members_count=' . count($memberIds));
         }
     } catch (Exception $notifEx) {
-        // Не критично — уведомление всё равно появится через push и localStorage
-        error_log("[send_message] ERROR saving notification: " . $notifEx->getMessage() . " | SQL: " . $notifEx->getTraceAsString());
+        error_log("[send_message] ERROR saving notification: " . $notifEx->getMessage());
     }
-    
+
     echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
 
 } catch (\PDOException $e) {

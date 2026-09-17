@@ -164,15 +164,24 @@
                     android:textColor="#4CAF50"
                     android:layout_marginBottom="12dp" />
 
-                <!-- RecyclerView для карусели -->
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvPhotos"
+                <!-- ViewPager2 для карусели фото -->
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/vpGroupPhotos"
+                    android:layout_width="match_parent"
+                    android:layout_height="250dp"
+                    android:visibility="gone" />
+
+                <!-- Индикатор позиций фото -->
+                <com.google.android.material.tabs.TabLayout
+                    android:id="@+id/tlPhotoIndicator"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:clipToPadding="false"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
-                    android:visibility="gone" />
+                    android:visibility="gone"
+                    app:tabBackground="@android:color/transparent"
+                    app:tabIndicator="@null"
+                    app:tabGravity="center"
+                    app:tabSelectedColor="#4CAF50"
+                    app:tabUnselectedColor="#CCCCCC" />
 
                 <!-- Сообщение, если нет фото -->
                 <TextView

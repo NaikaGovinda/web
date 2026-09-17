@@ -1,18 +1,14 @@
 <?php
-header('Content-Type: application/json; charset=utf8mb4');
+header('Content-Type: application/json; charset=utf-8');
 
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Требуется вход']);
-    exit;
-}
+// Проверяем авторизацию (сессия ИЛИ токен)
+$user_id = requireAuth($pdo);
 
 try {
-    $user_id = (int)$_SESSION['user_id'];
-
-    // Проверяем админский флаг (по стандарту проекта is_admin === 1)
+    // Проверяем админский флаг
     $stmt = $pdo->prepare("SELECT id, is_admin FROM users WHERE id = ?");
     $stmt->execute([$user_id]);
     $user = $stmt->fetch();

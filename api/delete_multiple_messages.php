@@ -4,14 +4,9 @@ header('Content-Type: application/json; charset=utf8mb4');
 
 // Порядок идеальный: db.php загружается первым и автоматически стартует сессию на 30 дней!
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Требуется авторизация']);
-    exit;
-}
-
-$currentUserId = (int)$_SESSION['user_id'];
+$currentUserId = requireAuth($pdo);
 $input = json_decode(file_get_contents('php://input'), true);
 $messageIds = $input['message_ids'] ?? [];
 

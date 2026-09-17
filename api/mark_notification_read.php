@@ -1,26 +1,10 @@
 <?php
 header('Content-Type: application/json; charset=utf8mb4');
 
-// Подключаем db.php (он инициализирует сессию)
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
-// Пытаемся получить user_id из сессии или из POST данных
-$user_id = null;
-if (isset($_SESSION['user_id'])) {
-    $user_id = (int)$_SESSION['user_id'];
-} else {
-    // Fallback: получаем user_id из POST данных (для WebView/Android)
-    $data = json_decode(file_get_contents('php://input'), true);
-    if (isset($data['user_id']) && $data['user_id'] > 0) {
-        $user_id = (int)$data['user_id'];
-    }
-}
-
-if (!$user_id) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Требуется авторизация']);
-    exit;
-}
+$user_id = requireAuth($pdo);
 
 $data = json_decode(file_get_contents('php://input'), true);
 $notification_id = (int)($data['notification_id'] ?? 0);

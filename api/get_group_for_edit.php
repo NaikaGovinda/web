@@ -3,14 +3,13 @@
 // [КОДИРОВКА] Явно задаем UTF-8 для заголовка ответа, чтобы полностью убрать кракозябры в браузере и Android WebView
 header('Content-Type: application/json; charset=utf-8');
 
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 // db.php подключен на самом верху, сессии централизованы в ядре
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Требуется вход'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+$user_id = requireAuth($pdo);
 
 $id = (int)($_GET['id'] ?? 0);
 

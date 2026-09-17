@@ -4,16 +4,11 @@ header('Content-Type: application/json; charset=utf8mb4');
 
 // [АРХИТЕКТУРА] Сначала подключаем db.php. Ручной старт сессии удален, централизован в ядре
 $pdo = require __DIR__ . '/db.php';
+require_once __DIR__ . '/auth_helper.php';
 
-// [АРХИТЕКТУРА] Возвращаем корректный http-статус 403 для триггера роутинга в WebView/фронтенде
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Требуется вход']);
-    exit;
-}
+$user_id = requireAuth($pdo);
 
 try {
-    $user_id = (int)$_SESSION['user_id'];
 
     // [АРХИТЕКТУРА] Проверяем, является ли пользователь глобальным админом (is_admin === 1)
     $adminStmt = $pdo->prepare("SELECT is_admin FROM users WHERE id = ?");
