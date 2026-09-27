@@ -22,7 +22,10 @@ const EXTERNAL_DOMAINS = [
     'photon.komoot.io',
     'unpkg.com',
     'tile.openstreetmap.org',
-    'leafletjs.com'
+    'leafletjs.com',
+    'api-maps.yandex.ru',
+    'yastatic.net',
+    'yandex.ru'
 ];
 
 /**

@@ -43,7 +43,7 @@
         </svg>
         Все
       </button>
-      <button class="filter-btn" id="btnMapFilter" data-filter="map">
+      <button class="filter-btn" id="btnMapFilter" data-filter="map" onclick="window.location.href='map.html?type=namahatta'">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
           <line x1="8" y1="2" x2="8" y2="18"/>
@@ -58,23 +58,29 @@
     </main>
 
     <nav class="bottom-bar">
-      <a href="/index.html" class="bar-btn">
+      <a href="index.html" class="bar-btn">
         <svg class="bar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
           <polyline points="9 22 9 12 15 12 15 22"/>
         </svg>
         <span>Главная</span>
       </a>
-      <a href="/namahatta.html" class="bar-btn bar-btn-active">
+      <a href="namahatta.html" class="bar-btn bar-btn-active">
         <svg class="bar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M23 21v-2a4 4 0 0 1 0 7.75"/>
           <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
         <span>Группы</span>
       </a>
-      <a href="/profile.html" class="bar-btn">
+      <a href="map.html" class="bar-btn">
+        <svg class="bar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+        </svg>
+        <span>Карта</span>
+      </a>
+      <a href="profile.html" class="bar-btn">
         <svg class="bar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
           <circle cx="12" cy="7" r="4"/>
@@ -84,15 +90,9 @@
     </nav>
   </div>
 
-  <div id="mapModal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <div id="map" style="width:100%; height:100%;"></div>
-      <button id="closeMap" class="btn btn-ghost" style="position:absolute; top:12px; right:12px; z-index:1000;">Закрыть</button>
-    </div>
-  </div>
-
   <script>
     function escapeHtml(text) {
+      if (!text) return '';
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
@@ -118,7 +118,7 @@
             let url = `/api/get_groups.php?type=${currentType}`;
     
             if (filter === 'online') url += '&online=1';
-            else if (filter === 'all' || filter === 'map') url += '&all=1';
+            else if (filter === 'all') url += '&all=1';
     
             if (filter === 'nearby') {
                 const loc = await getUserLocation();
@@ -144,7 +144,7 @@
                     const dist = parseFloat(group.distance);
                     distanceText = `${escapeHtml(group.city)} • ${dist < 1 ? Math.round(dist * 1000) + ' м' : dist.toFixed(1) + ' км'}`;
                 } else {
-                    distanceText = escapeHtml(group.city);
+                    distanceText = escapeHtml(group.city || '');
                 }
     
                 const card = document.createElement('div');
@@ -153,11 +153,11 @@
                     <div class="status-indicator">${isOnline ? '🟢' : '🔵'}</div>
                     <div class="group-info">
                         <h3 class="group-title">${escapeHtml(group.name)}</h3>
-                        <p class="group-desc">${escapeHtml(group.description)}</p>
+                        <p class="group-desc">${escapeHtml(group.description || '')}</p>
                         <div class="group-meta">${distanceText}</div>
                     </div>
                 `;
-                card.addEventListener('click', () => { window.location.href = `/group.html?id=${group.id}`; });
+                card.addEventListener('click', () => { window.location.href = `group.html?id=${group.id}`; });
                 container.appendChild(card);
             });
         } catch (error) {
@@ -169,84 +169,16 @@
     document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+          const filter = btn.dataset.filter;
+          if (filter === 'map') return;
           document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          const filter = btn.dataset.filter;
-          if (filter === 'map') { openMapModal(); }
-          else { loadGroups(filter); }
+          loadGroups(filter);
         });
       });
       loadGroups('nearby');
-      document.getElementById('closeMap')?.addEventListener('click', () => {
-        document.getElementById('mapModal').style.display = 'none';
-      });
     });
-
-    let mapInitialized = false;
-    let leafletMapInstance = null;
-
-    async function loadLeaflet() {
-      return new Promise((resolve) => {
-        if (typeof L !== 'undefined') { resolve(); return; }
-        if (!document.getElementById('leaflet-css')) {
-          const css = document.createElement('link');
-          css.id = 'leaflet-css'; css.rel = 'stylesheet';
-          css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-          document.head.appendChild(css);
-        }
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        script.onload = () => resolve();
-        document.head.appendChild(script);
-      });
-    }
-
-    async function openMapModal() {
-      document.getElementById('mapModal').style.display = 'flex';
-      if (mapInitialized && leafletMapInstance) {
-        setTimeout(() => { leafletMapInstance.invalidateSize(); }, 100);
-        return;
-      }
-      try {
-        await loadLeaflet();
-        const mapContainer = document.getElementById('map');
-        mapContainer.innerHTML = '';
-        let mapCenter = [55.751244, 37.618423];
-        let mapZoom = 10;
-        const userLoc = await getUserLocation();
-        if (userLoc) { mapCenter = [userLoc.lat, userLoc.lng]; mapZoom = 12; }
-        const map = L.map('map').setView(mapCenter, mapZoom);
-        leafletMapInstance = map;
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>' }).addTo(map);
-        const res = await fetch(`/api/get_groups_for_map.php?type=namahatta`);
-        const mapGroups = await res.json();
-        if (mapGroups.length > 0) {
-          const groupsByAddress = {};
-          mapGroups.forEach(group => {
-            if (group.lat && group.lng) {
-              const lat = parseFloat(group.lat), lng = parseFloat(group.lng);
-              if (isNaN(lat) || isNaN(lng)) return;
-              const coordKey = lat.toFixed(5) + "_" + lng.toFixed(5);
-              if (!groupsByAddress[coordKey]) groupsByAddress[coordKey] = { lat, lng, groupsList: [] };
-              groupsByAddress[coordKey].groupsList.push(group);
-            }
-          });
-          Object.keys(groupsByAddress).forEach(key => {
-            const point = groupsByAddress[key];
-            const currentMarker = L.marker([point.lat, point.lng]).addTo(map);
-            let popupHtml = '<div style="font-family:sans-serif; max-width:200px; text-align:center;">';
-            point.groupsList.forEach((group, index) => {
-              if (index > 0) popupHtml += '<hr style="border:0; border-top:1px solid #e0e0e0; margin:8px 0;">';
-              popupHtml += `<div><b style="color:#0071e3; font-size:13px; display:block;">${escapeHtml(group.name)}</b><span style="color:#666; font-size:11px; display:block;">${escapeHtml(group.city)}</span><a href="/group.html?id=${group.id}" style="display:inline-block; padding:6px 14px; background:#0071e3; color:#fff; text-decoration:none; border-radius:6px; font-size:11px; font-weight:600; margin-top:4px;">Перейти ➡️</a></div>`;
-            });
-            popupHtml += '</div>';
-            currentMarker.bindPopup(popupHtml);
-          });
-        }
-        mapInitialized = true;
-        setTimeout(() => { map.invalidateSize(); }, 100);
-      } catch (err) { showToast('❌ Ошибка загрузки карты: ' + err.message); }
-    }
+  </script>
   </script>
 
   <script src="/android.js"></script>

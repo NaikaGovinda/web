@@ -68,7 +68,7 @@ try {
             LEFT JOIN users u ON gl.user_id = u.id
             WHERE gl.group_id = ? AND gl.user_id IN ($placeholders)
         ");
-        $stmtLeaders->execute([$id, ...$leaderIdsArray]);
+        $stmtLeaders->execute(array_merge([$id], $leaderIdsArray));
         $groupLeadersList = $stmtLeaders->fetchAll();
 
         foreach ($groupLeadersList as &$gl) {
@@ -120,7 +120,7 @@ try {
 
         // Статус заявки
         $stmtStatus = $pdo->prepare("SELECT status FROM applications WHERE group_id = ? AND user_id = ? LIMIT 1");
-        $stmtStatus->execute([$id, $userId]);
+        $stmtStatus->execute([$id, $user_id]);
         $statusRow = $stmtStatus->fetch();
         if ($statusRow) {
             $userStatus = $statusRow['status'];
@@ -148,7 +148,7 @@ try {
     ");
 
     $membersStmt->execute([
-        'current_user_id' => $userId,
+        'current_user_id' => $user_id,
         'group_id'        => $id
     ]);
     $groupMembers = $membersStmt->fetchAll();

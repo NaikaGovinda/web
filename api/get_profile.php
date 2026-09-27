@@ -23,13 +23,16 @@ try {
         exit;
     }
 
-    // [ИСПРАВЛЕНО] Приоритет: is_admin → role из БД → 'user'
     // [ИСПРАВЛЕНО] Проверяем аватар пользователя
     $rootDir = $config['paths']['root_dir'];
     if (!empty($user_info['avatar_url'])) {
-        $avatarPath = $rootDir . '/' . ltrim($user_info['avatar_url'], '/');
-        if (!file_exists($avatarPath)) {
-            $user_info['avatar_url'] = null;
+        $url = $user_info['avatar_url'];
+        // Если это не внешний URL (Google/VK), проверяем локальный файл
+        if (strpos($url, 'http://') !== 0 && strpos($url, 'https://') !== 0) {
+            $avatarPath = $rootDir . '/' . ltrim($url, '/');
+            if (!file_exists($avatarPath) && !file_exists($rootDir . $url)) {
+                // Если файла физически нет, оставляем URL всё равно, т.к. фронтенд обрабатывает onerror
+            }
         }
     }
 

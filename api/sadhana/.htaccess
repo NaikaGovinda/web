@@ -1,0 +1,15 @@
+DirectoryIndex index.php
+Options -Indexes
+
+RewriteEngine On
+
+# Если запрашивается .php файл — отдаём его
+RewriteCond %{REQUEST_FILENAME} \.php$ -f
+RewriteRule ^ - [L]
+
+# Если запрашивается существующий файл — отдаём его
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Перенаправляем ВСЁ на index.php в этой папке
+RewriteRule ^(.*)$ /api/sadhana/index.php [L]

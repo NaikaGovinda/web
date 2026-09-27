@@ -186,19 +186,11 @@
   <!-- Модальное окно контактов лидера -->
   <div id="leaderContactModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
     <div class="card" style="width: 90%; max-width: 400px; max-height: 80vh; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin: auto; overflow-y: auto;">
-      <h3 style="margin-top: 0; font-size: 18px; text-align: center;">📞 Контакты лидера</h3>
-      
-      <div id="leaderContactInfo" style="margin: 20px 0;">
-        <div style="text-align: center; margin-bottom: 20px;">
-          <div id="leaderContactName" style="font-size: 20px; font-weight: 700; color: #1e1e20;"></div>
-        </div>
-        
-        <div id="leaderContactDetails" style="display: flex; flex-direction: column; gap: 12px;">
-          <!-- Здесь будут контакты -->
-        </div>
+      <div id="leaderContactDetails" style="display: flex; flex-direction: column; gap: 12px;">
+        <!-- Здесь будут контакты -->
       </div>
       
-      <div style="display: flex; gap: 10px; margin-top: 15px;">
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
         <button class="btn btn-ghost" id="btnCloseLeaderContact" style="flex: 1; margin: 0;">Закрыть</button>
       </div>
     </div>
@@ -343,10 +335,31 @@
         <!-- Лента сообщений -->
         <div class="chat-history" id="chatHistoryContainer" style="flex: 1; padding: 15px; overflow-y: auto; background: #f4f4f7; display: flex; flex-direction: column;"></div>
     
-        <!-- Панель ввода -->
-        <div class="chat-input-bar">
-            <textarea id="chatMessageInput" class="chat-textarea" placeholder="Сообщение..." autocomplete="off" rows="1"></textarea>
-            <button class="btn btn-send" onclick="sendGroupChatMessage()" style="width: auto; padding: 10px 20px;">Отправить</button>
+        <!-- Панель ввода с поддержкой голосовых сообщений -->
+        <div class="chat-input-bar" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #ffffff; border-top: 1px solid #e5e5e7;">
+            <div id="normalInputMode" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                <textarea id="chatMessageInput" class="chat-textarea" placeholder="Сообщение..." autocomplete="off" rows="1" style="flex: 1; margin: 0; padding: 10px 14px; border: 1px solid #d2d2d7; border-radius: 20px; font-size: 15px; outline: none; resize: none;"></textarea>
+
+                <button id="btnStartVoice" class="btn" style="width: 40px; height: 40px; border-radius: 50%; padding: 0; margin: 0; background: #f0f0f2; color: #0071e3; display: flex; align-items: center; justify-content: center; font-size: 18px; border: none; cursor: pointer;" title="Записать голосовое сообщение">
+                    🎙️
+                </button>
+
+                <button class="btn btn-send" onclick="sendGroupChatMessage()" style="width: auto; padding: 8px 16px; margin: 0; border-radius: 20px; font-size: 15px;">
+                    ➤
+                </button>
+            </div>
+
+            <div id="voiceRecordingMode" style="display: none; align-items: center; justify-content: space-between; width: 100%; background: #ffeebf; padding: 8px 14px; border-radius: 20px; border: 1px solid #ffd080;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="color: #ff3b30; font-size: 14px; animation: pulse 1s infinite;">🔴</span>
+                    <span id="voiceTimer" style="font-weight: 700; font-size: 15px; color: #1d1d1f;">00:00</span>
+                    <span style="font-size: 13px; color: #86868b;">Идет запись...</span>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnCancelVoice" style="background: none; border: none; font-size: 18px; cursor: pointer;" title="Отмена">❌</button>
+                    <button id="btnSendVoice" style="background: #34c759; color: white; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Отправить">➤</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -802,7 +815,25 @@
 					forwardedHeaderHtml = '<div style="font-size: 10px; color: #ff9500; font-weight: 600; margin-bottom: 4px;">📌 Пересланное</div>';
 				}
 
-				return `<div class="chat-msg-row js-selectable-msg" style="${rowStyle} cursor: pointer;" data-msg-id="${msgId}" data-sender-id="${senderId}" data-can-delete="${canDeleteThisMsg ? '1' : '0'}" data-can-edit="${canDeleteThisMsg || isMyMsg ? '1' : '0'}" data-is-forwarded="${isForwarded ? '1' : '0'}" data-is-mine="${dataIsMine}">${avatarHtml}<div class="chat-msg-bubble" style="${bubbleStyle} ${forwardedStyle}">${forwardedHeaderHtml}${(!isMyMsg && activeChatRecipientId === null) ? `<div class="chat-msg-author" style="font-size: 11px; font-weight: 700; color: #4a90e2; margin-bottom: 3px;">${escapeHtml(msg.first_name)} ${escapeHtml(msg.last_name || '')}</div>` : ''}${replyQuoteHtml}<div class="chat-msg-text" style="font-size: 14px; color: #1e1e20; word-break: break-word; text-align: left;">${escapeHtml(msg.message_text)}</div><div class="chat-msg-time" style="font-size: 10px; color: #888; text-align: right; margin-top: 4px;">${timeStr}${isEdited ? ' ✏️' : ''}</div></div></div>`;
+				let messageTextContentHtml = `<div class="chat-msg-text" style="font-size: 14px; color: #1e1e20; word-break: break-word; text-align: left;">${escapeHtml(msg.message_text)}</div>`;
+				if (msg.media_type === 'voice' && msg.media_url) {
+					const durationSec = msg.duration || 0;
+					const durFormatted = Math.floor(durationSec / 60) + ':' + String(durationSec % 60).padStart(2, '0');
+					messageTextContentHtml = `
+					  <div style="display: flex; align-items: center; gap: 10px; min-width: 180px; padding: 2px 0;">
+					    <button onclick="event.stopPropagation(); playVoiceMessage('${msg.media_url}', this)" style="background: #0071e3; color: white; border: none; border-radius: 50%; width: 34px; height: 34px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">▶</button>
+					    <div style="flex: 1;">
+					      <div style="font-size: 12px; font-weight: 600; margin-bottom: 2px;">🎤 Голосовое сообщение</div>
+					      <div style="height: 4px; background: rgba(0,0,0,0.12); border-radius: 2px; overflow: hidden;">
+					        <div class="voice-progress" style="width: 0%; height: 100%; background: #0071e3;"></div>
+					      </div>
+					    </div>
+					    <span style="font-size: 11px; opacity: 0.8;">${durFormatted}</span>
+					  </div>
+					`;
+				}
+
+				return `<div class="chat-msg-row js-selectable-msg" style="${rowStyle} cursor: pointer;" data-msg-id="${msgId}" data-sender-id="${senderId}" data-can-delete="${canDeleteThisMsg ? '1' : '0'}" data-can-edit="${canDeleteThisMsg || isMyMsg ? '1' : '0'}" data-is-forwarded="${isForwarded ? '1' : '0'}" data-is-mine="${dataIsMine}">${avatarHtml}<div class="chat-msg-bubble" style="${bubbleStyle} ${forwardedStyle}">${forwardedHeaderHtml}${(!isMyMsg && activeChatRecipientId === null) ? `<div class="chat-msg-author" style="font-size: 11px; font-weight: 700; color: #4a90e2; margin-bottom: 3px;">${escapeHtml(msg.first_name)} ${escapeHtml(msg.last_name || '')}</div>` : ''}${replyQuoteHtml}${messageTextContentHtml}<div class="chat-msg-time" style="font-size: 10px; color: #888; text-align: right; margin-top: 4px;">${timeStr}${isEdited ? ' ✏️' : ''}</div></div></div>`;
 			}
 
 			if (isScrollUp) {
@@ -902,7 +933,169 @@
             showToast('❌ Ошибка сети при отправке');
         }
     }
-    
+
+    // === ВОСПРОИЗВЕДЕНИЕ И ЗАПИСЬ ГОЛОСОВЫХ СООБЩЕНИЙ ===
+    let activeAudio = null;
+    let activePlayBtn = null;
+
+    function playVoiceMessage(url, btn) {
+      if (activeAudio) {
+        activeAudio.pause();
+        if (activePlayBtn) activePlayBtn.textContent = '▶';
+        if (activeAudio.src === url || (url.length < 100 && activeAudio.src.endsWith(url))) {
+          activeAudio = null;
+          return;
+        }
+      }
+
+      activeAudio = new Audio();
+      activeAudio.src = url;
+      activePlayBtn = btn;
+      btn.textContent = '❚❚';
+
+      const voiceBubble = btn.closest('.chat-msg-bubble');
+      const progressContainer = voiceBubble ? voiceBubble.querySelector('.voice-progress') : null;
+
+      activeAudio.ontimeupdate = () => {
+        if (activeAudio && activeAudio.duration) {
+          const percent = (activeAudio.currentTime / activeAudio.duration) * 100;
+          if (progressContainer) progressContainer.style.width = percent + '%';
+        }
+      };
+
+      activeAudio.play().catch(e => {
+        console.error('Audio playback error:', e);
+        if (typeof showToast === 'function') showToast('⚠️ Ошибка воспроизведения');
+        btn.textContent = '▶';
+        activeAudio = null;
+      });
+
+      activeAudio.onended = () => {
+        btn.textContent = '▶';
+        if (progressContainer) progressContainer.style.width = '0%';
+        activeAudio = null;
+      };
+    }
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let voiceStartTime = 0;
+    let voiceTimerInterval = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('btnStartVoice')?.addEventListener('click', async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+          let options = { audioBitsPerSecond: 64000 };
+          if (typeof MediaRecorder.isTypeSupported === 'function') {
+            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+              options.mimeType = 'audio/webm;codecs=opus';
+            } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+              options.mimeType = 'audio/ogg;codecs=opus';
+            } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+              options.mimeType = 'audio/mp4';
+            }
+          }
+
+          try {
+            mediaRecorder = new MediaRecorder(stream, options);
+          } catch (e) {
+            mediaRecorder = new MediaRecorder(stream);
+          }
+
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              audioChunks.push(event.data);
+            }
+          };
+
+          mediaRecorder.start(500);
+          voiceStartTime = Date.now();
+
+          document.getElementById('normalInputMode').style.display = 'none';
+          document.getElementById('voiceRecordingMode').style.display = 'flex';
+
+          voiceTimerInterval = setInterval(() => {
+            const elapsedSec = Math.floor((Date.now() - voiceStartTime) / 1000);
+            const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+            const secs = String(elapsedSec % 60).padStart(2, '0');
+            document.getElementById('voiceTimer').textContent = `${mins}:${secs}`;
+          }, 1000);
+
+        } catch (err) {
+          if (typeof showToast === 'function') {
+            showToast('⚠️ Доступ к микрофону отклонен');
+          } else {
+            alert('Доступ к микрофону отклонен');
+          }
+        }
+      });
+
+      document.getElementById('btnCancelVoice')?.addEventListener('click', () => {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+          mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+        clearInterval(voiceTimerInterval);
+        document.getElementById('voiceRecordingMode').style.display = 'none';
+        document.getElementById('normalInputMode').style.display = 'flex';
+      });
+
+      document.getElementById('btnSendVoice')?.addEventListener('click', () => {
+        if (!mediaRecorder) return;
+
+        const durationSec = Math.floor((Date.now() - voiceStartTime) / 1000);
+        clearInterval(voiceTimerInterval);
+
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const reader = new FileReader();
+
+          reader.onloadend = async () => {
+            const base64Audio = reader.result;
+            if (typeof showToast === 'function') showToast('⏳ Отправка голосового сообщения...');
+
+            try {
+              const response = await fetch('/api/send_message.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                  group_id: currentGroupId || 1,
+                  message_text: '🎤 Голосовое сообщение',
+                  media_type: 'voice',
+                  media_url: base64Audio,
+                  duration: durationSec,
+                  recipient_id: activeChatRecipientId
+                })
+              });
+              const result = await response.json();
+
+              if (result.success) {
+                if (typeof showToast === 'function') showToast('✅ Голосовое сообщение отправлено!');
+                await loadChatMessages();
+              } else {
+                if (typeof showToast === 'function') showToast('❌ Ошибка отправки');
+              }
+            } catch (e) {
+              if (typeof showToast === 'function') showToast('❌ Ошибка сети');
+            }
+          };
+
+          reader.readAsDataURL(audioBlob);
+
+          mediaRecorder.stream.getTracks().forEach(track => track.stop());
+          document.getElementById('voiceRecordingMode').style.display = 'none';
+          document.getElementById('normalInputMode').style.display = 'flex';
+        };
+
+        mediaRecorder.stop();
+      });
+    });
+
     // Функция удаления сообщения модератором или автором
 
     // Функция вызова кастомного окна подтверждения
@@ -1918,12 +2111,6 @@
                         </div>
                         
                         <div>
-                            <label for="leaderMax_${leaderId}" style="display:block; margin-bottom:5px; font-weight:600; font-size:13px;">💬 MAX</label>
-                            <input type="text" id="leaderMax_${leaderId}" class="input-field" placeholder="Ссылка или username" 
-                                   value="${escapeHtml(leader.max_contact || '')}" style="font-size: 14px;">
-                        </div>
-                        
-                        <div>
                             <label for="leaderVk_${leaderId}" style="display:block; margin-bottom:5px; font-weight:600; font-size:13px;">🔵 ВКонтакте</label>
                             <input type="text" id="leaderVk_${leaderId}" class="input-field" placeholder="Ссылка или username" 
                                    value="${escapeHtml(leader.vk_contact || '')}" style="font-size: 14px;">
@@ -1934,6 +2121,18 @@
         });
         
         container.innerHTML = html;
+        
+        // Добавляем обработчики для кнопок копирования
+        setTimeout(() => {
+          container.querySelectorAll('[data-copy-phone]').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+              e.preventDefault();
+              const phone = this.dataset.copyPhone;
+              console.log('[CLICK] Copy button clicked for:', phone);
+              copyPhoneNumber(phone);
+            });
+          });
+        }, 100);
     }
 
     // Закрытие модального окна редактирования группы
@@ -2102,15 +2301,13 @@
             if (currentLeadersData && currentLeadersData.length > 0) {
                 for (const leader of currentLeadersData) {
                     const phoneInput = document.getElementById(`leaderPhone_${leader.id}`);
-                    const maxInput = document.getElementById(`leaderMax_${leader.id}`);
                     const vkInput = document.getElementById(`leaderVk_${leader.id}`);
                     
-                    if (phoneInput && maxInput && vkInput) {
+                    if (phoneInput && vkInput) {
                         const contactData = {
                             group_id: currentGroupId,
                             leader_user_id: leader.id,
                             phone: phoneInput.value.trim(),
-                            max_contact: maxInput.value.trim(),
                             vk_contact: vkInput.value.trim()
                         };
                         
@@ -2182,15 +2379,88 @@
     });
 
     // === МОДАЛЬНОЕ ОКНО КОНТАКТОВ ЛИДЕРА ===
+    // Определяем, открыта ли страница внутри Telegram
+    function isInsideTelegram() {
+        const ua = navigator.userAgent || '';
+        
+        // Явные признаки
+        if (/Telegram/i.test(ua)) return true;
+        if (/TelegramBot/i.test(ua)) return true;
+        
+        // WebApp API
+        if (window.Telegram && window.Telegram.WebApp) {
+            // initData непустой = WebApp
+            if (window.Telegram.WebApp.initData && window.Telegram.WebApp.initData !== '') return true;
+            // platform заполнен = WebApp
+            if (window.Telegram.WebApp.platform && window.Telegram.WebApp.platform !== 'unknown') return true;
+        }
+        
+        // Проверка referrer (часто содержит telegram.org или t.me)
+        if (document.referrer && /telegram|t\.me/i.test(document.referrer)) return true;
+        
+        return false;
+    }
+    
+    function copyPhoneNumber(phone) {
+      console.log('[COPY] Copying phone:', phone);
+      
+      // Telegram WebApp API (самый надёжный внутри Telegram)
+      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+      }
+      
+      // Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(phone).then(function() {
+          console.log('[COPY] Success with Clipboard API');
+          showToast('📋 Номер ' + phone + ' скопирован');
+        }).catch(function(err) {
+          console.error('[COPY] Clipboard API failed:', err);
+          copyFallback(phone);
+        });
+      } else {
+        console.log('[COPY] Clipboard API not available, using fallback');
+        copyFallback(phone);
+      }
+    }
+    
+    function copyFallback(phone) {
+      var input = document.createElement('input');
+      input.value = phone;
+      document.body.appendChild(input);
+      input.select();
+      try {
+        var success = document.execCommand('copy');
+        console.log('[COPY] execCommand result:', success);
+        if (success) {
+          showToast('📋 Номер ' + phone + ' скопирован');
+        } else {
+          showToast('❌ Не удалось скопировать');
+        }
+      } catch (e) {
+        console.error('[COPY] execCommand error:', e);
+        showToast('❌ Не удалось скопировать');
+      }
+      document.body.removeChild(input);
+    }
+    
     function openLeaderContactModal() {
       const modal = document.getElementById('leaderContactModal');
-      const nameEl = document.getElementById('leaderContactName');
       const detailsEl = document.getElementById('leaderContactDetails');
       
-      if (!modal || !nameEl || !detailsEl) return;
+      // 🔍 ОТЛАДКА
+      console.log('=== openLeaderContactModal ===');
+      console.log('modal:', modal);
+      console.log('detailsEl:', detailsEl);
+      console.log('currentLeadersData:', currentLeadersData);
+      console.log('currentLeadersData.length:', currentLeadersData ? currentLeadersData.length : 'undefined');
+      console.log('UserAgent:', navigator.userAgent);
+      console.log('isInsideTelegram():', isInsideTelegram());
+      console.log('window.Telegram:', window.Telegram);
+      
+      if (!modal || !detailsEl) return;
       
       if (currentLeadersData.length === 0) {
-        nameEl.textContent = 'Нет данных о лидерах';
         detailsEl.innerHTML = '<p style="text-align: center; color: #888;">Информация недоступна</p>';
         modal.style.display = 'flex';
         return;
@@ -2198,38 +2468,46 @@
       
       // Берем первого лидера (если нужно для всех — можно доработать)
       const leader = currentLeadersData[0];
-      const fullName = `${escapeHtml(leader.first_name || '')} ${escapeHtml(leader.last_name || '')}`.trim();
-      nameEl.textContent = fullName || 'Лидер группы';
+      
+      // 🔍 ОТЛАДКА данных лидера
+      console.log('leader:', leader);
+      console.log('leader.phone:', leader.phone);
+      console.log('leader.vk_contact:', leader.vk_contact);
       
       let detailsHtml = '';
       
       // Телефон
       if (leader.phone) {
+        const cleanPhone = leader.phone.replace(/[^\d+]/g, '');
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const insideTelegram = isInsideTelegram();
+        
+        // Всегда добавляем кнопку "Скопировать"
         detailsHtml += `
-          <a href="tel:${leader.phone.replace(/[^\d+]/g, '')}" 
-             style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #f8f8fa; border-radius: 12px; text-decoration: none; color: #1e1e20; border: 1px solid #eef0f4;">
-            <span style="font-size: 20px;">📱</span>
+          <a href="javascript:void(0)" 
+             onclick="copyPhoneNumber('${cleanPhone}')" 
+             style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #f8f8fa; border-radius: 12px; text-decoration: none; color: #1e1e20; border: 1px solid #eef0f4; cursor: pointer;">
+            <span style="font-size: 20px;">📋</span>
             <div>
-              <div style="font-size: 12px; color: #888; margin-bottom: 2px;">Телефон</div>
+              <div style="font-size: 12px; color: #888; margin-bottom: 2px;">Скопировать номер</div>
               <div style="font-size: 15px; font-weight: 600;">${escapeHtml(leader.phone)}</div>
             </div>
           </a>
         `;
-      }
-      
-      // MAX
-      if (leader.max_contact) {
-        const maxLink = leader.max_contact.startsWith('http') ? leader.max_contact : `https://max.ru/${leader.max_contact}`;
-        detailsHtml += `
-          <a href="${escapeHtml(maxLink)}" target="_blank" rel="noopener noreferrer"
-             style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #f8f8fa; border-radius: 12px; text-decoration: none; color: #1e1e20; border: 1px solid #eef0f4;">
-            <span style="font-size: 20px;">💬</span>
-            <div>
-              <div style="font-size: 12px; color: #888; margin-bottom: 2px;">MAX</div>
-              <div style="font-size: 15px; font-weight: 600;">Написать в MAX</div>
-            </div>
-          </a>
-        `;
+        
+        // Дополнительно — кнопка "Позвонить", только если не Telegram
+        if (isMobile && !insideTelegram) {
+          detailsHtml += `
+            <a href="tel:${cleanPhone}" 
+               style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #e8f5e9; border-radius: 12px; text-decoration: none; color: #1e1e20; border: 1px solid #c8e6c9; cursor: pointer;">
+              <span style="font-size: 20px;">📞</span>
+              <div>
+                <div style="font-size: 12px; color: #2e7d32; margin-bottom: 2px;">Позвонить</div>
+                <div style="font-size: 15px; font-weight: 600;">${escapeHtml(leader.phone)}</div>
+              </div>
+            </a>
+          `;
+        }
       }
       
       // ВКонтакте
@@ -2241,7 +2519,7 @@
             <span style="font-size: 20px;">🔵</span>
             <div>
               <div style="font-size: 12px; color: #888; margin-bottom: 2px;">ВКонтакте</div>
-              <div style="font-size: 15px; font-weight: 600;">Написать в VC</div>
+              <div style="font-size: 15px; font-weight: 600;">Написать в VK</div>
             </div>
           </a>
         `;
@@ -2828,12 +3106,14 @@
           });
           
           const rawText = await response.text();
+          
           if (!response.ok) throw new Error(`HTTP ${response.status}: ${rawText.substring(0, 100)}`);
           
           const jsonIdx = rawText.indexOf('{');
           if (jsonIdx === -1) throw new Error('Сервер вернул не JSON');
           
           const data = JSON.parse(rawText.substring(jsonIdx));
+          
           if (!data.success) throw new Error(data.error || 'Ошибка загрузки');
 
           const group = data.group;
@@ -2856,6 +3136,7 @@
           const leadersArray = data.leaders || [];
           // Сохраняем данные о лидерах для модального окна
           currentLeadersData = leadersArray;
+          
           const leadersNamesText = leadersArray.length > 0
               ? leadersArray.map(l => `${escapeHtml(l.first_name)} ${escapeHtml(l.last_name || '')}`).join(', ')
               : 'Не назначен';
@@ -2882,7 +3163,7 @@
         <div class="card" style="max-width: 500px; margin: 0 auto;">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px;">
                 <p style="margin: 0; text-align: left;"><strong>Ведущие:</strong> ${leadersNamesText}</p>
-                ${leadersArray.length > 0 ? `<button onclick="openLeaderContactModal()" style="background: #4a90e2; color: #fff; border: none; border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;">📞 Связаться с лидером</button>` : ''}
+                ${leadersArray.length > 0 && !isGuest ? `<button onclick="openLeaderContactModal()" style="background: #4a90e2; color: #fff; border: none; border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;">📞 Связаться с лидером</button>` : ''}
             </div>
             ${group.address ? `<p style="margin: 4px 0; text-align: left;"><strong>🏠 Адрес:</strong> ${escapeHtml(group.address)}</p>` : ''}
             ${group.day ? `<p style="margin: 4px 0; text-align: left;"><strong>📅 День проведения:</strong> ${escapeHtml(group.day)}</p>` : ''}
@@ -2989,31 +3270,23 @@
           let actionsHtml = '';
           if (isGuest) {
               // Неавторизованный — только просмотр
-              actionsHtml = `
-        <p style="text-align: center; color: #888; font-size: 14px; padding: 10px; margin: 0;">
-            🔒 Войдите в аккаунт, чтобы подавать заявки и общаться в чате
-        </p>
-        <a href="/login.html" class="btn btn-block btn-primary" style="text-decoration: none; display: block; padding: 12px; border-radius: 8px; background: #4a90e2; color: #fff; font-weight: 600; text-align: center;">
-            Войти или зарегистрироваться
-        </a>
-    `;
+              actionsHtml = '<p style="text-align: center; color: #888; font-size: 14px; padding: 10px; margin: 0;">' +
+                '🔒 Войдите в аккаунт, чтобы подавать заявки и общаться в чате' +
+                '</p>' +
+                '<a href="/login.html" class="btn btn-block btn-primary" style="text-decoration: none; display: block; padding: 12px; border-radius: 8px; background: #4a90e2; color: #fff; font-weight: 600; text-align: center;">' +
+                'Войти или зарегистрироваться' +
+                '</a>';
           } else if (isObserver) {
               // [ДОБАВЛЕНО] Наблюдатель — только просмотр
-              actionsHtml = `
-                <p style="text-align: center; color: #888; font-size: 14px; padding: 10px; margin: 0;">
-                    👁️ Вы в режиме наблюдателя. Просмотр доступен, но отправка сообщений и подача заявок отключены.
-                </p>
-            `;
+              actionsHtml = '<p style="text-align: center; color: #888; font-size: 14px; padding: 10px; margin: 0;">' +
+                '👁️ Вы в режиме наблюдателя. Просмотр доступен, но отправка сообщений и подача заявок отключены.' +
+                '</p>';
           } else if (hasAccessToChat) {
               // Чат уже перенесен вверх
           } else if (data.user_status && data.user_status.toString() === 'pending') {
-              actionsHtml = `
-                <button class="btn btn-block btn-ghost" disabled>⏳ Заявка на рассмотрении</button>
-            `;
+              actionsHtml = '<button class="btn btn-block btn-ghost" disabled>⏳ Заявка на рассмотрении</button>';
           } else {
-              actionsHtml = `
-                <button class="btn btn-block btn-primary" id="btnApply" style="font-weight: 600;">✅ Подать заявку на вступление</button>
-            `;
+              actionsHtml = '<button class="btn btn-block btn-primary" id="btnApply" style="font-weight: 600;">✅ Подать заявку на вступление</button>';
           }
 
           html += `
@@ -3414,7 +3687,25 @@
                         forwardedHeaderHtml = '<div style="font-size: 10px; color: #ff9500; font-weight: 600; margin-bottom: 4px;">📌 Пересланное</div>';
                     }
                     
-                    newHtml += `<div class="chat-msg-row js-selectable-msg" style="${rowStyle} cursor: pointer;" data-msg-id="${msg.id}" data-sender-id="${msg.sender_id}" data-can-delete="${canDeleteThisMsg ? '1' : '0'}" data-can-edit="${canDeleteThisMsg || isMyMsg ? '1' : '0'}" data-is-forwarded="${isForwarded ? '1' : '0'}" data-is-mine="${isMyMsg ? '1' : '0'}">${avatarHtml}<div class="chat-msg-bubble" style="${bubbleStyle} ${forwardedStyle}">${forwardedHeaderHtml}${(!isMyMsg && activeChatRecipientId === null) ? `<div class="chat-msg-author" style="font-size: 11px; font-weight: 700; color: #4a90e2; margin-bottom: 3px;">${escapeHtml(msg.first_name)} ${escapeHtml(msg.last_name || '')}</div>` : ''}${replyQuoteHtml}<div class="chat-msg-text" style="font-size: 14px; color: #1e1e20; word-break: break-word; text-align: left;">${escapeHtml(msg.message_text)}</div><div class="chat-msg-time" style="font-size: 10px; color: #888; text-align: right; margin-top: 4px;">${timeStr}${isEdited ? ' ✏️' : ''}</div></div></div>`;
+                    let msgTextHtml = `<div class="chat-msg-text" style="font-size: 14px; color: #1e1e20; word-break: break-word; text-align: left;">${escapeHtml(msg.message_text)}</div>`;
+                    if (msg.media_type === 'voice' && msg.media_url) {
+                        const durationSec = msg.duration || 0;
+                        const durFormatted = Math.floor(durationSec / 60) + ':' + String(durationSec % 60).padStart(2, '0');
+                        msgTextHtml = `
+                          <div style="display: flex; align-items: center; gap: 10px; min-width: 180px; padding: 2px 0;">
+                            <button onclick="event.stopPropagation(); playVoiceMessage('${msg.media_url}', this)" style="background: #0071e3; color: white; border: none; border-radius: 50%; width: 34px; height: 34px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">▶</button>
+                            <div style="flex: 1;">
+                              <div style="font-size: 12px; font-weight: 600; margin-bottom: 2px;">🎤 Голосовое сообщение</div>
+                              <div style="height: 4px; background: rgba(0,0,0,0.12); border-radius: 2px; overflow: hidden;">
+                                <div class="voice-progress" style="width: 0%; height: 100%; background: #0071e3;"></div>
+                              </div>
+                            </div>
+                            <span style="font-size: 11px; opacity: 0.8;">${durFormatted}</span>
+                          </div>
+                        `;
+                    }
+
+                    newHtml += `<div class="chat-msg-row js-selectable-msg" style="${rowStyle} cursor: pointer;" data-msg-id="${msg.id}" data-sender-id="${msg.sender_id}" data-can-delete="${canDeleteThisMsg ? '1' : '0'}" data-can-edit="${canDeleteThisMsg || isMyMsg ? '1' : '0'}" data-is-forwarded="${isForwarded ? '1' : '0'}" data-is-mine="${isMyMsg ? '1' : '0'}">${avatarHtml}<div class="chat-msg-bubble" style="${bubbleStyle} ${forwardedStyle}">${forwardedHeaderHtml}${(!isMyMsg && activeChatRecipientId === null) ? `<div class="chat-msg-author" style="font-size: 11px; font-weight: 700; color: #4a90e2; margin-bottom: 3px;">${escapeHtml(msg.first_name)} ${escapeHtml(msg.last_name || '')}</div>` : ''}${replyQuoteHtml}${msgTextHtml}<div class="chat-msg-time" style="font-size: 10px; color: #888; text-align: right; margin-top: 4px;">${timeStr}${isEdited ? ' ✏️' : ''}</div></div></div>`;
                 }
                 
                 // Вставляем все новые сообщения одним вызовом

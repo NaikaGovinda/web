@@ -1,5 +1,8 @@
 <?php
 // /api/send_message.php
+@ini_set('memory_limit', '256M');
+@ini_set('post_max_size', '32M');
+@ini_set('upload_max_filesize', '32M');
 
 // Глобальный перехватчик ошибок
 set_exception_handler(function($e) {
@@ -148,9 +151,33 @@ try {
         $hasOriginalMessageId = ($colCheck && $colCheck->rowCount() > 0);
     } catch (\Exception $e) { $hasOriginalMessageId = false; }
 
+    $mediaType = $data['media_type'] ?? 'text';
+    $mediaUrl = $data['media_url'] ?? null;
+    $duration = (int)($data['duration'] ?? 0);
+
+    $hasMediaType = false;
+    try {
+        $colCheck = $pdo->query("SHOW COLUMNS FROM group_messages LIKE 'media_type'");
+        $hasMediaType = ($colCheck && $colCheck->rowCount() > 0);
+    } catch (\Exception $e) { $hasMediaType = false; }
+
     $fields = ['group_id', 'sender_id', 'recipient_id', 'message_text'];
     $placeholders = ['?', '?', '?', '?'];
     $values = [$groupId, $userId, $recipientId, $messageText];
+
+    if ($hasMediaType) {
+        $fields[] = 'media_type';
+        $placeholders[] = '?';
+        $values[] = $mediaType;
+
+        $fields[] = 'media_url';
+        $placeholders[] = '?';
+        $values[] = $mediaUrl;
+
+        $fields[] = 'duration';
+        $placeholders[] = '?';
+        $values[] = $duration;
+    }
 
     if ($hasReplyTo) {
         $fields[] = 'reply_to_id';

@@ -4,10 +4,25 @@ header('Content-Type: application/json; charset=utf8mb4');
 
 $pdo = require __DIR__ . '/db.php';
 
-// [ИЗМЕНЕНО] Разрешаем просмотр без авторизации
-$type = $_GET['type'] ?? 'namahatta';
+$type = $_GET['type'] ?? null;
+$city = $_GET['city'] ?? null;
 
 try {
+    $whereClauses = ["status = 'active'", "lat IS NOT NULL", "lng IS NOT NULL"];
+    $params = [];
+
+    if (!empty($type) && $type !== 'all') {
+        $whereClauses[] = "type = ?";
+        $params[] = $type;
+    }
+
+    if (!empty($city) && $city !== 'all') {
+        $whereClauses[] = "city = ?";
+        $params[] = $city;
+    }
+
+    $whereSql = implode(" AND ", $whereClauses);
+
     $stmt = $pdo->prepare("
         SELECT
             id,
@@ -15,18 +30,16 @@ try {
             city,
             address,
             lat,
-            lng
+            lng,
+            type,
+            description
         FROM `groups`
-        WHERE type = ?
-          AND status = 'active'
-          AND lat IS NOT NULL
-          AND lng IS NOT NULL
+        WHERE $whereSql
     ");
 
-    $stmt->execute([$type]);
+    $stmt->execute($params);
     $groups = $stmt->fetchAll();
 
-    // Типизация
     foreach ($groups as &$g) {
         $g['id'] = (int)$g['id'];
         $g['lat'] = (float)$g['lat'];

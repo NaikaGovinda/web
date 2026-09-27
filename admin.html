@@ -465,36 +465,17 @@
 
                     if (searchQuery) {
                         try {
-                            var urlArray = [
-                                "https://", "nominatim.", "openstreetmap.org", "/search?q=",
-                                encodeURIComponent(searchQuery), "&format=json&limit=1&accept-language=ru"
-                            ];
-                            const controller = new AbortController();
-                            const timeout = setTimeout(() => controller.abort(), 8000);
-                            const geoRes = await fetch(urlArray.join(""), { signal: controller.signal });
-                            clearTimeout(timeout);
-                            const geoData = await geoRes.json();
-                            if (geoData && Array.isArray(geoData) && geoData.length > 0 && geoData[0]) {
-                                latVal = parseFloat(geoData[0].lat);
-                                lngVal = parseFloat(geoData[0].lon);
-                            }
-                        } catch (nominatimErr) {
-                            console.warn('Nominatim failed, trying Photon:', nominatimErr);
-                            try {
-                                const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&limit=1`;
-                                const controller2 = new AbortController();
-                                const timeout2 = setTimeout(() => controller2.abort(), 5000);
-                                const geoRes2 = await fetch(photonUrl, { signal: controller2.signal });
-                                clearTimeout(timeout2);
-                                const photonData = await geoRes2.json();
-                                if (photonData && photonData.features && photonData.features.length > 0) {
-                                    const f = photonData.features[0];
-                                    latVal = parseFloat(f.geometry.coordinates[1]);
-                                    lngVal = parseFloat(f.geometry.coordinates[0]);
+                            if (window.ymaps && window.ymaps.geocode) {
+                                const res = await ymaps.geocode(searchQuery);
+                                const firstGeoObject = res.geoObjects.get(0);
+                                if (firstGeoObject) {
+                                    const coords = firstGeoObject.geometry.getCoordinates();
+                                    latVal = coords[0];
+                                    lngVal = coords[1];
                                 }
-                            } catch (photonErr) {
-                                console.error('Photon also failed:', photonErr);
                             }
+                        } catch (ymapsErr) {
+                            console.warn('Yandex Geocode error:', ymapsErr);
                         }
                     }
                 } catch (geoErr) {
@@ -582,27 +563,33 @@
     let selectedLat = null;
     let selectedLng = null;
 
-    async function loadLeafletAsync() {
+    function loadYandexMapsAsync() {
         return new Promise((resolve, reject) => {
-            if (typeof L !== 'undefined') { resolve(); return; }
-            const css = document.createElement('link');
-            css.rel = 'stylesheet';
-            css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-            css.onload = () => {
+            if (window.ymaps && window.ymaps.ready) {
+                window.ymaps.ready(resolve);
+                return;
+            }
+            if (!document.getElementById('yandex-maps-script')) {
                 const script = document.createElement('script');
-                script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-                script.onload = () => resolve();
+                script.id = 'yandex-maps-script';
+                script.src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU&apikey=70162547-5136-412f-9467-331b66df8772';
+                script.onload = () => { window.ymaps.ready(resolve); };
                 script.onerror = reject;
                 document.head.appendChild(script);
-            };
-            css.onerror = reject;
-            document.head.appendChild(css);
+            } else {
+                const interval = setInterval(() => {
+                    if (window.ymaps && window.ymaps.ready) {
+                        clearInterval(interval);
+                        window.ymaps.ready(resolve);
+                    }
+                }, 100);
+            }
         });
     }
 
     async function openMapPicker() {
         try {
-            await loadLeafletAsync();
+            await loadYandexMapsAsync();
         } catch (e) {
             showToast('❌ Ошибка загрузки карты');
             return;
@@ -612,7 +599,7 @@
         document.getElementById('mapAddress').textContent = 'Кликните на карту';
 
         if (mapPickerInstance) {
-            setTimeout(() => mapPickerInstance.invalidateSize(), 100);
+            mapPickerInstance.container.fitToViewport();
             return;
         }
 
@@ -633,40 +620,33 @@
                 }
             }
 
-            mapPickerInstance = L.map('map', { zoomControl: true, attributionControl: false }).setView(center, zoom);
+            mapPickerInstance = new ymaps.Map('map', {
+                center: center,
+                zoom: zoom,
+                controls: ['zoomControl', 'geolocationControl', 'typeSelector']
+            });
+
             document.getElementById('inputLat').value = center[0].toFixed(6);
             document.getElementById('inputLng').value = center[1].toFixed(6);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(mapPickerInstance);
-
-            mapPickerInstance.on('click', async function (e) {
-                const { lat, lng } = e.latlng;
-                selectedLat = lat;
-                selectedLng = lng;
+            mapPickerInstance.events.add('click', async function (e) {
+                const coords = e.get('coords');
+                const lat = coords[0];
+                const lng = coords[1];
 
                 if (mapPickerMarker) {
-                    mapPickerMarker.setLatLng([lat, lng]);
+                    mapPickerMarker.geometry.setCoordinates(coords);
                 } else {
-                    mapPickerMarker = L.marker([lat, lng]).addTo(mapPickerInstance);
+                    mapPickerMarker = new ymaps.Placemark(coords, {}, { preset: 'islands#redDotIcon', draggable: true });
+                    mapPickerInstance.geoObjects.add(mapPickerMarker);
+
+                    mapPickerMarker.events.add('dragend', function () {
+                        const newCoords = mapPickerMarker.geometry.getCoordinates();
+                        updatePointDetails(newCoords[0], newCoords[1]);
+                    });
                 }
 
-                document.getElementById('mapCoords').textContent = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                document.getElementById('inputLat').value = lat.toFixed(6);
-                document.getElementById('inputLng').value = lng.toFixed(6);
-
-                try {
-                    const urlArray = [`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ru`];
-                    const controller = new AbortController();
-                    const timeout = setTimeout(() => controller.abort(), 8000);
-                    const geoRes = await fetch(urlArray.join(""), { signal: controller.signal });
-                    clearTimeout(timeout);
-                    const data = await geoRes.json();
-                    if (data && data.display_name) {
-                        document.getElementById('mapAddress').textContent = data.display_name.substring(0, 80);
-                    }
-                } catch (err) {
-                    console.error('Ошибка геокодирования:', err);
-                }
+                updatePointDetails(lat, lng);
             });
 
             document.getElementById('btnUseMyLocation').onclick = async function () {
@@ -680,10 +660,16 @@
                     });
                     const lat = pos.coords.latitude;
                     const lng = pos.coords.longitude;
-                    document.getElementById('inputLat').value = lat.toFixed(6);
-                    document.getElementById('inputLng').value = lng.toFixed(6);
-                    mapPickerInstance.setView([lat, lng], 16);
-                    mapPickerInstance.fire('click', { latlng: L.latLng(lat, lng) });
+                    mapPickerInstance.setCenter([lat, lng], 16);
+
+                    if (mapPickerMarker) {
+                        mapPickerMarker.geometry.setCoordinates([lat, lng]);
+                    } else {
+                        mapPickerMarker = new ymaps.Placemark([lat, lng], {}, { preset: 'islands#redDotIcon', draggable: true });
+                        mapPickerInstance.geoObjects.add(mapPickerMarker);
+                    }
+
+                    updatePointDetails(lat, lng);
                 } catch (err) {
                     showToast('❌ Не удалось определить местоположение');
                 }
@@ -695,20 +681,15 @@
                     document.getElementById('groupLng').value = selectedLng;
 
                     try {
-                        const urlArray = [`https://nominatim.openstreetmap.org/reverse?lat=${selectedLat}&lon=${selectedLng}&format=json&accept-language=ru`];
-                        const controller = new AbortController();
-                        const timeout = setTimeout(() => controller.abort(), 8000);
-                        const geoRes = await fetch(urlArray.join(""), { signal: controller.signal });
-                        clearTimeout(timeout);
-                        const geoData = await geoRes.json();
-                        if (geoData && geoData.display_name) {
-                            const addr = geoData.address || {};
-                            const street = addr.road || '';
-                            const house = addr.house_number || '';
+                        const res = await ymaps.geocode([selectedLat, selectedLng]);
+                        const firstGeoObject = res.geoObjects.get(0);
+                        if (firstGeoObject) {
+                            const street = firstGeoObject.getThoroughfare() || '';
+                            const house = firstGeoObject.getPremiseNumber() || '';
                             if (street) {
                                 document.getElementById('groupAddress').value = `${street}${house ? ', ' + house : ''}`;
                             } else {
-                                document.getElementById('groupAddress').value = geoData.display_name.substring(0, 100);
+                                document.getElementById('groupAddress').value = firstGeoObject.getAddressLine() || '';
                             }
                         }
                     } catch (err) {
@@ -731,17 +712,16 @@
                     return;
                 }
 
-                mapPickerInstance.setView([lat, lng], 16);
-                selectedLat = lat;
-                selectedLng = lng;
+                mapPickerInstance.setCenter([lat, lng], 16);
 
                 if (mapPickerMarker) {
-                    mapPickerMarker.setLatLng([lat, lng]);
+                    mapPickerMarker.geometry.setCoordinates([lat, lng]);
                 } else {
-                    mapPickerMarker = L.marker([lat, lng]).addTo(mapPickerInstance);
+                    mapPickerMarker = new ymaps.Placemark([lat, lng], {}, { preset: 'islands#redDotIcon', draggable: true });
+                    mapPickerInstance.geoObjects.add(mapPickerMarker);
                 }
 
-                document.getElementById('mapCoords').textContent = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                updatePointDetails(lat, lng);
             };
 
             document.getElementById('btnSearchAddress').onclick = async function () {
@@ -752,34 +732,25 @@
                 }
 
                 try {
-                    const urlArray = [
-                        "https://", "nominatim.", "openstreetmap.org", "/search?q=",
-                        encodeURIComponent(address), "&format=json&limit=1&accept-language=ru"
-                    ];
-                    const controller = new AbortController();
-                    const timeout = setTimeout(() => controller.abort(), 8000);
-                    const geoRes = await fetch(urlArray.join(""), { signal: controller.signal });
-                    clearTimeout(timeout);
-                    const geoData = await geoRes.json();
+                    const res = await ymaps.geocode(address);
+                    const firstGeoObject = res.geoObjects.get(0);
 
-                    if (geoData && geoData.length > 0 && geoData[0]) {
-                        const lat = parseFloat(geoData[0].lat);
-                        const lng = parseFloat(geoData[0].lon);
+                    if (firstGeoObject) {
+                        const coords = firstGeoObject.geometry.getCoordinates();
+                        const lat = coords[0];
+                        const lng = coords[1];
 
-                        mapPickerInstance.setView([lat, lng], 16);
-                        selectedLat = lat;
-                        selectedLng = lng;
+                        mapPickerInstance.setCenter([lat, lng], 16);
 
                         if (mapPickerMarker) {
-                            mapPickerMarker.setLatLng([lat, lng]);
+                            mapPickerMarker.geometry.setCoordinates([lat, lng]);
                         } else {
-                            mapPickerMarker = L.marker([lat, lng]).addTo(mapPickerInstance);
+                            mapPickerMarker = new ymaps.Placemark([lat, lng], {}, { preset: 'islands#redDotIcon', draggable: true });
+                            mapPickerInstance.geoObjects.add(mapPickerMarker);
                         }
 
-                        document.getElementById('mapCoords').textContent = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                        document.getElementById('inputLat').value = lat.toFixed(6);
-                        document.getElementById('inputLng').value = lng.toFixed(6);
-                        document.getElementById('mapAddress').textContent = geoData[0].display_name?.substring(0, 80) || address;
+                        updatePointDetails(lat, lng);
+                        document.getElementById('mapAddress').textContent = firstGeoObject.getAddressLine() || address;
                         showToast('✅ Адрес найден');
                     } else {
                         showToast('⚠️ Адрес не найден');
@@ -790,10 +761,28 @@
                 }
             };
 
-            setTimeout(() => mapPickerInstance.invalidateSize(), 100);
+            setTimeout(() => mapPickerInstance.container.fitToViewport(), 100);
         } catch (err) {
             console.error('Ошибка инициализации карты:', err);
             showToast('❌ Ошибка загрузки карты');
+        }
+    }
+
+    async function updatePointDetails(lat, lng) {
+        selectedLat = lat;
+        selectedLng = lng;
+        document.getElementById('mapCoords').textContent = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        document.getElementById('inputLat').value = lat.toFixed(6);
+        document.getElementById('inputLng').value = lng.toFixed(6);
+
+        try {
+            const res = await ymaps.geocode([lat, lng]);
+            const firstGeoObject = res.geoObjects.get(0);
+            if (firstGeoObject) {
+                document.getElementById('mapAddress').textContent = firstGeoObject.getAddressLine() || 'Адрес не найден';
+            }
+        } catch (err) {
+            console.error('Ошибка геокодирования:', err);
         }
     }
 

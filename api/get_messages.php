@@ -110,7 +110,9 @@ try {
     // 4. ЗАПРОС СООБЩЕНИЙ: Разделяем логику на Общий чат и Личный чат (ЛС)
     if ($recipientId === null) {
         // --- ОБЩИЙ ЧАТ ГРУППЫ ---
+        $hasMediaType = isset($_SESSION[$cacheKey]['media_type']);
         $selectFields = "m.id, m.sender_id, m.message_text, m.created_at";
+        if ($hasMediaType) $selectFields .= ", m.media_type, m.media_url, m.duration";
         if ($hasUpdatedAt) $selectFields .= ", m.updated_at";
         // reply_to_id всегда нужен для отображения ответов
         $selectFields .= ", m.reply_to_id";
@@ -174,7 +176,9 @@ try {
         ");
         $updateReadStmt->execute([$recipientId, $userId]);
         
+        $hasMediaType = isset($_SESSION[$cacheKey]['media_type']);
         $selectFields = "m.id, m.sender_id, m.message_text, m.created_at";
+        if ($hasMediaType) $selectFields .= ", m.media_type, m.media_url, m.duration";
         if ($hasUpdatedAt) $selectFields .= ", m.updated_at";
         // reply_to_id всегда нужен для отображения ответов
         $selectFields .= ", m.reply_to_id";

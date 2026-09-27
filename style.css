@@ -748,19 +748,7 @@ p, li {
 
 #closeMap:active {
     background: #f5f5f7;
-    transform: scale(0.95); /* Эффект нажатия пальцем */
-}
-
-/* Опускаем блок управления зумом Leaflet (+ и -) чуть ниже, чтобы он не залезал под кнопку */
-.leaflet-top.leaflet-left {
-    top: 62px !important;    /* Сдвигаем весь блок вниз на 75 пикселей от верхнего края */
-    left: 16px !important;   /* Слегка отодвигаем от левого края для красоты */
-}
-
-/* Делаем кнопки зума аккуратнее на смартфонах */
-.leaflet-bar {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important; /* Мягкая тень под + и - вместо жесткой черной */
-    border: none !important;
+    transform: scale(0.95);
 }
 
 .multi-select {

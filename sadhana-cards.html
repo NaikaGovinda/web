@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Управление карточками — Нама-Хатта</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ===== SADHANA CARDS MANAGEMENT STYLES ===== */
+        :root {
+            --sadhana-bg: #f4f5fa;
+            --sadhana-card-bg: #ffffff;
+            --sadhana-primary: #00a86b;
+            --sadhana-primary-hover: #008f5a;
+            --sadhana-text: #2d3436;
+            --sadhana-text-muted: #8c98a4;
+            --sadhana-border: #e2e8f0;
+            --sadhana-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            --sadhana-radius-card: 16px;
+            --sadhana-radius-item: 12px;
+            --sadhana-radius-input: 10px;
+        }
+
+        body {
+            background-color: var(--sadhana-bg) !important;
+            color: var(--sadhana-text);
+            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-y: auto !important;
+        }
+
+        .cards-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 24px 20px 100px;
+            background: var(--sadhana-bg);
+            min-height: 100vh;
+        }
+
+        /* Top Header */
+        .cards-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .back-btn-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--sadhana-text);
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        }
+
+        .back-btn-circle:hover {
+            background: #f8f9fa;
+            transform: translateX(-2px);
+        }
+
+        .header-title-area h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--sadhana-text);
+        }
+
+        .header-title-area p {
+            margin: 2px 0 0;
+            font-size: 13px;
+            color: var(--sadhana-text-muted);
+        }
+
+        /* Grid Layout */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        @media (min-width: 850px) {
+            .cards-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .sadhana-card {
+            background: #ffffff;
+            border-radius: var(--sadhana-radius-card);
+            padding: 24px;
+            box-shadow: var(--sadhana-shadow);
+            border: none;
+        }
+
+        .card-heading {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--sadhana-text);
+        }
+
+        /* Form Inputs */
+        .form-group-custom {
+            margin-bottom: 14px;
+        }
+
+        .form-label-upper {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--sadhana-text-muted);
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .form-input-custom, .form-select-custom {
+            width: 100%;
+            padding: 12px 14px;
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--sadhana-radius-input);
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--sadhana-text);
+            outline: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .form-input-custom:focus, .form-select-custom:focus {
+            border-color: var(--sadhana-primary);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(0, 168, 107, 0.1);
+        }
+
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn-create-card {
+            width: 100%;
+            height: 48px;
+            background: var(--sadhana-primary);
+            color: #ffffff;
+            border: none;
+            border-radius: var(--sadhana-radius-item);
+            font-size: 15px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 6px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 168, 107, 0.25);
+        }
+
+        .btn-create-card:hover {
+            background: var(--sadhana-primary-hover);
+            transform: translateY(-1px);
+        }
+
+        /* Practice Card List Item */
+        .card-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            border-radius: var(--sadhana-radius-item);
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .card-list-item:hover {
+            background: #f1f3f5;
+        }
+
+        .card-list-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--sadhana-text);
+        }
+
+        .card-list-meta {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--sadhana-text-muted);
+            margin-top: 2px;
+            text-transform: uppercase;
+        }
+
+        .trash-btn {
+            background: transparent;
+            border: none;
+            color: #a0aec0;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .trash-btn:hover {
+            background: #ffeaea;
+            color: #e53e3e;
+        }
+
+        .empty-state-text {
+            text-align: center;
+            padding: 30px;
+            color: var(--sadhana-text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="cards-container">
+    <!-- Top Header -->
+    <div class="cards-header">
+        <a href="/sadhana.html" class="back-btn-circle" title="Назад в панель">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+        </a>
+        <div class="header-title-area">
+            <h1>Список и управление практиками</h1>
+            <p>Добавляйте новые карточки и настраивайте цели практик</p>
+        </div>
+    </div>
+
+    <!-- Cards Layout Grid -->
+    <div class="cards-grid">
+        <!-- Card Form -->
+        <div class="sadhana-card">
+            <h3 class="card-heading">Новая практика</h3>
+
+            <div class="form-group-custom">
+                <label class="form-label-upper">НАЗВАНИЕ</label>
+                <input type="text" class="form-input-custom" id="cardName" placeholder="Напр. Медитация">
+            </div>
+
+            <div class="form-row-2">
+                <div class="form-group-custom">
+                    <label class="form-label-upper">ТИП</label>
+                    <select class="form-select-custom" id="cardType">
+                        <option value="COUNT">Кол-во</option>
+                        <option value="DURATION">Длительность</option>
+                    </select>
+                </div>
+                <div class="form-group-custom">
+                    <label class="form-label-upper">ЦЕЛЬ</label>
+                    <input type="number" class="form-input-custom" id="cardTarget" placeholder="10">
+                </div>
+            </div>
+
+            <div class="form-group-custom">
+                <label class="form-label-upper">ЕДИНИЦА ИЗМЕРЕНИЯ</label>
+                <input type="text" class="form-input-custom" id="cardUnit" placeholder="кругов / мин / раз">
+            </div>
+
+            <button class="btn-create-card" id="addBtn" onclick="addCard()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Создать карточку
+            </button>
+        </div>
+
+        <!-- Active Cards List -->
+        <div class="sadhana-card">
+            <h3 class="card-heading">Список практик</h3>
+            <div id="cardsList">
+                <div class="empty-state-text">Загрузка карточек...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script type="module">
+import { getCurrentUserId, apiFetch, showToast, escapeHtml, validateNumber } from './js/sadhana-utils.js?v=20260927-25';
+
+const API_BASE = '';
+let USER_ID = null;
+
+window.addCard = addCard;
+window.archiveCard = archiveCard;
+
+document.addEventListener('DOMContentLoaded', async () => {
+    USER_ID = await getCurrentUserId();
+    if (!USER_ID) {
+        showToast('⚠️ Авторизуйтесь для управления карточками', 'error', 3000);
+        setTimeout(() => window.location.href = '/login.html', 2000);
+        return;
+    }
+    await loadCards();
+});
+
+async function loadCards() {
+    try {
+        const response = await apiFetch(`${API_BASE}/api/sadhana/cards.php`, {}, 2);
+        renderCards(Array.isArray(response.cards) ? response.cards : []);
+    } catch (error) {
+        console.error('Error loading cards:', error);
+        renderCards([]);
+    }
+}
+
+function renderCards(cards) {
+    const container = document.getElementById('cardsList');
+    
+    // Filter active (non-archived) cards
+    const activeCards = cards.filter(c => !c.is_archived);
+
+    if (activeCards.length === 0) {
+        container.innerHTML = '<div class="empty-state-text">Список практик пуст</div>';
+        return;
+    }
+
+    container.innerHTML = activeCards.map(c => `
+        <div class="card-list-item">
+            <div>
+                <div class="card-list-name">${escapeHtml(c.name)}</div>
+                <div class="card-list-meta">${c.target_value} ${escapeHtml(c.unit || '').toUpperCase()}</div>
+            </div>
+            <button class="trash-btn" onclick="archiveCard(${c.id})" title="Удалить карточку">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+            </button>
+        </div>
+    `).join('');
+}
+
+async function addCard() {
+    const name = document.getElementById('cardName').value.trim();
+    const type = document.getElementById('cardType').value;
+    const target = validateNumber(document.getElementById('cardTarget').value, 1, 9999);
+    const unit = document.getElementById('cardUnit').value.trim();
+
+    if (!name) {
+        showToast('Введите название практики', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('addBtn');
+    btn.disabled = true;
+    btn.textContent = 'Создание...';
+
+    try {
+        await apiFetch(`${API_BASE}/api/sadhana/cards.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name,
+                type: type,
+                targetValue: target,
+                unit: unit
+            })
+        }, 2);
+
+        showToast('✅ Карточка создана!', 'success');
+        document.getElementById('cardName').value = '';
+        document.getElementById('cardTarget').value = '';
+        document.getElementById('cardUnit').value = '';
+        await loadCards();
+
+    } catch (error) {
+        showToast('❌ Ошибка: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Создать карточку
+        `;
+    }
+}
+
+async function archiveCard(cardId) {
+    if (!confirm('Удалить эту карточку из базы данных?')) return;
+
+    try {
+        await apiFetch(`${API_BASE}/api/sadhana/cards.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id: cardId })
+        }, 2);
+
+        showToast('🗑️ Карточка удалена из БД', 'info');
+        await loadCards();
+
+    } catch (error) {
+        showToast('❌ Ошибка: ' + error.message, 'error');
+    }
+}
+</script>
+</body>
+</html>

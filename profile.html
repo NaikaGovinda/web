@@ -6,6 +6,36 @@
     <title>Мой профиль — Нама-Хатта</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        .sadhana-link-card {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: white !important;
+            padding: 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            transition: 0.3s;
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);
+            border: none;
+        }
+        .sadhana-link-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(79, 70, 229, 0.4);
+        }
+        .sadhana-link-card .icon {
+            background: rgba(255,255,255,0.2);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+    </style>
     <script src="assets/custom-cropper.js"></script>
 </head>
 <body>
@@ -565,6 +595,19 @@
     </div>
     <h2 class="profile-name">${escapeHtml(user_info.first_name)} ${escapeHtml(user_info.last_name || '')}</h2>
 </div>
+
+<a href="/sadhana.html" class="sadhana-link-card" target="_blank">
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <div class="icon">🕉️</div>
+        <div>
+            <div style="font-weight: 700; font-size: 17px;">Моя Садхана</div>
+            <div style="font-size: 13px; opacity: 0.8;">Трекер ежедневных практик</div>
+        </div>
+    </div>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+</a>
 
 <div class="profile-info card">
     <div class="profile-info-item">

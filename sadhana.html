@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Моя Садхана — Панель управления</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ===== MY SADHANA UPDATED DASHBOARD STYLES ===== */
+        :root {
+            --sadhana-bg: #f4f5fa;
+            --sadhana-card-bg: #ffffff;
+            --sadhana-primary: #00a86b;
+            --sadhana-primary-hover: #008f5a;
+            --sadhana-text: #2d3436;
+            --sadhana-text-muted: #8c98a4;
+            --sadhana-border: #e2e8f0;
+            --sadhana-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            --sadhana-radius-card: 16px;
+            --sadhana-radius-item: 12px;
+            --sadhana-radius-input: 10px;
+        }
+
+        body {
+            background-color: var(--sadhana-bg) !important;
+            color: var(--sadhana-text);
+            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-y: auto !important;
+        }
+
+        .sadhana-dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 20px 100px;
+            background: var(--sadhana-bg);
+            min-height: 100vh;
+        }
+
+        /* Top Header Area */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .dashboard-title-group h1 {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--sadhana-text);
+            letter-spacing: -0.3px;
+        }
+
+        .dashboard-title-group .date-str {
+            margin-top: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--sadhana-text-muted);
+        }
+
+        /* Date Navigator */
+        .date-navigator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .date-nav-btn {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--sadhana-text);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .date-nav-btn:hover {
+            background: #f8f9fa;
+            border-color: var(--sadhana-primary);
+        }
+
+        .date-picker-input {
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: inherit;
+            color: var(--sadhana-text);
+            outline: none;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .date-picker-input:focus {
+            border-color: var(--sadhana-primary);
+        }
+
+        .today-btn {
+            background: rgba(0, 168, 107, 0.1);
+            color: var(--sadhana-primary);
+            border: none;
+            border-radius: 8px;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .today-btn:hover {
+            background: var(--sadhana-primary);
+            color: #ffffff;
+        }
+
+        /* User Profile Badge */
+        .user-profile-badge {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #ffffff;
+            padding: 8px 16px 8px 10px;
+            border-radius: 40px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .user-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #ffffff;
+            font-size: 14px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--sadhana-text);
+            line-height: 1.2;
+        }
+
+        .user-role {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--sadhana-text-muted);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* View Tabs */
+        .dashboard-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .tab-btn {
+            padding: 10px 18px;
+            border-radius: 12px;
+            border: none;
+            background: #ffffff;
+            color: var(--sadhana-text-muted);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            font-family: inherit;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: var(--sadhana-primary);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 168, 107, 0.25);
+        }
+
+        /* Main Grid Layout */
+        .sadhana-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        @media (min-width: 992px) {
+            .sadhana-grid {
+                grid-template-columns: 1.35fr 1fr;
+                align-items: start;
+            }
+        }
+
+        /* Card Component */
+        .sadhana-card {
+            background: #ffffff;
+            border-radius: var(--sadhana-radius-card);
+            padding: 22px 24px;
+            box-shadow: var(--sadhana-shadow);
+            margin-bottom: 20px;
+            border: none;
+        }
+
+        .card-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-heading {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--sadhana-text);
+        }
+
+        .card-subheading {
+            margin: 4px 0 0;
+            font-size: 13px;
+            color: var(--sadhana-text-muted);
+        }
+
+        /* Green Banner Card */
+        .banner-card {
+            background: linear-gradient(135deg, #00a86b 0%, #00b894 100%);
+            border-radius: var(--sadhana-radius-card);
+            padding: 20px 24px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            box-shadow: 0 4px 16px rgba(0, 168, 107, 0.25);
+            margin-bottom: 20px;
+        }
+
+        .banner-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .banner-icon-wrapper {
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .banner-text h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .banner-text p {
+            margin: 4px 0 0;
+            font-size: 13px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        .banner-btn {
+            background: #ffffff;
+            color: #00a86b;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .banner-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        .banner-btn.confirmed {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        /* Progress Card */
+        .progress-percent-text {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--sadhana-primary);
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 8px;
+            background: #f0f2f5;
+            border-radius: 4px;
+            margin-top: 16px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--sadhana-primary);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        /* Log Card */
+        .badge-synced {
+            background: #eef2ff;
+            color: #4f46e5;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .log-item {
+            background: #f8f9fa;
+            border-radius: var(--sadhana-radius-item);
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .log-item:hover {
+            background: #f1f3f5;
+        }
+
+        .log-item-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .log-item-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--sadhana-text);
+        }
+
+        .log-item-sub {
+            font-size: 12px;
+            color: var(--sadhana-text-muted);
+            margin-top: 2px;
+        }
+
+        .log-input-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--sadhana-radius-input);
+            padding: 6px 12px;
+        }
+
+        .log-input {
+            width: 48px;
+            border: none;
+            outline: none;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--sadhana-text);
+            text-align: center;
+            background: transparent;
+            font-family: inherit;
+        }
+
+        .log-unit {
+            font-size: 13px;
+            color: var(--sadhana-text-muted);
+            font-weight: 500;
+        }
+
+        .log-item-progress {
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .log-item-progress-bar {
+            height: 100%;
+            background: var(--sadhana-primary);
+            border-radius: 2px;
+            transition: width 0.2s ease;
+        }
+
+        /* Sleep Section */
+        .card-heading-with-icon {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sleep-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            align-items: center;
+        }
+
+        @media (min-width: 540px) {
+            .sleep-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .form-group-compact {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label-small {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--sadhana-text-muted);
+            margin-bottom: 4px;
+        }
+
+        .time-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .time-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--sadhana-radius-input);
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            color: var(--sadhana-text);
+            outline: none;
+        }
+
+        .time-input:focus {
+            border-color: var(--sadhana-primary);
+            background: #ffffff;
+        }
+
+        .clock-icon {
+            position: absolute;
+            right: 12px;
+            color: var(--sadhana-text-muted);
+            pointer-events: none;
+        }
+
+        .sleep-duration-card {
+            background: #eef2ff;
+            border-radius: var(--sadhana-radius-item);
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .sleep-label {
+            font-size: 11px;
+            font-weight: 800;
+            color: #4338ca;
+            letter-spacing: 0.5px;
+        }
+
+        .sleep-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: #1e1b4b;
+            margin: 6px 0 2px;
+        }
+
+        .sleep-calc-note {
+            font-size: 11px;
+            font-style: italic;
+            color: #6366f1;
+        }
+
+        /* Save Button */
+        .save-day-btn {
+            width: 100%;
+            height: 52px;
+            background: #6c757d;
+            color: #ffffff;
+            border: none;
+            border-radius: var(--sadhana-radius-item);
+            font-size: 15px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.2);
+            margin-top: 10px;
+        }
+
+        .save-day-btn:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        .save-day-btn.saved {
+            background: var(--sadhana-primary);
+            box-shadow: 0 4px 12px rgba(0, 168, 107, 0.3);
+        }
+
+        /* Right Column Form Elements */
+        .form-group-custom {
+            margin-bottom: 14px;
+        }
+
+        .form-label-upper {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--sadhana-text-muted);
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .form-input-custom, .form-select-custom {
+            width: 100%;
+            padding: 12px 14px;
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--sadhana-radius-input);
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--sadhana-text);
+            outline: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .form-input-custom:focus, .form-select-custom:focus {
+            border-color: var(--sadhana-primary);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(0, 168, 107, 0.1);
+        }
+
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn-create-card {
+            width: 100%;
+            height: 48px;
+            background: var(--sadhana-primary);
+            color: #ffffff;
+            border: none;
+            border-radius: var(--sadhana-radius-item);
+            font-size: 15px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 6px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 168, 107, 0.25);
+        }
+
+        .btn-create-card:hover {
+            background: var(--sadhana-primary-hover);
+            transform: translateY(-1px);
+        }
+
+        /* Card List Management */
+        .card-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            border-radius: var(--sadhana-radius-item);
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .card-list-item:hover {
+            background: #f1f3f5;
+        }
+
+        .card-list-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--sadhana-text);
+        }
+
+        .card-list-meta {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--sadhana-text-muted);
+            margin-top: 2px;
+            text-transform: uppercase;
+        }
+
+        .trash-btn {
+            background: transparent;
+            border: none;
+            color: #a0aec0;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .trash-btn:hover {
+            background: #ffeaea;
+            color: #e53e3e;
+        }
+
+        /* History View Styles */
+        .history-card {
+            background: #ffffff;
+            border-radius: var(--sadhana-radius-card);
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            box-shadow: var(--sadhana-shadow);
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .history-card:hover {
+            border-color: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+        .history-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .history-date-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--sadhana-text);
+        }
+
+        .history-percent-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 800;
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+
+        .history-percent-badge.full {
+            background: #e6f7f0;
+            color: #00a86b;
+        }
+
+        .history-details-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: var(--sadhana-text-muted);
+            font-weight: 500;
+        }
+
+        .history-practice-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .history-tag {
+            background: #f8f9fa;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--sadhana-text);
+            border: 1px solid #e2e8f0;
+        }
+
+        .history-open-btn {
+            background: transparent;
+            border: none;
+            color: var(--sadhana-primary);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0;
+            margin-top: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-family: inherit;
+        }
+
+        .history-open-btn:hover {
+            text-decoration: underline;
+        }
+
+        /* Leaderboard */
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+
+        .leaderboard-rank {
+            font-weight: 800;
+            font-size: 14px;
+            color: var(--sadhana-text-muted);
+            width: 24px;
+            text-align: center;
+        }
+
+        .leaderboard-rank.rank-1 { color: #f59e0b; }
+        .leaderboard-rank.rank-2 { color: #94a3b8; }
+        .leaderboard-rank.rank-3 { color: #d97706; }
+
+        .leaderboard-name {
+            font-size: 14px;
+            font-weight: 700;
+            flex: 1;
+        }
+
+        .leaderboard-percent {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--sadhana-primary);
+        }
+
+        .empty-state-text {
+            text-align: center;
+            padding: 24px;
+            color: var(--sadhana-text-muted);
+            font-size: 13px;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+<div class="sadhana-dashboard">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="dashboard-title-group">
+            <h1>Моя Садхана</h1>
+            <div class="date-str" id="currentDateStr">загрузка даты...</div>
+            <div class="date-navigator">
+                <button class="date-nav-btn" onclick="changeSelectedDate(-1)" title="Предыдущий день">◀</button>
+                <input type="date" class="date-picker-input" id="sadhanaDatePicker" onchange="onDatePickerChange(this.value)">
+                <button class="date-nav-btn" onclick="changeSelectedDate(1)" title="Следующий день">▶</button>
+                <button class="today-btn" onclick="goToToday()" id="todayBtn">Сегодня</button>
+            </div>
+        </div>
+        <div class="user-profile-badge">
+            <div class="user-avatar" id="userAvatar">U</div>
+            <div class="user-details">
+                <span class="user-name" id="userName">user_an95hnij8</span>
+                <span class="user-role" id="userRole">SENIOR PRACTITIONER</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs View Selector -->
+    <div class="dashboard-tabs">
+        <button class="tab-btn active" id="tabDayBtn" onclick="switchView('day')">📝 Панель отслеживания</button>
+        <button class="tab-btn" id="tabHistoryBtn" onclick="switchView('history')">📅 История по дням</button>
+        <button class="tab-btn" id="tabCommunityBtn" onclick="switchView('community')">🏆 Общий прогресс</button>
+    </div>
+
+    <!-- Main Grid View: Day Tracking & Card Management -->
+    <div id="viewDay" class="sadhana-grid">
+        <!-- LEFT COLUMN: Practice Logs & Sleep -->
+        <div class="sadhana-column-left">
+            <!-- Green Confirmation Banner Card -->
+            <div class="banner-card">
+                <div class="banner-left">
+                    <div class="banner-icon-wrapper">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                    </div>
+                    <div class="banner-text">
+                        <h2>Готовы начать практику?</h2>
+                        <p id="bannerSubtext">Утвердите список практик на сегодня, чтобы начать отслеживание.</p>
+                    </div>
+                </div>
+                <button class="banner-btn" id="confirmPlanBtn" onclick="togglePlanConfirmed()">Утвердить план</button>
+            </div>
+
+            <!-- Card 1: Daily Progress -->
+            <div class="sadhana-card">
+                <div class="card-header-flex">
+                    <div>
+                        <h3 class="card-heading">Дневной прогресс</h3>
+                        <p class="card-subheading">Завершите все практики на 100%</p>
+                    </div>
+                    <div class="progress-percent-text" id="progressPercent">0%</div>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- Card 2: Practice Log -->
+            <div class="sadhana-card">
+                <div class="card-header-flex" style="margin-bottom: 16px;">
+                    <h3 class="card-heading">Лог практик</h3>
+                    <span class="badge-synced">Синхронизировано</span>
+                </div>
+                <div id="practiceLogsList">
+                    <div class="empty-state-text">Загрузка практик...</div>
+                </div>
+            </div>
+
+            <!-- Card 3: Sleep Mode -->
+            <div class="sadhana-card">
+                <div class="card-heading-with-icon" style="margin-bottom: 16px;">
+                    <span style="font-size: 18px;">🌙</span>
+                    <h3 class="card-heading">Режим сна</h3>
+                </div>
+                <div class="sleep-grid">
+                    <div class="sleep-inputs">
+                        <div class="form-group-compact">
+                            <label class="form-label-small">отбой</label>
+                            <div class="time-input-wrapper">
+                                <input type="time" class="time-input" id="bedTime" value="22:30">
+                                <svg class="clock-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="form-group-compact" style="margin-top: 12px;">
+                            <label class="form-label-small">подъём</label>
+                            <div class="time-input-wrapper">
+                                <input type="time" class="time-input" id="wakeTime" value="04:45">
+                                <svg class="clock-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sleep-duration-card">
+                        <div class="sleep-label">ПРОДОЛЖИТЕЛЬНОСТЬ</div>
+                        <div class="sleep-value" id="sleepDurationVal">0 ч 00 мин</div>
+                        <div class="sleep-calc-note">*Рассчитывается автоматически</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Day Button -->
+            <button class="save-day-btn" id="saveDayBtn" onclick="saveDailyLog()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Сохранить день
+            </button>
+        </div>
+
+        <!-- RIGHT COLUMN: Practice Creation & Active Cards Management -->
+        <div class="sadhana-column-right">
+            <!-- Card 1: New Practice Form -->
+            <div class="sadhana-card">
+                <h3 class="card-heading" style="margin-bottom: 16px;">Новая практика</h3>
+
+                <div class="form-group-custom">
+                    <label class="form-label-upper">НАЗВАНИЕ</label>
+                    <input type="text" class="form-input-custom" id="newCardName" placeholder="Напр. Медитация">
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group-custom">
+                        <label class="form-label-upper">ТИП</label>
+                        <select class="form-select-custom" id="newCardType">
+                            <option value="COUNT">Кол-во</option>
+                            <option value="DURATION">Длительность</option>
+                        </select>
+                    </div>
+                    <div class="form-group-custom">
+                        <label class="form-label-upper">ЦЕЛЬ</label>
+                        <input type="number" class="form-input-custom" id="newCardTarget" placeholder="10">
+                    </div>
+                </div>
+
+                <div class="form-group-custom">
+                    <label class="form-label-upper">ЕДИНИЦА ИЗМЕРЕНИЯ</label>
+                    <input type="text" class="form-input-custom" id="newCardUnit" placeholder="кругов / мин / раз">
+                </div>
+
+                <button class="btn-create-card" id="createCardBtn" onclick="createNewCard()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Создать карточку
+                </button>
+            </div>
+
+            <!-- Card 2: Active Practice List -->
+            <div class="sadhana-card">
+                <h3 class="card-heading" style="margin-bottom: 16px;">Список практик</h3>
+                <div id="cardsListContainer">
+                    <div class="empty-state-text">Загрузка карточек...</div>
+                </div>
+            </div>
+        </div>
+    </div><!-- /viewDay -->
+
+    <!-- History View: Daily History Entries -->
+    <div id="viewHistory" class="hidden" style="max-width: 850px; margin: 0 auto;">
+        <div class="sadhana-card">
+            <h3 class="card-heading" style="margin-bottom: 16px;">📅 История выполненных практик по дням</h3>
+            <div id="historyContainer">
+                <div class="empty-state-text">Загрузка истории...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary View: Leaderboard -->
+    <div id="viewCommunity" class="hidden" style="max-width: 800px; margin: 0 auto;">
+        <div class="sadhana-card">
+            <h3 class="card-heading" style="margin-bottom: 16px;">🏆 Общий прогресс участников</h3>
+            <div id="leaderboardContainer">
+                <div class="empty-state-text">Загрузка рейтинга...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script type="module">
+import {
+    getCurrentUserId, apiFetch, showToast, escapeHtml, validateNumber,
+    calculateSleepDuration, formatSleepDuration, getFormattedDate,
+    getTodayDate, saveToLocalStorage, loadFromLocalStorage
+} from './js/sadhana-utils.js?v=20260927-25';
+
+const API_BASE = '';
+let USER_ID = null;
+
+let state = {
+    selectedDate: getTodayDate(),
+    practices: [],
+    sleep: { bedTime: '22:30', wakeTime: '04:45' },
+    isPlanConfirmed: false
+};
+
+// Global exports for inline HTML onclick handlers
+window.togglePlanConfirmed = togglePlanConfirmed;
+window.createNewCard = createNewCard;
+window.archiveCard = archiveCard;
+window.saveDailyLog = saveDailyLog;
+window.updateLogValue = updateLogValue;
+window.switchView = switchView;
+window.changeSelectedDate = changeSelectedDate;
+window.goToToday = goToToday;
+window.onDatePickerChange = onDatePickerChange;
+window.selectHistoryDate = selectHistoryDate;
+
+document.addEventListener('DOMContentLoaded', async () => {
+    state.selectedDate = getTodayDate();
+    document.getElementById('sadhanaDatePicker').value = state.selectedDate;
+
+    updateDateDisplay();
+    loadProfileInfo();
+    setupSleepListeners();
+
+    USER_ID = await getCurrentUserId();
+    if (!USER_ID) {
+        showToast('⚠️ Авторизуйтесь для использования панели', 'error', 3000);
+        setTimeout(() => window.location.href = '/login.html', 2000);
+        return;
+    }
+
+    await loadCardsAndLogs();
+    await loadLeaderboardData();
+    calculateSleep();
+});
+
+function updateDateDisplay() {
+    const parts = state.selectedDate.split('-');
+    const dt = new Date(parts[0], parts[1] - 1, parts[2]);
+    const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+    const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+
+    const formatted = `${dt.getDate()} ${months[dt.getMonth()]} ${dt.getFullYear()}, ${days[dt.getDay()]}`;
+    document.getElementById('currentDateStr').textContent = formatted;
+}
+
+function changeSelectedDate(offsetDays) {
+    const parts = state.selectedDate.split('-');
+    const dt = new Date(parts[0], parts[1] - 1, parts[2]);
+    dt.setDate(dt.getDate() + offsetDays);
+
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const d = String(dt.getDate()).padStart(2, '0');
+
+    state.selectedDate = `${y}-${m}-${d}`;
+    document.getElementById('sadhanaDatePicker').value = state.selectedDate;
+    updateDateDisplay();
+    loadCardsAndLogs();
+}
+
+function goToToday() {
+    state.selectedDate = getTodayDate();
+    document.getElementById('sadhanaDatePicker').value = state.selectedDate;
+    updateDateDisplay();
+    loadCardsAndLogs();
+}
+
+function onDatePickerChange(val) {
+    if (!val) return;
+    state.selectedDate = val;
+    updateDateDisplay();
+    loadCardsAndLogs();
+}
+
+function selectHistoryDate(dateStr) {
+    state.selectedDate = dateStr;
+    document.getElementById('sadhanaDatePicker').value = state.selectedDate;
+    updateDateDisplay();
+    switchView('day');
+    loadCardsAndLogs();
+}
+
+async function loadProfileInfo() {
+    let name = 'user_an95hnij8';
+    let role = 'SENIOR PRACTITIONER';
+    let avatarUrl = null;
+
+    try {
+        const info = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        const fullName = ((info.first_name || '') + ' ' + (info.last_name || '')).trim();
+        if (fullName || info.username) {
+            name = fullName || info.username;
+        }
+        if (info.role) role = info.role;
+        if (info.avatar_url) avatarUrl = info.avatar_url;
+    } catch (e) {}
+
+    renderProfileBadge(name, role, avatarUrl);
+
+    try {
+        const res = await apiFetch('/api/get_profile.php', {}, 1);
+        if (res && res.success && res.user_info) {
+            const u = res.user_info;
+            localStorage.setItem('userInfo', JSON.stringify(u));
+
+            const fullName = ((u.first_name || '') + ' ' + (u.last_name || '')).trim();
+            if (fullName || u.username) {
+                name = fullName || u.username;
+            }
+            if (u.role) role = u.role;
+            avatarUrl = u.avatar_url || null;
+
+            renderProfileBadge(name, role, avatarUrl);
+        }
+    } catch (e) {
+        console.warn('Could not fetch fresh user profile:', e);
+    }
+}
+
+function renderProfileBadge(name, role, avatarUrl) {
+    document.getElementById('userName').textContent = name;
+    document.getElementById('userRole').textContent = role.toUpperCase();
+
+    const avatarEl = document.getElementById('userAvatar');
+    if (avatarUrl) {
+        const fullAvatarUrl = avatarUrl.startsWith('http') ? avatarUrl : (API_BASE + avatarUrl);
+        avatarEl.innerHTML = `<img src="${escapeHtml(fullAvatarUrl)}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.remove(); document.getElementById('userAvatar').textContent='${escapeHtml(name.substring(0,2).toUpperCase())}';">`;
+    } else {
+        const initials = name.substring(0, 2).toUpperCase();
+        avatarEl.textContent = initials;
+    }
+}
+
+function setupSleepListeners() {
+    document.getElementById('bedTime').addEventListener('input', (e) => {
+        state.sleep.bedTime = e.target.value;
+        calculateSleep();
+    });
+    document.getElementById('wakeTime').addEventListener('input', (e) => {
+        state.sleep.wakeTime = e.target.value;
+        calculateSleep();
+    });
+}
+
+function calculateSleep() {
+    const mins = calculateSleepDuration(state.sleep.bedTime, state.sleep.wakeTime);
+    document.getElementById('sleepDurationVal').textContent = formatSleepDuration(mins);
+}
+
+function switchView(viewName) {
+    const viewDay = document.getElementById('viewDay');
+    const viewHistory = document.getElementById('viewHistory');
+    const viewCommunity = document.getElementById('viewCommunity');
+
+    const tabDayBtn = document.getElementById('tabDayBtn');
+    const tabHistoryBtn = document.getElementById('tabHistoryBtn');
+    const tabCommunityBtn = document.getElementById('tabCommunityBtn');
+
+    viewDay.classList.add('hidden');
+    viewHistory.classList.add('hidden');
+    viewCommunity.classList.add('hidden');
+
+    tabDayBtn.classList.remove('active');
+    tabHistoryBtn.classList.remove('active');
+    tabCommunityBtn.classList.remove('active');
+
+    if (viewName === 'day') {
+        viewDay.classList.remove('hidden');
+        tabDayBtn.classList.add('active');
+    } else if (viewName === 'history') {
+        viewHistory.classList.remove('hidden');
+        tabHistoryBtn.classList.add('active');
+        loadHistoryData();
+    } else {
+        viewCommunity.classList.remove('hidden');
+        tabCommunityBtn.classList.add('active');
+        loadLeaderboardData();
+    }
+}
+
+async function loadCardsAndLogs() {
+    try {
+        // Fetch active cards directly from cards.php
+        const cardsRes = await apiFetch(`${API_BASE}/api/sadhana/cards.php`, {}, 2);
+        const cards = cardsRes.cards || [];
+
+        // Fetch logs for the selected date
+        const queryDate = state.selectedDate || getTodayDate();
+        let logsMap = {};
+        try {
+            const logsRes = await apiFetch(`${API_BASE}/api/sadhana/logs.php?date=${queryDate}`, {}, 2);
+            if (logsRes.logs) {
+                logsRes.logs.forEach(l => {
+                    logsMap[l.cardId] = l.actualValue;
+                });
+            }
+        } catch (e) {
+            console.warn('Could not load online logs:', e);
+        }
+
+        // Fetch sleep log for the selected date
+        try {
+            const sleepRes = await apiFetch(`${API_BASE}/api/sadhana/sleep.php?date=${queryDate}`, {}, 2);
+            if (sleepRes.sleep) {
+                state.sleep.bedTime = sleepRes.sleep.bedTime || '22:30';
+                state.sleep.wakeTime = sleepRes.sleep.wakeTime || '04:45';
+            } else {
+                state.sleep.bedTime = '22:30';
+                state.sleep.wakeTime = '04:45';
+            }
+            document.getElementById('bedTime').value = state.sleep.bedTime;
+            document.getElementById('wakeTime').value = state.sleep.wakeTime;
+            calculateSleep();
+        } catch (e) {}
+
+        // Construct practice state
+        state.practices = cards.map(c => ({
+            id: c.id,
+            name: c.name,
+            type: c.type,
+            targetValue: c.target_value || 1,
+            unit: c.unit || '',
+            actualValue: logsMap[c.id] !== undefined ? logsMap[c.id] : 0
+        }));
+
+        renderPracticeLogs();
+        renderActiveCardsList();
+        updateProgress();
+
+    } catch (error) {
+        console.error('Error loading sadhana data:', error);
+        showToast('❌ Ошибка загрузки данных', 'error');
+    }
+}
+
+function renderPracticeLogs() {
+    const container = document.getElementById('practiceLogsList');
+    if (!state.practices || state.practices.length === 0) {
+        container.innerHTML = '<div class="empty-state-text">Нет активных практик. Добавьте карточку справа.</div>';
+        return;
+    }
+
+    container.innerHTML = state.practices.map((practice, index) => {
+        const target = practice.targetValue || 1;
+        const actual = practice.actualValue || 0;
+        const percent = Math.min(Math.round((actual / target) * 100), 100);
+
+        return `
+            <div class="log-item">
+                <div class="log-item-top">
+                    <div>
+                        <div class="log-item-title">${escapeHtml(practice.name)}</div>
+                        <div class="log-item-sub">Цель: ${target} ${escapeHtml(practice.unit)}</div>
+                    </div>
+                    <div class="log-input-box">
+                        <input type="number" min="0" class="log-input"
+                            value="${actual}"
+                            oninput="updateLogValue(${index}, this.value)"
+                            inputmode="numeric">
+                        <span class="log-unit">${escapeHtml(practice.unit)}</span>
+                    </div>
+                </div>
+                <div class="log-item-progress">
+                    <div class="log-item-progress-bar" style="width: ${percent}%;"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderActiveCardsList() {
+    const container = document.getElementById('cardsListContainer');
+    if (!state.practices || state.practices.length === 0) {
+        container.innerHTML = '<div class="empty-state-text">Список пуст</div>';
+        return;
+    }
+
+    container.innerHTML = state.practices.map(p => `
+        <div class="card-list-item">
+            <div>
+                <div class="card-list-name">${escapeHtml(p.name)}</div>
+                <div class="card-list-meta">${p.targetValue} ${escapeHtml(p.unit).toUpperCase()}</div>
+            </div>
+            <button class="trash-btn" onclick="archiveCard(${p.id})" title="Удалить карточку">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+            </button>
+        </div>
+    `).join('');
+}
+
+function updateLogValue(index, val) {
+    const num = validateNumber(val, 0, 9999);
+    state.practices[index].actualValue = num;
+    updateProgress();
+
+    // Update progress bar element for this item dynamically
+    const logItems = document.querySelectorAll('.log-item');
+    if (logItems[index]) {
+        const bar = logItems[index].querySelector('.log-item-progress-bar');
+        const target = state.practices[index].targetValue || 1;
+        const percent = Math.min(Math.round((num / target) * 100), 100);
+        if (bar) bar.style.width = percent + '%';
+    }
+}
+
+function updateProgress() {
+    const total = state.practices.length;
+    if (total === 0) {
+        document.getElementById('progressPercent').textContent = '0%';
+        document.getElementById('progressFill').style.width = '0%';
+        return;
+    }
+
+    let sumPercent = 0;
+    state.practices.forEach(p => {
+        const target = p.targetValue || 1;
+        const actual = p.actualValue || 0;
+        const itemRatio = Math.min(actual / target, 1.0);
+        sumPercent += itemRatio;
+    });
+
+    const percent = Math.round((sumPercent / total) * 100);
+    document.getElementById('progressPercent').textContent = `${percent}%`;
+    document.getElementById('progressFill').style.width = `${percent}%`;
+}
+
+function togglePlanConfirmed() {
+    state.isPlanConfirmed = !state.isPlanConfirmed;
+    const btn = document.getElementById('confirmPlanBtn');
+    const subtext = document.getElementById('bannerSubtext');
+
+    if (state.isPlanConfirmed) {
+        btn.textContent = 'План утверждён ✓';
+        btn.classList.add('confirmed');
+        subtext.textContent = 'План практик на сегодня успешно утверждён!';
+        showToast('✅ План практик утверждён', 'success');
+    } else {
+        btn.textContent = 'Утвердить план';
+        btn.classList.remove('confirmed');
+        subtext.textContent = 'Утвердите список практик на сегодня, чтобы начать отслеживание.';
+    }
+}
+
+async function createNewCard() {
+    const name = document.getElementById('newCardName').value.trim();
+    const type = document.getElementById('newCardType').value;
+    const target = validateNumber(document.getElementById('newCardTarget').value, 1, 9999);
+    const unit = document.getElementById('newCardUnit').value.trim();
+
+    if (!name) {
+        showToast('Введите название практики', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('createCardBtn');
+    btn.disabled = true;
+    btn.textContent = 'Создание...';
+
+    try {
+        await apiFetch(`${API_BASE}/api/sadhana/cards.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name,
+                type: type,
+                targetValue: target,
+                unit: unit
+            })
+        }, 2);
+
+        showToast('✅ Практика создана!', 'success');
+        document.getElementById('newCardName').value = '';
+        document.getElementById('newCardTarget').value = '';
+        document.getElementById('newCardUnit').value = '';
+
+        await loadCardsAndLogs();
+
+    } catch (error) {
+        showToast('❌ Ошибка: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Создать карточку
+        `;
+    }
+}
+
+async function archiveCard(cardId) {
+    if (!confirm('Удалить эту практику из базы данных?')) return;
+
+    try {
+        await apiFetch(`${API_BASE}/api/sadhana/cards.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id: cardId })
+        }, 2);
+
+        showToast('🗑️ Практика удалена из БД', 'info');
+        await loadCardsAndLogs();
+
+    } catch (error) {
+        showToast('❌ Ошибка: ' + error.message, 'error');
+    }
+}
+
+async function saveDailyLog() {
+    const btn = document.getElementById('saveDayBtn');
+    btn.disabled = true;
+    btn.textContent = 'Сохранение...';
+
+    const saveDate = state.selectedDate || getTodayDate();
+
+    try {
+        // Save sleep
+        await apiFetch(`${API_BASE}/api/sadhana/sleep.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                date: saveDate,
+                bedTime: state.sleep.bedTime,
+                wakeTime: state.sleep.wakeTime
+            })
+        }, 2);
+
+        // Save each practice log
+        for (const practice of state.practices) {
+            await apiFetch(`${API_BASE}/api/sadhana/logs.php?card_id=${practice.id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date: saveDate,
+                    actualValue: practice.actualValue
+                })
+            }, 2);
+        }
+
+        btn.classList.add('saved');
+        btn.innerHTML = '✔ День сохранён!';
+        showToast('✅ День успешно сохранён!', 'success');
+
+        // Immediately update leaderboard data
+        await loadLeaderboardData();
+
+        setTimeout(() => {
+            btn.classList.remove('saved');
+            btn.disabled = false;
+            btn.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Сохранить день
+            `;
+        }, 2500);
+
+    } catch (error) {
+        console.error('Error saving daily log:', error);
+        showToast('❌ Ошибка сохранения: ' + error.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = 'Сохранить день';
+    }
+}
+
+async function loadHistoryData() {
+    const container = document.getElementById('historyContainer');
+    container.innerHTML = '<div class="empty-state-text">Загрузка истории...</div>';
+
+    try {
+        const res = await apiFetch(`${API_BASE}/api/sadhana/history.php?limit=30`, {}, 2);
+        const historyList = res.history || [];
+
+        if (!historyList || historyList.length === 0) {
+            container.innerHTML = '<div class="empty-state-text">История пока пуста. Начните сохранять практики по дням!</div>';
+            return;
+        }
+
+        container.innerHTML = historyList.map(item => {
+            const parts = item.date.split('-');
+            const dt = new Date(parts[0], parts[1] - 1, parts[2]);
+            const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+            const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+            const dateTitle = `${dt.getDate()} ${months[dt.getMonth()]} ${dt.getFullYear()}, ${days[dt.getDay()]}`;
+
+            const percent = item.completionPercent || 0;
+            const badgeCls = percent >= 100 ? 'full' : '';
+
+            let sleepText = '—';
+            if (item.bedTime && item.wakeTime) {
+                const mins = calculateSleepDuration(item.bedTime, item.wakeTime);
+                sleepText = `${formatSleepDuration(mins)} (${item.bedTime} — ${item.wakeTime})`;
+            }
+
+            return `
+                <div class="history-card">
+                    <div class="history-card-header">
+                        <div class="history-date-title">📅 ${escapeHtml(dateTitle)}</div>
+                        <span class="history-percent-badge ${badgeCls}">${percent}%</span>
+                    </div>
+                    <div class="history-details-row">
+                        <span>🌙 Сон: <strong>${escapeHtml(sleepText)}</strong></span>
+                        <span>✅ Выполнено: <strong>${item.completedCards} из ${item.totalCards}</strong></span>
+                    </div>
+                    <div class="history-practice-tags">
+                        ${(item.practices || []).map(p => `
+                            <span class="history-tag">
+                                ${escapeHtml(p.name)}: <strong>${p.actualValue} / ${p.targetValue} ${escapeHtml(p.unit)}</strong>
+                            </span>
+                        `).join('')}
+                    </div>
+                    <button class="history-open-btn" onclick="selectHistoryDate('${item.date}')">
+                        Редактировать этот день →
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error loading history:', error);
+        container.innerHTML = '<div class="empty-state-text">Ошибка загрузки истории</div>';
+    }
+}
+
+async function loadLeaderboardData() {
+    try {
+        const res = await apiFetch(`${API_BASE}/api/sadhana/leaderboard.php?limit=10`, {}, 1);
+        const users = res.leaderboard || [];
+        const container = document.getElementById('leaderboardContainer');
+
+        if (!users || users.length === 0) {
+            container.innerHTML = '<div class="empty-state-text">Пока нет данных участников</div>';
+            return;
+        }
+
+        container.innerHTML = users.map((u, i) => {
+            const rank = i + 1;
+            const rankCls = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
+            const isMe = u.isCurrentUser === 1;
+            return `
+                <div class="leaderboard-item" style="${isMe ? 'background: #eef2ff; border: 1px solid #c7d2fe;' : ''}">
+                    <div class="leaderboard-rank ${rankCls}">#${rank}</div>
+                    <div class="leaderboard-name" style="${isMe ? 'font-weight: 800; color: #4338ca;' : ''}">${escapeHtml(u.name)}${isMe ? ' (Вы)' : ''}</div>
+                    <div class="leaderboard-percent">${u.completionPercent}%</div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        console.warn('Leaderboard error:', e);
+    }
+}
+</script>
+</body>
+</html>
